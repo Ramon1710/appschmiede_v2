@@ -34,7 +34,6 @@ export default function DashboardPage() {
   const [newName, setNewName] = useState("");
   const [loadingCreate, setLoadingCreate] = useState(false);
 
-  // live query auf "projects" des aktuellen Users
   const userProjectsQuery = useMemo(() => {
     if (!uid) return null;
     return query(
@@ -93,6 +92,10 @@ export default function DashboardPage() {
     await deleteDoc(doc(db, "projects", id));
   };
 
+  const openProject = (id: string) => {
+    router.push(`/projects/${id}`);
+  };
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center">
@@ -114,9 +117,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        <p className="text-slate-300">
-          Willkommen {displayName ?? email} 👋
-        </p>
+        <p className="text-slate-300">Willkommen {displayName ?? email} 👋</p>
 
         {/* Neues Projekt */}
         <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
@@ -156,15 +157,12 @@ export default function DashboardPage() {
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{p.name}</span>
-                    <span className="text-xs text-slate-400">
-                      ID: {p.id}
-                    </span>
+                    <span className="text-xs text-slate-400">ID: {p.id}</span>
                   </div>
                   <div className="flex gap-2">
-                    {/* Später: „Öffnen“ führt in den Editor */}
                     <button
                       className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800"
-                      onClick={() => alert("Editor folgt ✨")}
+                      onClick={() => openProject(p.id)}
                     >
                       Öffnen
                     </button>
