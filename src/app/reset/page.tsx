@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth } from "../../lib/firebase";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
