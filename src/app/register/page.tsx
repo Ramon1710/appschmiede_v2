@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
@@ -15,11 +15,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  if (typeof window !== "undefined") {
-    onAuthStateChanged(auth, (user) => {
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
       if (user) router.replace("/dashboard");
     });
-  }
+    return () => unsub();
+  }, [router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,14 +85,4 @@ export default function RegisterPage() {
           </div>
 
           <button disabled={loading} type="submit" className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold hover:bg-indigo-500 disabled:opacity-60">
-            {loading ? "Erstellen…" : "Konto erstellen"}
-          </button>
-
-          <div className="mt-4 text-center text-sm text-slate-300">
-            <Link href="/login" className="hover:underline">Bereits registriert? Anmelden</Link>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+            {loading ? "Erstellen…" : "Konto erstellen

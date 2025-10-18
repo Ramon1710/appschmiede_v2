@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
@@ -14,12 +14,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Wenn schon eingeloggt → weiterleiten
-  if (typeof window !== "undefined") {
-    onAuthStateChanged(auth, (user) => {
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
       if (user) router.replace("/dashboard");
     });
-  }
+    return () => unsub();
+  }, [router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
