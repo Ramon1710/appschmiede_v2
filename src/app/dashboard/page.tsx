@@ -43,9 +43,7 @@ export default function DashboardPage() {
         <p className="text-slate-300">Willkommen {displayName ?? email} 👋</p>
 
         <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-          <p className="text-slate-300">
-            Hier kommt später der App-Editor, Projekte, Chat, Zeiterfassung usw.
-          </p>
+          <p className="text-slate-300">Hier kommt später der App-Editor, Projekte, Chat, Zeiterfassung usw.</p>
         </div>
       </div>
     </div>

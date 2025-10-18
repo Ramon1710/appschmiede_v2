@@ -30,8 +30,9 @@ export default function RegisterPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: name });
       router.replace("/dashboard");
-    } catch (e: any) {
-      setErr(e?.message ?? "Registrierung fehlgeschlagen");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg || "Registrierung fehlgeschlagen");
     } finally {
       setLoading(false);
     }
@@ -84,5 +85,19 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <button disabled={loading} type="submit" className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold hover:bg-indigo-500 disabled:opacity-60">
-            {loading ? "Erstellen…" : "Konto erstellen
+          <button
+            disabled={loading}
+            type="submit"
+            className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold hover:bg-indigo-500 disabled:opacity-60"
+          >
+            {loading ? "Erstellen…" : "Konto erstellen"}
+          </button>
+
+          <div className="mt-4 text-center text-sm text-slate-300">
+            <Link href="/login" className="hover:underline">Bereits registriert? Anmelden</Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

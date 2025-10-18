@@ -19,8 +19,9 @@ export default function ResetPasswordPage() {
     try {
       await sendPasswordResetEmail(auth, email);
       setMsg("Wenn die E-Mail existiert, wurde ein Reset-Link gesendet.");
-    } catch (e: any) {
-      setErr(e?.message ?? "Senden fehlgeschlagen");
+    } catch (e: unknown) {
+      const m = e instanceof Error ? e.message : String(e);
+      setErr(m || "Senden fehlgeschlagen");
     } finally {
       setLoading(false);
     }

@@ -28,8 +28,9 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.replace("/dashboard");
-    } catch (e: any) {
-      setErr(e?.message ?? "Login fehlgeschlagen");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg || "Login fehlgeschlagen");
     } finally {
       setLoading(false);
     }
