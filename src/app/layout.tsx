@@ -7,12 +7,10 @@ export const metadata: Metadata = {
   description: "No-code/low-code App-Editor",
 };
 
-// Kein globaler Protected/AuthProvider hier.
-// Geschützte Seiten bekommen ihr Gate lokal in der Seite.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }
