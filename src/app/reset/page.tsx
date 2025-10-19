@@ -1,63 +1,37 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState } from "react";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { useState, FormEvent } from 'react';
+import { useAuth } from '@/lib/auth';
+import Link from 'next/link';
 
-export default function ResetPasswordPage() {
-  const [email, setEmail] = useState("");
+export default function ResetPage() {
+  const { resetPassword } = useAuth();
+  const [email, setEmail] = useState('');
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setMsg(null);
-    setErr(null);
-    setLoading(true);
+    setErr(null); setMsg(null);
     try {
-      await sendPasswordResetEmail(auth, email);
-      setMsg("Wenn die E-Mail existiert, wurde ein Reset-Link gesendet.");
-    } catch (e: unknown) {
-      const m = e instanceof Error ? e.message : String(e);
-      setErr(m || "Senden fehlgeschlagen");
-    } finally {
-      setLoading(false);
+      await resetPassword(email);
+      setMsg('E-Mail zum Zurücksetzen gesendet.');
+    } catch (e:any) {
+      setErr(e.message ?? 'Fehler beim Senden');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black text-white">
-      <div className="mx-auto max-w-md px-6 pt-20">
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Passwort zurücksetzen</h1>
-          <p className="mt-2 text-slate-300">Gib deine E-Mail ein. Wir senden dir einen Link.</p>
-        </div>
-
-        <form onSubmit={onSubmit} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 shadow-xl backdrop-blur">
-          {msg && <p className="mb-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{msg}</p>}
-          {err && <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{err}</p>}
-
-          <label className="mb-2 block text-sm text-slate-300">E-Mail</label>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-            required
-          />
-
-          <button disabled={loading} type="submit" className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold hover:bg-indigo-500 disabled:opacity-60">
-            {loading ? "Sende…" : "Link senden"}
-          </button>
-
-          <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
-            <Link href="/login" className="hover:underline">Zurück zum Login</Link>
-            <Link href="/register" className="hover:underline">Konto erstellen</Link>
-          </div>
+    <div className="container" style={{ maxWidth: 480 }}>
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>Passwort zurücksetzen</h2>
+        <form onSubmit={onSubmit} className="row">
+          <input className="input" type="email" placeholder="E-Mail" value={email} onChange={e=>setEmail(e.target.value)} required />
+          {msg && <div className="badge" style={{ background:'#132018', borderColor:'#1e4633', color:'#a6e9c5' }}>{msg}</div>}
+          {err && <div className="badge" style={{ background:'#20141a', borderColor:'#46232f', color:'#ffb3b3' }}>{err}</div>}
+          <button className="btn">Senden</button>
         </form>
+        <div style={{ marginTop: 14 }}><Link href="/login">Zurück zum Login</Link></div>
       </div>
     </div>
   );

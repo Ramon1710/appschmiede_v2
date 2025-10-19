@@ -1,6 +1,6 @@
-// src/app/page.tsx
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  redirect("/login");
+  // Einfach erstmal aufs Dashboard leiten – Middleware/Client-Guard übernimmt Auth
+  redirect('/dashboard');
 }
