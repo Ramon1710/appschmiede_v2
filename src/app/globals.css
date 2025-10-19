@@ -1,22 +1,15 @@
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* dunkles Grundlayout + saubere Typo */
-:root {
-  color-scheme: dark;
-}
+:root { color-scheme: dark; }
 
-html, body {
-  height: 100%;
-}
+html, body { height: 100%; }
 
 body {
   @apply bg-slate-950 text-white antialiased;
 }
 
 /* optional: glatte Scrollbar etc. */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+* { -webkit-tap-highlight-color: transparent; }
