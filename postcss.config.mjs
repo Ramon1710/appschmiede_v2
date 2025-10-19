@@ -1,7 +1,7 @@
-// postcss.config.mjs  (Tailwind v4)
+// postcss.config.mjs (Tailwind v4)
 export default {
   plugins: {
-    "@tailwindcss/postcss": {},   // <-- wichtig: nicht "tailwindcss"
+    "@tailwindcss/postcss": {},   // wichtig: v4-Plugin
     autoprefixer: {},
   },
 };
