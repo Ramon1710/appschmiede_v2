@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: "No-code/low-code App-Editor",
 };
 
-// KEIN globales Protected / KEIN globales useAuth hier!
-// Seiten, die Login brauchen (Dashboard/Projects), schützen wir seitenweise.
+// Kein globaler Protected/AuthProvider hier.
+// Geschützte Seiten bekommen ihr Gate lokal in der Seite.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de">
