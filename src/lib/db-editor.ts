@@ -13,25 +13,25 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "../lib/firebase";
 import { PageDoc, PageTree } from "./editorTypes";
 
 const PAGES = "pages";
 const TREES = "pageTrees";
 
+/** Seiten eines Projekts laden – nur WHERE, Sortierung clientseitig (kein Composite-Index nötig) */
 export async function listPagesByProject(projectId: string): Promise<PageDoc[]> {
-  // Nur WHERE, kein orderBy -> vermeidet Composite-Index
   const q = query(collection(db, PAGES), where("projectId", "==", projectId));
   const snap = await getDocs(q);
   const pages = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as PageDoc[];
-  // Clientseitig sortieren
   pages.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   return pages;
 }
 
 export async function createPage(projectId: string, name = "Neue Seite") {
   const pages = await listPagesByProject(projectId);
-  const nextOrder = pages.length ? (pages[pages.length - 1].order ?? pages.length - 1) + 1 : 0;
+  const nextOrder = pages.length ? (pages[pages.length - 1].order ?? (pages.length - 1)) + 1 : 0;
+
   const ref = await addDoc(collection(db, PAGES), {
     projectId,
     name,
@@ -41,12 +41,14 @@ export async function createPage(projectId: string, name = "Neue Seite") {
     updatedAt: serverTimestamp(),
     isHome: pages.length === 0, // erste Seite = Home
   });
+
   await setDoc(doc(db, TREES, ref.id), {
     projectId,
     pageId: ref.id,
     tree: { id: "root", type: "container", props: { bg: "#0b1220" }, children: [] },
     updatedAt: Date.now(),
   });
+
   return ref.id;
 }
 
@@ -94,10 +96,7 @@ export async function setHomePage(projectId: string, pageId: string) {
   const pages = await listPagesByProject(projectId);
   const batch = writeBatch(db);
   pages.forEach((p) => {
-    batch.update(doc(db, PAGES, p.id), {
-      isHome: p.id === pageId,
-      updatedAt: serverTimestamp(),
-    });
+    batch.update(doc(db, PAGES, p.id), { isHome: p.id === pageId, updatedAt: serverTimestamp() });
   });
   await batch.commit();
 }
