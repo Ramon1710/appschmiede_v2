@@ -1,4 +1,3 @@
-// src/lib/db-projects.ts
 import {
   addDoc,
   collection,
@@ -29,10 +28,13 @@ export async function listProjectsForUser(uid: string): Promise<ProjectInfo[]> {
     };
   });
 
-  // Member (optional; wenn Index fehlt, ignorieren wir den Fehler)
+  // Member (optional; wenn Index fehlt, ignorieren)
   try {
     const field = `members.${uid}`;
-    const qMember = query(collection(db, "projects"), where(field as any, "in", ["master", "member"]));
+    const qMember = query(
+      collection(db, "projects"),
+      where(field as any, "in", ["master", "member"])
+    );
     const sMember = await getDocs(qMember);
     sMember.forEach((d) => {
       const data = d.data() as any;

@@ -1,5 +1,3 @@
-// src/lib/editorTypes.ts
-
 export type NodeType = "text" | "button" | "image" | "input";
 
 export interface Node {
