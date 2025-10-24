@@ -1,90 +1,163 @@
 "use client";
-import React from "react";
-import { Node } from "../../../lib/editorTypes";
-import { X } from "lucide-react";
 
-export default function PropertiesPanel({
-  node,
-  updateNode,
-  clearSelection,
-}: {
-  node: Node | null;
-  updateNode: (patch: Partial<Node>) => void;
-  clearSelection: () => void;
-}) {
-  if (!node) {
-    return <div className="w-80 bg-[#161618] border-l border-[#222] p-4 text-sm text-gray-400">Kein Element ausgewählt</div>;
+import React from "react";
+import type { Node as EditorNode } from "../../../lib/editorTypes";
+
+type Props = {
+  selected: EditorNode | null;
+  onChange: (patch: Partial<EditorNode>) => void;
+};
+
+const PropertiesPanel: React.FC<Props> = ({ selected, onChange }) => {
+  if (!selected) {
+    return (
+      <div className="px-4 py-6 text-sm text-gray-400">
+        Nichts ausgewählt. Klicke ein Element im Canvas an.
+      </div>
+    );
   }
-  const setProp = (k: string, v: any) => updateNode({ props: { [k]: v } as any });
+
   return (
-    <div className="w-80 bg-[#161618] border-l border-[#222] p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">Eigenschaften</h2>
-        <button onClick={clearSelection} className="opacity-70 hover:opacity-100"><X size={18} /></button>
+    <div className="px-4 py-4 space-y-4 text-sm">
+      <div className="text-gray-300">
+        <div className="font-medium mb-1">Element</div>
+        <div className="text-xs opacity-70">ID: {selected.id} • Typ: {selected.type}</div>
       </div>
-      <div className="space-y-3 text-sm">
-        <div><div className="text-gray-400 text-xs mb-1">Typ</div><div className="px-2 py-1 bg-[#202226] rounded">{node.type}</div></div>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block"><span className="text-xs text-gray-400">X</span>
-            <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.x ?? 0} onChange={(e) => updateNode({ x: parseInt(e.target.value || "0", 10) })} />
-          </label>
-          <label className="block"><span className="text-xs text-gray-400">Y</span>
-            <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.y ?? 0} onChange={(e) => updateNode({ y: parseInt(e.target.value || "0", 10) })} />
-          </label>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block"><span className="text-xs text-gray-400">Breite</span>
-            <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.w ?? ""} onChange={(e) => updateNode({ w: e.target.value ? parseInt(e.target.value, 10) : undefined })} />
-          </label>
-          <label className="block"><span className="text-xs text-gray-400">Höhe</span>
-            <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.h ?? ""} onChange={(e) => updateNode({ h: e.target.value ? parseInt(e.target.value, 10) : undefined })} />
-          </label>
-        </div>
-        {node.type === "text" && (<>
-          <label className="block"><span className="text-xs text-gray-400">Text</span>
-            <input className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.text ?? ""} onChange={(e) => setProp("text", e.target.value)} />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="block"><span className="text-xs text-gray-400">Farbe</span>
-              <input type="color" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded h-9" value={node.props?.color ?? "#ffffff"} onChange={(e) => setProp("color", e.target.value)} />
-            </label>
-            <label className="block"><span className="text-xs text-gray-400">Größe</span>
-              <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.fontSize ?? 16} onChange={(e) => setProp("fontSize", parseInt(e.target.value || "16", 10))} />
-            </label>
-          </div>
-          <label className="block"><span className="text-xs text-gray-400">Align</span>
-            <select className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.align ?? "left"} onChange={(e) => setProp("align", e.target.value)}>
-              <option value="left">left</option><option value="center">center</option><option value="right">right</option>
-            </select>
-          </label>
-        </>)}
-        {node.type === "button" && (<>
-          <label className="block"><span className="text-xs text-gray-400">Label</span>
-            <input className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.label ?? ""} onChange={(e) => setProp("label", e.target.value)} />
-          </label>
-          <label className="block"><span className="text-xs text-gray-400">Variante</span>
-            <select className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.variant ?? "primary"} onChange={(e) => setProp("variant", e.target.value)}>
-              <option value="primary">primary</option><option value="ghost">ghost</option>
-            </select>
-          </label>
-        </>)}
-        {node.type === "image" && (<>
-          <label className="block"><span className="text-xs text-gray-400">Bild-URL</span>
-            <input className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.src ?? ""} onChange={(e) => setProp("src", e.target.value)} />
-          </label>
-          <label className="block"><span className="text-xs text-gray-400">Alt</span>
-            <input className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.alt ?? ""} onChange={(e) => setProp("alt", e.target.value)} />
-          </label>
-        </>)}
-        {node.type === "input" && (<>
-          <label className="block"><span className="text-xs text-gray-400">Placeholder</span>
-            <input className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.props?.placeholder ?? ""} onChange={(e) => setProp("placeholder", e.target.value)} />
-          </label>
-          <label className="block"><span className="text-xs text-gray-400">Breite</span>
-            <input type="number" className="w-full bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1" value={node.w ?? 220} onChange={(e) => updateNode({ w: parseInt(e.target.value || "220", 10) })} />
-          </label>
-        </>)}
+
+      <div className="grid grid-cols-2 gap-2">
+        <LabeledNumber label="X" value={selected.x ?? 0} onChange={(v) => onChange({ x: v })} />
+        <LabeledNumber label="Y" value={selected.y ?? 0} onChange={(v) => onChange({ y: v })} />
+        <LabeledNumber label="Breite" value={selected.w ?? 140} onChange={(v) => onChange({ w: v })} />
+        <LabeledNumber label="Höhe" value={selected.h ?? 40} onChange={(v) => onChange({ h: v })} />
       </div>
+
+      {selected.type === "text" && (
+        <>
+          <LabeledInput
+            label="Text"
+            value={selected.props?.text ?? ""}
+            onChange={(v) => onChange({ props: { ...selected.props, text: v } })}
+          />
+          <LabeledSelect
+            label="Ausrichtung"
+            value={selected.props?.align ?? "left"}
+            options={[
+              { value: "left", label: "Links" },
+              { value: "center", label: "Zentriert" },
+              { value: "right", label: "Rechts" },
+            ]}
+            onChange={(v) => onChange({ props: { ...selected.props, align: v } })}
+          />
+          <LabeledColor
+            label="Farbe"
+            value={selected.props?.color ?? "#ffffff"}
+            onChange={(v) => onChange({ props: { ...selected.props, color: v } })}
+          />
+          <LabeledNumber
+            label="Schriftgröße"
+            value={selected.props?.size ?? 16}
+            onChange={(v) => onChange({ props: { ...selected.props, size: v } })}
+          />
+        </>
+      )}
+
+      {selected.type === "button" && (
+        <>
+          <LabeledInput
+            label="Label"
+            value={selected.props?.label ?? "Button"}
+            onChange={(v) => onChange({ props: { ...selected.props, label: v } })}
+          />
+          <LabeledSelect
+            label="Variante"
+            value={selected.props?.variant ?? "primary"}
+            options={[
+              { value: "primary", label: "Primary" },
+              { value: "secondary", label: "Secondary" },
+            ]}
+            onChange={(v) => onChange({ props: { ...selected.props, variant: v } })}
+          />
+        </>
+      )}
+
+      {selected.type === "image" && (
+        <LabeledInput
+          label="Bild-URL"
+          value={selected.props?.src ?? ""}
+          onChange={(v) => onChange({ props: { ...selected.props, src: v } })}
+        />
+      )}
+
+      {selected.type === "input" && (
+        <LabeledInput
+          label="Platzhalter"
+          value={selected.props?.placeholder ?? ""}
+          onChange={(v) => onChange({ props: { ...selected.props, placeholder: v } })}
+        />
+      )}
     </div>
+  );
+};
+
+export default PropertiesPanel;
+
+/* ------- kleine Form Controls ------- */
+function LabeledInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void; }) {
+  return (
+    <label className="block">
+      <span className="text-gray-300">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full bg-[#0f1113] border border-[#2a2d31] rounded px-3 py-2 outline-none"
+      />
+    </label>
+  );
+}
+
+function LabeledNumber({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void; }) {
+  return (
+    <label className="block">
+      <span className="text-gray-300">{label}</span>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="mt-1 w-full bg-[#0f1113] border border-[#2a2d31] rounded px-3 py-2 outline-none"
+      />
+    </label>
+  );
+}
+
+function LabeledSelect({
+  label, value, options, onChange,
+}: {
+  label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-gray-300">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full bg-[#0f1113] border border-[#2a2d31] rounded px-3 py-2 outline-none"
+      >
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function LabeledColor({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void; }) {
+  return (
+    <label className="block">
+      <span className="text-gray-300">{label}</span>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full h-10 rounded bg-[#0f1113] border border-[#2a2d31] p-1"
+      />
+    </label>
   );
 }

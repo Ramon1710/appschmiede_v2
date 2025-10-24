@@ -1,139 +1,226 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { restrictToParentElement } from "@dnd-kit/modifiers";
-import { AlignCenter, Image as ImageIcon, Text, Type, SquareMousePointer, Save } from "lucide-react";
-
-import Canvas from "./Canvas";
-import PageSidebar from "./PageSidebar";
-import PropertiesPanel from "./PropertiesPanel";
-import { Node, PageTree } from "../../../lib/editorTypes";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import { Loader2, RefreshCw, Smartphone, Save, Info } from "lucide-react";
 import { getPageTree, savePageTree } from "../../../lib/db-editor";
-import { useParams, useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../../lib/firebase";
-import { ToastProvider, useToast } from "./Toast";
+import type { PageTree, Node as EditorNode, NodeType } from "../../../lib/editorTypes";
+import Canvas from "./Canvas";
+import PropertiesPanel from "./PropertiesPanel";
+import PageSidebar from "./PageSidebar";
 
-const GRID = 8;
-const snap = (n: number) => Math.round(n / GRID) * GRID;
+type DirtyState = "idle" | "saving" | "saved" | "error";
 
-function ShellInner() {
-  const router = useRouter();
-  const params = useParams() as { projectId: string; pageId: string };
-  const { projectId, pageId } = params;
+function useDebounced<T extends (...args: any[]) => void>(fn: T, delay = 600) {
+  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
+  return React.useCallback((...args: Parameters<T>) => {
+    if (t.current) clearTimeout(t.current);
+    t.current = setTimeout(() => fn(...args), delay);
+  }, [fn, delay]) as T;
+}
 
-  const { push } = useToast();
+const EditorShell: React.FC = () => {
+  const { projectId, pageId } = useParams() as { projectId: string; pageId: string };
+
   const [tree, setTree] = useState<PageTree | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const saveTimer = useRef<any>(null);
+  const [dirty, setDirty] = useState<DirtyState>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [dbg, setDbg] = useState<string>("init");
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) router.push("/login");
-    });
-    return () => unsub();
-  }, [router]);
+  const log = (m: string) => setDbg((d) => `${d}\n${new Date().toISOString()} ${m}`);
 
-  useEffect(() => {
-    (async () => {
+  const load = useCallback(async () => {
+    setError(null);
+    setTree(null);
+    setSelectedId(null);
+    log(`load:start p=${projectId} page=${pageId}`);
+    try {
       const t = await getPageTree(pageId);
-      if (t) setTree(t);
-    })();
+      if (!t) {
+        const fresh: PageTree = {
+          projectId,
+          pageId,
+          tree: { id: "root", type: "container", props: { bg: "#0b1220" }, children: [] },
+          updatedAt: Date.now(),
+        };
+        setTree(fresh);
+        setDirty("saving");
+        await savePageTree(pageId, fresh);
+        setDirty("saved");
+      } else {
+        setTree(t);
+        setDirty("idle");
+      }
+      log("load:done");
+    } catch (e: any) {
+      setError(e?.message || "Konnte Seite nicht laden.");
+      setTree({
+        projectId,
+        pageId,
+        tree: { id: "root", type: "container", props: { bg: "#0b1220" }, children: [] },
+        updatedAt: Date.now(),
+      });
+      setDirty("error");
+      log(`load:error ${e?.message || e}`);
+    }
+  }, [pageId, projectId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const persist = useCallback(async (next: PageTree) => {
+    setDirty("saving");
+    try {
+      await savePageTree(pageId, next);
+      setDirty("saved");
+      setTimeout(() => setDirty("idle"), 800);
+    } catch (e: any) {
+      setDirty("error");
+      setError(e?.message || "Speichern fehlgeschlagen.");
+    }
   }, [pageId]);
 
-  const scheduleSave = (next: PageTree) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      setIsSaving(true);
-      await savePageTree(pageId, { projectId, tree: next.tree, updatedAt: Date.now() });
-      setIsSaving(false);
-      push("Gespeichert");
-    }, 600);
-  };
+  const persistDebounced = useDebounced(persist, 600);
 
-  const addElement = (type: Node["type"]) => {
+  const updateTree = useCallback((updater: (t: PageTree) => PageTree, autosave = true) => {
+    setTree((prev) => {
+      if (!prev) return prev;
+      const next = updater(prev);
+      if (autosave) persistDebounced(next);
+      return next;
+    });
+  }, [persistDebounced]);
+
+  const addNode = useCallback((type: NodeType) => {
     if (!tree) return;
-    const id = crypto.randomUUID();
-    const base: Node = { id, type, x: 40, y: 40, props: {} };
-    if (type === "image") { base.w = 120; base.h = 120; base.props = { src: "", alt: "Bild" }; }
-    if (type === "text") base.props = { text: "Neuer Text", color: "#ffffff", fontSize: 16, align: "left" };
-    if (type === "button") base.props = { label: "Button", variant: "primary" };
-    if (type === "input") base.props = { placeholder: "Eingabe", value: "" };
-
-    const next: PageTree = {
-      ...tree,
-      tree: { ...tree.tree, children: [...(tree.tree.children || []), base] },
-      updatedAt: Date.now(),
+    const id = `n_${Date.now()}`;
+    const base: EditorNode = {
+      id,
+      type,
+      x: 24,
+      y: 24,
+      w: type === "image" ? 160 : 140,
+      h: type === "input" ? 44 : 40,
+      props: {},
     };
-    setTree(next);
+    if (type === "text") base.props = { text: "Neuer Text", align: "left", color: "#ffffff", size: 16 };
+    if (type === "button") base.props = { label: "Button", variant: "primary" };
+    if (type === "image") base.props = { src: "https://placehold.co/320x180/1e293b/fff?text=Bild" };
+    if (type === "input") base.props = { placeholder: "Eingabe…" };
+
+    updateTree((t) => ({
+      ...t,
+      tree: { ...t.tree, children: [...t.tree.children, base] },
+      updatedAt: Date.now(),
+    }));
     setSelectedId(id);
-    scheduleSave(next);
-  };
+  }, [tree, updateTree]);
 
-  const selectedNode = useMemo(() => {
-    if (!tree || !selectedId) return null;
-    return (tree.tree.children || []).find((n) => n.id === selectedId) || null;
-  }, [tree, selectedId]);
+  const removeNode = useCallback((id: string) => {
+    updateTree((t) => ({
+      ...t,
+      tree: { ...t.tree, children: t.tree.children.filter((c) => c.id !== id) },
+      updatedAt: Date.now(),
+    }));
+    setSelectedId((s) => (s === id ? null : s));
+  }, [updateTree]);
 
-  const onDragEnd = (e: DragEndEvent) => {
-    if (!tree) return;
-    const id = e.active.id as string;
-    const current = (tree.tree.children || []).find((n) => n.id === id);
-    if (!current) return;
-    const nx = snap((current.x || 0) + (e.delta?.x || 0));
-    const ny = snap((current.y || 0) + (e.delta?.y || 0));
-    const nextChildren = (tree.tree.children || []).map((n) => (n.id === id ? { ...n, x: nx, y: ny } : n));
-    const next: PageTree = { ...tree, tree: { ...tree.tree, children: nextChildren } };
-    setTree(next);
-    scheduleSave(next);
-  };
+  const moveNode = useCallback((id: string, dx: number, dy: number) => {
+    updateTree((t) => ({
+      ...t,
+      tree: {
+        ...t.tree,
+        children: t.tree.children.map((c) =>
+          c.id === id ? { ...c, x: Math.max(0, (c.x ?? 0) + dx), y: Math.max(0, (c.y ?? 0) + dy) } : c
+        ),
+      },
+      updatedAt: Date.now(),
+    }));
+  }, [updateTree]);
 
-  const updateSelected = (patch: Partial<Node>) => {
-    if (!tree || !selectedId) return;
-    const nextChildren = (tree.tree.children || []).map((n) =>
-      n.id === selectedId ? { ...n, ...patch, props: { ...n.props, ...(patch as any).props } } : n
-    );
-    const next = { ...tree, tree: { ...tree.tree, children: nextChildren } };
-    setTree(next);
-    scheduleSave(next);
-  };
+  const updateNodeProps = useCallback((id: string, patch: Partial<EditorNode>) => {
+    updateTree((t) => ({
+      ...t,
+      tree: {
+        ...t.tree,
+        children: t.tree.children.map((c) =>
+          c.id === id ? { ...c, ...patch, props: { ...c.props, ...(patch as any).props } } : c
+        ),
+      },
+      updatedAt: Date.now(),
+    }));
+  }, [updateTree]);
+
+  const selected: EditorNode | null = useMemo(
+    () => (tree?.tree.children.find((c) => c.id === selectedId) ?? null),
+    [tree, selectedId]
+  );
 
   if (!tree) {
     return (
-      <div className="h-screen w-full bg-[#0d0d0f] text-gray-300 flex items-center justify-center">
-        Lädt Editor…
+      <div className="max-w-6xl mx-auto px-4 py-10 text-gray-200">
+        <div className="flex items-center gap-2"><Loader2 className="animate-spin" /> Seite lädt…</div>
+        {error && <div className="mt-4 text-red-300 text-sm">{error}</div>}
+        <pre className="mt-2 text-[11px] leading-5 bg-black/40 p-3 rounded max-h-64 overflow-auto">{dbg}</pre>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-[#0d0d0f] text-white">
-      <PageSidebar projectId={projectId} activePageId={pageId} />
-      <div className="flex-1 flex flex-col">
-        <div className="h-12 border-b border-[#222] bg-[#121214] px-3 flex items-center gap-2">
-          <button onClick={() => addElement("text")} className="px-3 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d] flex items-center gap-2 text-sm"><Type size={16} /> Text</button>
-          <button onClick={() => addElement("button")} className="px-3 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d] flex items-center gap-2 text-sm"><SquareMousePointer size={16} /> Button</button>
-          <button onClick={() => addElement("image")} className="px-3 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d] flex items-center gap-2 text-sm"><ImageIcon size={16} /> Bild</button>
-          <button onClick={() => addElement("input")} className="px-3 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d] flex items-center gap-2 text-sm"><Text size={16} /> Eingabefeld</button>
-          <div className="ml-auto flex items-center gap-3 text-xs text-gray-400">
-            <AlignCenter size={16} /><span>Grid 8px</span><Save size={16} /><span>{isSaving ? "Speichert…" : "Gespeichert"}</span>
+    <div className="max-w-[1200px] mx-auto px-4 py-6 grid grid-cols-[280px_1fr_320px] gap-4">
+      <div className="rounded-2xl border border-[#222] bg-[#0f1113]">
+        <div className="px-4 py-3 border-b border-[#222] flex items-center gap-2">
+          <Smartphone size={16} className="opacity-70" />
+          <div className="font-medium">Komponenten</div>
+          <button
+            onClick={load}
+            className="ml-auto text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d]"
+            title="Neu laden"
+          >
+            <RefreshCw size={14} /> Reload
+          </button>
+        </div>
+        <PageSidebar onAdd={addNode} />
+        <div className="px-4 py-3 text-xs text-gray-400 border-t border-[#222] flex items-start gap-2">
+          <Info size={14} className="mt-0.5" />
+          <span>Ziehe Elemente auf die Handy-Fläche. Änderungen werden automatisch gespeichert.</span>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-[#222] bg-[#0b0e13] p-4">
+        <Canvas
+          tree={tree}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onRemove={removeNode}
+          onMove={moveNode}
+        />
+      </div>
+
+      <div className="rounded-2xl border border-[#222] bg-[#0f1113]">
+        <div className="px-4 py-3 border-b border-[#222] flex items-center gap-2">
+          <Save size={16} className={
+            dirty === "saving" ? "animate-pulse text-yellow-400" :
+            dirty === "saved" ? "text-green-400" :
+            dirty === "error" ? "text-red-400" : "opacity-70"
+          } />
+          <div className="font-medium">Eigenschaften</div>
+          <div className="ml-auto text-xs text-gray-400">
+            {dirty === "saving" && "Speichern…"}
+            {dirty === "saved" && "Gespeichert"}
+            {dirty === "error" && "Fehler"}
           </div>
         </div>
-        <DndContext onDragEnd={onDragEnd} modifiers={[restrictToParentElement]}>
-          <Canvas tree={tree} selectedId={selectedId} setSelectedId={setSelectedId} />
-        </DndContext>
+        <PropertiesPanel
+          selected={selected}
+          onChange={(patch: Partial<EditorNode>) => {
+            if (!selected) return;
+            updateNodeProps(selected.id, patch);
+          }}
+        />
       </div>
-      <PropertiesPanel node={selectedNode} updateNode={updateSelected} clearSelection={() => setSelectedId(null)} />
     </div>
   );
-}
+};
 
-export default function EditorShell() {
-  return (
-    <ToastProvider>
-      <ShellInner />
-    </ToastProvider>
-  );
-}
+export default EditorShell;
