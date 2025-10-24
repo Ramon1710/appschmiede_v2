@@ -1,175 +1,178 @@
 "use client";
-export const dynamic = "force-dynamic";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth, db } from "../../lib/firebase";
-import { useRouter } from "next/navigation";
+import { auth } from "../../lib/firebase";
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  where,
-} from "firebase/firestore";
-
-type Project = {
-  id: string;
-  name: string;
-  ownerId: string;
-  createdAt?: { seconds: number; nanoseconds: number };
-};
+  createProject,
+  listProjectsForUser,
+  removeProject,
+  type ProjectDoc,
+} from "../../lib/db-projects";
+import { Loader2, Plus, LogOut, RefreshCw, Trash2, ExternalLink } from "lucide-react";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectDoc[] | null>(null);
   const [newName, setNewName] = useState("");
-  const [loadingCreate, setLoadingCreate] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const userProjectsQuery = useMemo(() => {
-    if (!uid) return null;
-    return query(
-      collection(db, "projects"),
-      where("ownerId", "==", uid),
-      orderBy("createdAt", "desc")
-    );
-  }, [uid]);
-
+  // Auth & initial load
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        router.replace("/login");
-      } else {
-        setUid(user.uid);
-        setDisplayName(user.displayName);
-        setEmail(user.email);
-        setReady(true);
+    return onAuthStateChanged(auth, async (u) => {
+      if (!u) {
+        window.location.href = "/login";
+        return;
       }
+      setUid(u.uid);
+      await reload(u.uid);
     });
-    return () => unsubAuth();
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => {
-    if (!userProjectsQuery) return;
-    const unsub = onSnapshot(userProjectsQuery, (snap) => {
-      const rows: Project[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      setProjects(rows);
-    });
-    return () => unsub();
-  }, [userProjectsQuery]);
-
-  const logout = async () => {
-    await signOut(auth);
-    router.replace("/login");
-  };
-
-  const createProject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uid || !newName.trim()) return;
-    setLoadingCreate(true);
+  const reload = async (theUid?: string) => {
     try {
-      await addDoc(collection(db, "projects"), {
-        name: newName.trim(),
-        ownerId: uid,
-        createdAt: serverTimestamp(),
-      });
-      setNewName("");
-    } finally {
-      setLoadingCreate(false);
+      setError(null);
+      setProjects(null);
+      const id = theUid ?? uid;
+      if (!id) return;
+      const list = await listProjectsForUser(id);
+      setProjects(list);
+    } catch (e: any) {
+      setProjects([]);
+      setError(e?.message || "Fehler beim Laden deiner Projekte.");
     }
   };
 
-  const openProject = (id: string) => {
-    router.push(`/projects/${id}`);
+  const onCreate = async () => {
+    if (!uid) return;
+    if (!newName.trim()) return;
+    setBusy(true);
+    try {
+      const id = await createProject(newName.trim(), uid);
+      setNewName("");
+      await reload(uid);
+      // Direkt öffnen:
+      window.location.href = `/projects/${id}`;
+    } catch (e: any) {
+      setError(e?.message || "Projekt konnte nicht angelegt werden (Regeln?).");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const deleteProject = async (id: string) => {
+  const onDelete = async (id: string) => {
     if (!confirm("Projekt wirklich löschen?")) return;
-    await deleteDoc(doc(db, "projects", id));
+    setBusy(true);
+    try {
+      await removeProject(id);
+      await reload(uid!);
+    } catch (e: any) {
+      setError(e?.message || "Löschen fehlgeschlagen (Regeln?).");
+    } finally {
+      setBusy(false);
+    }
   };
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center">
-        Lade…
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-black text-white">
-      <div className="mx-auto max-w-3xl px-6 pt-14">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <button onClick={logout} className="rounded-xl border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800">
-            Abmelden
+    <div className="max-w-3xl mx-auto px-4 py-10 text-white">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <button
+          onClick={() => signOut(auth)}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-[#1d1f22] hover:bg-[#26292d] text-sm"
+        >
+          <LogOut size={16} />
+          Abmelden
+        </button>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-[#222] bg-[#111218]">
+        <div className="p-4 border-b border-[#222] font-medium">Neues Projekt</div>
+        <div className="p-4 flex gap-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Projektname"
+            className="flex-1 bg-[#0f1113] border border-[#2a2d31] rounded px-3 py-2 outline-none"
+          />
+          <button
+            onClick={onCreate}
+            disabled={busy || !newName.trim()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60"
+          >
+            <Plus size={16} />
+            Anlegen
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-2xl border border-[#222] bg-[#111218]">
+        <div className="p-4 border-b border-[#222] flex items-center justify-between">
+          <div className="font-medium">Meine Projekte</div>
+          <button
+            onClick={() => reload()}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-[#1d1f22] hover:bg-[#26292d] text-sm"
+          >
+            <RefreshCw size={16} />
+            Aktualisieren
           </button>
         </div>
 
-        <p className="text-slate-300">Willkommen {displayName ?? email} 👋</p>
+        {/* Ladezustand */}
+        {projects === null && (
+          <div className="p-4 text-gray-300 flex items-center gap-2">
+            <Loader2 className="animate-spin" /> lädt …
+          </div>
+        )}
 
-        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-          <h2 className="mb-4 text-lg font-semibold">Neues Projekt</h2>
-          <form onSubmit={createProject} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Projektname"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-              required
-              maxLength={80}
-            />
-            <button
-              type="submit"
-              disabled={loadingCreate}
-              className="rounded-xl bg-indigo-600 px-4 py-3 font-semibold hover:bg-indigo-500 disabled:opacity-60"
-            >
-              {loadingCreate ? "Anlegen…" : "Anlegen"}
-            </button>
-          </form>
-        </div>
+        {/* Fehler */}
+        {error && projects !== null && (
+          <div className="p-4 text-red-300 text-sm">{error}</div>
+        )}
 
-        <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/40 p-6">
-          <h2 className="mb-4 text-lg font-semibold">Meine Projekte</h2>
-          {projects.length === 0 ? (
-            <p className="text-slate-400">Noch keine Projekte.</p>
-          ) : (
-            <ul className="space-y-3">
+        {/* Liste */}
+        {projects && (
+          <div className="p-2">
+            {!projects.length && (
+              <div className="text-sm text-gray-400 px-2 py-4">
+                Keine Projekte gefunden. Lege oben ein neues an.
+              </div>
+            )}
+            <ul className="space-y-2">
               {projects.map((p) => (
-                <li key={p.id} className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{p.name}</span>
-                    <span className="text-xs text-slate-400">ID: {p.id}</span>
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[#0f1113] border border-[#2a2d31]"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{p.name}</div>
+                    <div className="text-xs text-gray-400">ID: {p.id}</div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800"
-                      onClick={() => openProject(p.id)}
-                    >
-                      Öffnen
-                    </button>
-                    <button
-                      className="rounded-lg border border-red-700/70 px-3 py-2 text-sm text-red-300 hover:bg-red-950/50"
-                      onClick={() => deleteProject(p.id)}
-                    >
-                      Löschen
-                    </button>
-                  </div>
+
+                  <Link
+                    href={`/projects/${p.id}`}
+                    className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d]"
+                  >
+                    <ExternalLink size={14} />
+                    Öffnen
+                  </Link>
+
+                  <button
+                    onClick={() => onDelete(p.id)}
+                    className="inline-flex items-center gap-2 text-xs px-2 py-1 rounded bg-[#2a0f12] hover:bg-[#381317]"
+                    title="Löschen"
+                  >
+                    <Trash2 size={14} />
+                    Löschen
+                  </button>
                 </li>
               ))}
             </ul>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
