@@ -8,16 +8,40 @@ import {
   listPagesByProject,
   renamePage,
   deletePage,
-} from "@/lib/db-editor";
-import type { PageDoc } from "@/lib/editorTypes";
-import { Loader2, Pencil, Trash2, Plus, ExternalLink } from "lucide-react";
+  getProject,
+} from "../../../lib/db-editor";
+import type { PageDoc } from "../../../lib/editorTypes";
+import {
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
+
+// Timeout-Wrapper: verhindert Endlos-Loader
+function withTimeout<T>(p: Promise<T>, ms = 8000, tag = "request"): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`timeout:${tag}:${ms}ms`)), ms);
+    p.then((v) => { clearTimeout(t); resolve(v); })
+     .catch((e) => { clearTimeout(t); reject(e); });
+  });
+}
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams() as { projectId: string };
   const [pages, setPages] = useState<PageDoc[] | null>(null);
+  const [projectName, setProjectName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [debug, setDebug] = useState<string>("init");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+
+  const log = (msg: string) =>
+    setDebug((d) => `${d}\n${new Date().toISOString()} ${msg}`);
 
   const activePageId = useMemo(() => {
     if (!pages || !pages.length) return null;
@@ -26,15 +50,51 @@ export default function ProjectDetailPage() {
   }, [pages]);
 
   const load = async () => {
-    const list = await listPagesByProject(projectId);
-    if (!list.length) {
-      // autom. Startseite erzeugen
-      const firstId = await createPage(projectId, "Startseite");
-      const afterCreate = await listPagesByProject(projectId);
-      setPages(afterCreate);
-      return;
+    try {
+      setError(null);
+      setPages(null);
+      setDebug(`init ${projectId}`);
+
+      // 1) Projekt existiert / lesbar?
+      log("getProject:start");
+      const proj = await withTimeout(getProject(projectId), 8000, "getProject");
+      log("getProject:done");
+      if (!proj) {
+        setError("Projekt nicht gefunden oder keine Leseberechtigung.");
+        setPages([]);
+        return;
+      }
+      setProjectName(proj.name ?? "Projekt");
+
+      // 2) Seiten laden
+      log("listPages:start");
+      const list = await withTimeout(listPagesByProject(projectId), 8000, "listPages");
+      log(`listPages:done count=${list.length}`);
+
+      if (!list.length) {
+        // 3) Erstmals: Startseite anlegen (kann an Rules scheitern)
+        try {
+          log("createPage:start");
+          await withTimeout(createPage(projectId, "Startseite"), 8000, "createPage");
+          log("createPage:done");
+          const after = await withTimeout(listPagesByProject(projectId), 8000, "listPages.afterCreate");
+          setPages(after);
+          return;
+        } catch (e: any) {
+          log(`createPage:error ${e?.code || ""} ${e?.message || e}`);
+          setError("Keine Berechtigung zum Anlegen von Seiten. (Lesen ok)");
+          setPages([]);
+          return;
+        }
+      }
+
+      setPages(list);
+    } catch (e: any) {
+      const msg = e?.message || String(e);
+      log(`load:error ${e?.code || ""} ${msg}`);
+      setError(msg);
+      setPages([]);
     }
-    setPages(list);
   };
 
   useEffect(() => {
@@ -44,41 +104,86 @@ export default function ProjectDetailPage() {
 
   const onNew = async () => {
     setBusy(true);
-    await createPage(projectId, `Seite ${pages ? pages.length + 1 : 1}`);
-    await load();
-    setBusy(false);
+    try {
+      await createPage(projectId, `Seite ${pages ? pages.length + 1 : 1}`);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || "Seite konnte nicht angelegt werden.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onRename = async (id: string) => {
     setBusy(true);
-    await renamePage(id, editName || "Seite");
-    setEditingId(null);
-    await load();
-    setBusy(false);
+    try {
+      await renamePage(id, editName || "Seite");
+      setEditingId(null);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || "Umbenennen fehlgeschlagen.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onDelete = async (id: string) => {
     if (!confirm("Seite wirklich löschen?")) return;
     setBusy(true);
-    await deletePage(id);
-    await load();
-    setBusy(false);
+    try {
+      await deletePage(id);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || "Löschen fehlgeschlagen.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  if (!pages) {
+  // Fehleransicht (zeigt auch Debug)
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-10 text-gray-200">
+        <div className="flex items-center gap-2 mb-3">
+          <AlertTriangle className="text-yellow-400" />
+          <span className="font-semibold">Problem:</span>
+          <span className="text-sm opacity-90 break-all">{error}</span>
+        </div>
+
+        <button
+          onClick={load}
+          className="inline-flex items-center gap-2 bg-[#1d1f22] hover:bg-[#26292d] px-3 py-2 rounded"
+        >
+          <RefreshCw size={16} />
+          Erneut laden
+        </button>
+
+        <pre className="mt-4 text-[11px] leading-5 bg-black/40 rounded p-3 overflow-auto max-h-64">
+          {debug}
+        </pre>
+      </div>
+    );
+  }
+
+  // Ladeansicht (endet spätestens via Timeout → Fehler oben)
+  if (pages === null) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10 text-gray-300">
         <div className="flex items-center gap-2">
           <Loader2 className="animate-spin" /> lädt Projekt …
         </div>
+        <pre className="mt-4 text-[11px] leading-5 bg-black/30 rounded p-3 overflow-auto max-h-64">
+          {debug}
+        </pre>
       </div>
     );
   }
 
+  // Normale Ansicht
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Projekt</h1>
+        <h1 className="text-2xl font-semibold">{projectName ?? "Projekt"}</h1>
         {activePageId && (
           <Link
             href={`/editor/${projectId}/${activePageId}`}
@@ -106,39 +211,15 @@ export default function ProjectDetailPage() {
         <div className="p-2">
           {!pages.length && (
             <div className="text-sm text-gray-400 px-2 py-4">
-              Noch keine Seiten – eine Startseite wurde gerade für dich angelegt.
+              Noch keine Seiten (oder keine Berechtigung zum Anlegen).
             </div>
           )}
 
           <ul className="divide-y divide-[#222]">
             {pages.map((p) => (
               <li key={p.id} className="flex items-center gap-3 p-3 hover:bg-[#0e0f14]">
-                <Link
-                  href={`/editor/${projectId}/${p.id}`}
-                  className="flex-1 truncate"
-                  title="Im Editor öffnen"
-                >
-                  <span className="text-sm">
-                    {editingId === p.id ? (
-                      <input
-                        autoFocus
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        onBlur={() => onRename(p.id)}
-                        onKeyDown={(e) => e.key === "Enter" && onRename(p.id)}
-                        className="bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1 text-sm w-64"
-                      />
-                    ) : (
-                      <>
-                        {p.name}
-                        {p.isHome && (
-                          <span className="ml-2 text-[11px] px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-300">
-                            Start
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </span>
+                <Link href={`/editor/${projectId}/${p.id}`} className="flex-1 truncate" title="Im Editor öffnen">
+                  <span className="text-sm">{p.name}</span>
                 </Link>
 
                 <button
@@ -152,17 +233,24 @@ export default function ProjectDetailPage() {
                   <Pencil size={16} />
                 </button>
 
-                <button
-                  className="opacity-70 hover:opacity-100"
-                  title="Löschen"
-                  onClick={() => onDelete(p.id)}
-                >
+                {editingId === p.id && (
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => onRename(p.id)}
+                    onKeyDown={(e) => e.key === "Enter" && onRename(p.id)}
+                    className="bg-[#0f1113] border border-[#2a2d31] rounded px-2 py-1 text-sm w-64"
+                  />
+                )}
+
+                <button className="opacity-70 hover:opacity-100" title="Löschen" onClick={() => onDelete(p.id)}>
                   <Trash2 size={16} />
                 </button>
 
                 <Link
                   href={`/editor/${projectId}/${p.id}`}
-                  className="ml-2 text-xs px-2 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d]"
+                  className="ml-2 text-xs px-2 py-1 rounded bg-[#1d1f22] hover:bg-[#26292d] whitespace-nowrap"
                 >
                   Öffnen
                 </Link>
@@ -171,8 +259,6 @@ export default function ProjectDetailPage() {
           </ul>
         </div>
       </div>
-
-      {/* Optional: Projekteinstellungen etc. können unten bleiben */}
     </div>
   );
 }
