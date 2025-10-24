@@ -5,7 +5,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -14,25 +13,25 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "./firebase"; // ← relativ zu src/lib
+import { db } from "./firebase";
 import { PageDoc, PageTree } from "./editorTypes";
 
 const PAGES = "pages";
 const TREES = "pageTrees";
 
 export async function listPagesByProject(projectId: string): Promise<PageDoc[]> {
-  const q = query(
-    collection(db, PAGES),
-    where("projectId", "==", projectId),
-    orderBy("order", "asc")
-  );
+  // Nur WHERE, kein orderBy -> vermeidet Composite-Index
+  const q = query(collection(db, PAGES), where("projectId", "==", projectId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as PageDoc[];
+  const pages = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as PageDoc[];
+  // Clientseitig sortieren
+  pages.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return pages;
 }
 
 export async function createPage(projectId: string, name = "Neue Seite") {
   const pages = await listPagesByProject(projectId);
-  const nextOrder = pages.length ? pages[pages.length - 1].order + 1 : 0;
+  const nextOrder = pages.length ? (pages[pages.length - 1].order ?? pages.length - 1) + 1 : 0;
   const ref = await addDoc(collection(db, PAGES), {
     projectId,
     name,
@@ -40,7 +39,7 @@ export async function createPage(projectId: string, name = "Neue Seite") {
     order: nextOrder,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    isHome: pages.length === 0,
+    isHome: pages.length === 0, // erste Seite = Home
   });
   await setDoc(doc(db, TREES, ref.id), {
     projectId,
@@ -80,11 +79,7 @@ export async function getPageTree(pageId: string): Promise<PageTree | null> {
 }
 
 export async function savePageTree(pageId: string, payload: Omit<PageTree, "pageId">) {
-  await setDoc(
-    doc(db, TREES, pageId),
-    { ...payload, pageId, updatedAt: Date.now() },
-    { merge: true }
-  );
+  await setDoc(doc(db, TREES, pageId), { ...payload, pageId, updatedAt: Date.now() }, { merge: true });
 }
 
 export async function reorderPages(projectId: string, orderedIds: string[]) {
