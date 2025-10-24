@@ -1,0 +1,14 @@
+# im Projekt-Root ausführen
+mkdir -p .vscode
+cat > .vscode/settings.json <<'EOF'
+{
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false,
+  "css.lint.unknownAtRules": "ignore",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.emmetCompletions": true
+}
+EOF

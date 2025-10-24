@@ -1,4 +1,4 @@
-// src/app/dashboard/page.tsx
+// src/app/projects/page.tsx
 'use client';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import type { Project } from '@/types/editor';
 import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
 
-export default function DashboardPage() {
+export default function ProjectsIndexPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [name, setName] = useState('');
   const [projects, setProjects] = useState<Project[]>([]);
@@ -22,12 +22,14 @@ export default function DashboardPage() {
   }, [user?.uid]);
 
   const onCreate = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || !name.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      await createProject(name.trim(), user.uid);
+      const p = await createProject(name.trim(), user.uid);
       setName('');
+      // optional: direkt auf Detailseite
+      // location.href = `/projects/${p.id}`;
     } catch (e: any) {
       setError(e?.message || 'Fehler beim Anlegen.');
     } finally {
@@ -71,10 +73,7 @@ export default function DashboardPage() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
-          <div className="flex items-center">
-            <h2 className="font-semibold">Meine Projekte</h2>
-          </div>
-
+          <h2 className="font-semibold">Meine Projekte</h2>
           {projects.length === 0 ? (
             <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
           ) : (
@@ -86,16 +85,10 @@ export default function DashboardPage() {
                     onBlur={(e) => renameProject(p.id, e.target.value)}
                     className="flex-1 bg-transparent outline-none"
                   />
-                  <a
-                    href={`/editor?id=${p.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20"
-                  >
+                  <a href={`/projects/${p.id}`} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20">
                     Öffnen
                   </a>
-                  <button
-                    onClick={() => removeProject(p.id)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500"
-                  >
+                  <button onClick={() => removeProject(p.id)} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500">
                     Löschen
                   </button>
                 </div>

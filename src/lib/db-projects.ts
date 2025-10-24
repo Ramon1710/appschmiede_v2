@@ -1,80 +1,55 @@
 // src/lib/db-projects.ts
+import { db } from './firebase';
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
-  where,
   updateDoc,
-} from "firebase/firestore";
-import { db } from "./firebase";
-import type { ProjectInfo } from "./editorTypes";
+  where,
+} from 'firebase/firestore';
+import type { Project } from '@/types/editor';
 
-/** Projekte laden, in denen der Nutzer Owner ODER Member ist. */
-export async function listProjectsForUser(uid: string): Promise<ProjectInfo[]> {
-  const results: Record<string, ProjectInfo> = {};
+const col = () => collection(db, 'projects');
 
-  // Owner
-  const qOwner = query(collection(db, "projects"), where("ownerUid", "==", uid));
-  const sOwner = await getDocs(qOwner);
-  sOwner.forEach((d) => {
-    const data = d.data() as any;
-    results[d.id] = {
-      id: d.id,
-      name: data.name,
-      ownerUid: data.ownerUid,
-      members: data.members,
-    };
-  });
-
-  // Member (optional; wenn Index fehlt, ignorieren)
-  try {
-    const field = `members.${uid}`;
-    const qMember = query(
-      collection(db, "projects"),
-      where(field as any, "in", ["master", "member"])
-    );
-    const sMember = await getDocs(qMember);
-    sMember.forEach((d) => {
-      const data = d.data() as any;
-      results[d.id] = {
-        id: d.id,
-        name: data.name,
-        ownerUid: data.ownerUid,
-        members: data.members,
-      };
-    });
-  } catch {
-    // ignorieren – Owner-Liste reicht als Fallback
-  }
-
-  return Object.values(results);
+export async function createProject(name: string, ownerId: string): Promise<Project> {
+  const now = Date.now();
+  const pageId = `pg_${Math.random().toString(36).slice(2)}`;
+  const data: Project = {
+    id: '', // wird nach addDoc gesetzt
+    name: name || 'Neues Projekt',
+    ownerId,
+    pages: [{ id: pageId, name: 'Start', nodeIds: [] }],
+    nodes: {},
+    createdAt: now,
+    updatedAt: now,
+  };
+  const ref = await addDoc(col(), { ...data, _serverUpdatedAt: serverTimestamp() });
+  const withId: Project = { ...data, id: ref.id };
+  await updateDoc(doc(db, 'projects', ref.id), { id: ref.id, updatedAt: Date.now() });
+  return withId;
 }
 
-/** Projekt erstellen: setzt ownerUid + members[uid]='master' */
-export async function createProject(name: string, uid: string): Promise<string> {
-  const ref = await addDoc(collection(db, "projects"), {
-    name: name || "Neues Projekt",
-    ownerUid: uid,
-    members: { [uid]: "master" },
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  return ref.id;
+export async function listProjects(ownerId: string): Promise<Project[]> {
+  const q = query(col(), where('ownerId', '==', ownerId), orderBy('updatedAt', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as Project);
 }
 
-/** Projekt löschen (Rules prüfen Rechte) */
-export async function removeProject(projectId: string): Promise<void> {
-  await deleteDoc(doc(db, "projects", projectId));
+export function subscribeProjects(ownerId: string, cb: (p: Project[]) => void) {
+  const q = query(col(), where('ownerId', '==', ownerId), orderBy('updatedAt', 'desc'));
+  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => d.data() as Project)));
 }
 
-/** Falls du Owner bist: dich selbst als 'master' in members eintragen. */
-export async function ensureMaster(projectId: string, uid: string): Promise<void> {
-  await updateDoc(doc(db, "projects", projectId), {
-    [`members.${uid}`]: "master",
-    updatedAt: serverTimestamp(),
-  });
+export async function renameProject(id: string, name: string) {
+  await updateDoc(doc(db, 'projects', id), { name, updatedAt: Date.now() });
+}
+
+export async function removeProject(id: string) {
+  await deleteDoc(doc(db, 'projects', id));
 }
