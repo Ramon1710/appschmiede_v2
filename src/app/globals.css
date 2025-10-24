@@ -1,7 +1,6 @@
-/* src/app/globals.css  (komplett ersetzen) */
+/* src/app/globals.css  (muss existieren – das ist die Datei, die Tailwind lädt) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* optionale globale Feinheiten */
 html, body { height: 100%; }
