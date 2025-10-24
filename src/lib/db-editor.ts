@@ -19,7 +19,19 @@ import { PageDoc, PageTree } from "./editorTypes";
 const PAGES = "pages";
 const TREES = "pageTrees";
 
-/** Nur WHERE + clientseitige Sortierung – kein Composite-Index nötig */
+/** Diagnose: Projekt-Dokument lesen (prüft Zugriff + Existenz) */
+export async function getProject(projectId: string) {
+  const snap = await getDoc(doc(db, "projects", projectId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...(snap.data() as any) } as {
+    id: string;
+    name?: string;
+    ownerUid: string;
+    members?: Record<string, "master" | "member">;
+  };
+}
+
+/** Seiten eines Projekts – nur WHERE, Sortierung clientseitig (kein Composite-Index nötig) */
 export async function listPagesByProject(projectId: string): Promise<PageDoc[]> {
   const q = query(collection(db, PAGES), where("projectId", "==", projectId));
   const snap = await getDocs(q);
@@ -39,7 +51,7 @@ export async function createPage(projectId: string, name = "Neue Seite") {
     order: nextOrder,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    isHome: pages.length === 0,
+    isHome: pages.length === 0, // erste Seite = Home
   });
 
   await setDoc(doc(db, TREES, ref.id), {
