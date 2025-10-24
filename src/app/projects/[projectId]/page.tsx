@@ -1,3 +1,4 @@
+// src/app/projects/[projectId]/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -10,7 +11,7 @@ import {
   deletePage,
   getProject,
 } from "../../../lib/db-editor";
-import type { PageDoc } from "../../../lib/editorTypes";
+import type { PageDoc, ProjectInfo } from "../../../lib/editorTypes";
 import {
   Loader2,
   Pencil,
@@ -21,7 +22,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-// Timeout-Wrapper: verhindert Endlos-Loader
 function withTimeout<T>(p: Promise<T>, ms = 8000, tag = "request"): Promise<T> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error(`timeout:${tag}:${ms}ms`)), ms);
@@ -55,9 +55,9 @@ export default function ProjectDetailPage() {
       setPages(null);
       setDebug(`init ${projectId}`);
 
-      // 1) Projekt existiert / lesbar?
+      // 1) Projekt lesen
       log("getProject:start");
-      const proj = await withTimeout(getProject(projectId), 8000, "getProject");
+      const proj: ProjectInfo | null = await withTimeout(getProject(projectId), 8000, "getProject");
       log("getProject:done");
       if (!proj) {
         setError("Projekt nicht gefunden oder keine Leseberechtigung.");
@@ -68,16 +68,16 @@ export default function ProjectDetailPage() {
 
       // 2) Seiten laden
       log("listPages:start");
-      const list = await withTimeout(listPagesByProject(projectId), 8000, "listPages");
+      const list: PageDoc[] = await withTimeout(listPagesByProject(projectId), 8000, "listPages");
       log(`listPages:done count=${list.length}`);
 
       if (!list.length) {
-        // 3) Erstmals: Startseite anlegen (kann an Rules scheitern)
+        // 3) Startseite anlegen (optional, falls Berechtigung)
         try {
           log("createPage:start");
           await withTimeout(createPage(projectId, "Startseite"), 8000, "createPage");
           log("createPage:done");
-          const after = await withTimeout(listPagesByProject(projectId), 8000, "listPages.afterCreate");
+          const after: PageDoc[] = await withTimeout(listPagesByProject(projectId), 8000, "listPages.afterCreate");
           setPages(after);
           return;
         } catch (e: any) {
@@ -140,7 +140,6 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Fehleransicht (zeigt auch Debug)
   if (error) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10 text-gray-200">
@@ -165,7 +164,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Ladeansicht (endet spätestens via Timeout → Fehler oben)
   if (pages === null) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10 text-gray-300">
@@ -179,7 +177,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  // Normale Ansicht
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between">

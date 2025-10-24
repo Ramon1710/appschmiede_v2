@@ -1,32 +1,43 @@
-export type ComponentType = "text" | "button" | "image" | "input" | "container";
+// src/lib/editorTypes.ts
 
-export type BaseNode = {
+export type NodeType = "text" | "button" | "image" | "input";
+
+export interface Node {
   id: string;
-  type: ComponentType;
-  x?: number; // px (absolute auf Canvas)
-  y?: number; // px
+  type: NodeType;
+  x?: number;
+  y?: number;
   w?: number;
   h?: number;
-  children?: Node[];
   props?: Record<string, any>;
-};
+}
 
-export type Node = BaseNode;
-
-export type PageTree = {
+export interface PageTree {
   projectId: string;
   pageId: string;
-  tree: Node;
+  tree: {
+    id: "root";
+    type: "container";
+    props?: { bg?: string };
+    children: Node[];
+  };
   updatedAt: number;
-};
+}
 
-export type PageDoc = {
+export interface PageDoc {
   id: string;
   projectId: string;
   name: string;
-  path: string; // z.B. "home"
+  path: string;
   order: number;
-  createdAt: number;
-  updatedAt: number;
   isHome?: boolean;
-};
+  createdAt?: any;
+  updatedAt?: any;
+}
+
+export interface ProjectInfo {
+  id: string;
+  name?: string;
+  ownerUid: string;
+  members?: Record<string, "master" | "member">;
+}

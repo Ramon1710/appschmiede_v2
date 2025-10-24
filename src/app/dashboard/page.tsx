@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -8,18 +9,17 @@ import {
   createProject,
   listProjectsForUser,
   removeProject,
-  type ProjectDoc,
 } from "../../lib/db-projects";
+import type { ProjectInfo } from "../../lib/editorTypes";
 import { Loader2, Plus, LogOut, RefreshCw, Trash2, ExternalLink } from "lucide-react";
 
 export default function DashboardPage() {
   const [uid, setUid] = useState<string | null>(null);
-  const [projects, setProjects] = useState<ProjectDoc[] | null>(null);
+  const [projects, setProjects] = useState<ProjectInfo[] | null>(null);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auth & initial load
   useEffect(() => {
     return onAuthStateChanged(auth, async (u) => {
       if (!u) {
@@ -47,17 +47,15 @@ export default function DashboardPage() {
   };
 
   const onCreate = async () => {
-    if (!uid) return;
-    if (!newName.trim()) return;
+    if (!uid || !newName.trim()) return;
     setBusy(true);
     try {
       const id = await createProject(newName.trim(), uid);
       setNewName("");
       await reload(uid);
-      // Direkt öffnen:
       window.location.href = `/projects/${id}`;
     } catch (e: any) {
-      setError(e?.message || "Projekt konnte nicht angelegt werden (Regeln?).");
+      setError(e?.message || "Projekt konnte nicht angelegt werden.");
     } finally {
       setBusy(false);
     }
@@ -70,7 +68,7 @@ export default function DashboardPage() {
       await removeProject(id);
       await reload(uid!);
     } catch (e: any) {
-      setError(e?.message || "Löschen fehlgeschlagen (Regeln?).");
+      setError(e?.message || "Löschen fehlgeschlagen.");
     } finally {
       setBusy(false);
     }
@@ -121,19 +119,16 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Ladezustand */}
         {projects === null && (
           <div className="p-4 text-gray-300 flex items-center gap-2">
             <Loader2 className="animate-spin" /> lädt …
           </div>
         )}
 
-        {/* Fehler */}
         {error && projects !== null && (
           <div className="p-4 text-red-300 text-sm">{error}</div>
         )}
 
-        {/* Liste */}
         {projects && (
           <div className="p-2">
             {!projects.length && (
@@ -148,7 +143,7 @@ export default function DashboardPage() {
                   className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[#0f1113] border border-[#2a2d31]"
                 >
                   <div className="flex-1">
-                    <div className="font-medium">{p.name}</div>
+                    <div className="font-medium">{p.name ?? "Ohne Namen"}</div>
                     <div className="text-xs text-gray-400">ID: {p.id}</div>
                   </div>
 
