@@ -1,10 +1,7 @@
-/* src/app/globals.css – Tailwind v4 Style */
-@import "tailwindcss";
+/* src/app/globals.css  (komplett ersetzen) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* dunkles Grundlayout + saubere Typo */
-:root { color-scheme: dark; }
-
+/* optionale globale Feinheiten */
 html, body { height: 100%; }
-
-/* optional: glatte Scrollbar etc. */
-* { -webkit-tap-highlight-color: transparent; }

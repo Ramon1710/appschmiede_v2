@@ -1,4 +1,4 @@
-// tailwind.config.ts
+// tailwind.config.ts (Content sicherstellen)
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
@@ -6,12 +6,10 @@ const config: Config = {
   content: [
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}'
+    './src/styles/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  theme: {
-    extend: {}
-  },
-  plugins: []
+  theme: { extend: {} },
+  plugins: [],
 };
 
 export default config;
