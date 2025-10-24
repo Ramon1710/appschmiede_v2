@@ -1,4 +1,4 @@
-// src/lib/db-projects.ts  (createProject – sichere Variante)
+// src/lib/db-projects.ts (Ausschnitt – createProject)
 import { db } from './firebase';
 import {
   collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query,
@@ -25,5 +25,3 @@ export async function createProject(name: string, ownerId: string): Promise<Proj
   await setDoc(doc(db, 'projects', id), { ...data, _serverUpdatedAt: serverTimestamp() });
   return data;
 }
-
-// list/subscribe/rename/remove – unverändert lassen

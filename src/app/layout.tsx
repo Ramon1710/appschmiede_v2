@@ -1,4 +1,4 @@
-// src/app/layout.tsx  (stellt sicher, dass die Styles geladen werden)
+// src/app/layout.tsx  (zentriert + Dark-BG)
 import './globals.css';
 import type { Metadata } from 'next';
 
