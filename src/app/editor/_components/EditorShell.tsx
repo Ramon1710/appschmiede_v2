@@ -4,14 +4,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
 import { AlignCenter, Image as ImageIcon, Text, Type, SquareMousePointer, Save } from "lucide-react";
+
 import Canvas from "./Canvas";
 import PageSidebar from "./PageSidebar";
 import PropertiesPanel from "./PropertiesPanel";
-import { Node, PageTree } from "@/lib/editorTypes";
-import { getPageTree, savePageTree } from "@/lib/db-editor";
+import { Node, PageTree } from "../../../lib/editorTypes";
+import { getPageTree, savePageTree } from "../../../lib/db-editor";
 import { useParams, useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../../lib/firebase"; // ← relativ zu src/app/editor/_components
+import { auth } from "../../../lib/firebase";
 import { ToastProvider, useToast } from "./Toast";
 
 const GRID = 8;

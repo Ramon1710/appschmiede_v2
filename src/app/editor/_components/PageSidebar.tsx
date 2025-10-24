@@ -1,13 +1,12 @@
 "use client";
-
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createPage, deletePage, listPagesByProject, renamePage,
   reorderPages, setHomePage
-} from "@/lib/db-editor";
-import { PageDoc } from "@/lib/editorTypes";
+} from "../../../lib/db-editor";
+import { PageDoc } from "../../../lib/editorTypes";
 import { GripVertical, Home, MoreVertical, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -106,19 +105,11 @@ export default function PageSidebar({
                       )}
                     </Link>
 
-                    <button
-                      className="opacity-70 hover:opacity-100"
-                      title="Als Startseite"
-                      onClick={() => markHome(p.id)}
-                    >
+                    <button className="opacity-70 hover:opacity-100" title="Als Startseite" onClick={() => markHome(p.id)}>
                       <Home size={16} />
                     </button>
 
-                    <button
-                      className="opacity-70 hover:opacity-100"
-                      onClick={() => { setEditingId(p.id); setEditName(p.name); }}
-                      title="Umbenennen"
-                    >
+                    <button className="opacity-70 hover:opacity-100" onClick={() => { setEditingId(p.id); setEditName(p.name); }} title="Umbenennen">
                       <Pencil size={16} />
                     </button>
                     <button className="opacity-70 hover:opacity-100" onClick={() => onDelete(p.id)} title="Löschen">

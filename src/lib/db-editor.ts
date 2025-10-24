@@ -13,13 +13,13 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db } from "./firebase";
 import { PageDoc, PageTree } from "./editorTypes";
 
 const PAGES = "pages";
 const TREES = "pageTrees";
 
-/** Seiten eines Projekts laden – nur WHERE, Sortierung clientseitig (kein Composite-Index nötig) */
+/** Nur WHERE + clientseitige Sortierung – kein Composite-Index nötig */
 export async function listPagesByProject(projectId: string): Promise<PageDoc[]> {
   const q = query(collection(db, PAGES), where("projectId", "==", projectId));
   const snap = await getDocs(q);
@@ -39,7 +39,7 @@ export async function createPage(projectId: string, name = "Neue Seite") {
     order: nextOrder,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    isHome: pages.length === 0, // erste Seite = Home
+    isHome: pages.length === 0,
   });
 
   await setDoc(doc(db, TREES, ref.id), {

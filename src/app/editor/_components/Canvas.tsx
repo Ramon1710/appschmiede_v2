@@ -1,8 +1,7 @@
 "use client";
-
 import React from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { PageTree, Node } from "@/lib/editorTypes";
+import { PageTree, Node } from "../../../lib/editorTypes";
 import { Smartphone } from "lucide-react";
 
 function DraggableNode({
@@ -14,10 +13,7 @@ function DraggableNode({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: node.id,
-  });
-
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: node.id });
   const style: React.CSSProperties = {
     position: "absolute",
     left: node.x ?? 0,
@@ -31,7 +27,6 @@ function DraggableNode({
     cursor: "move",
     userSelect: "none",
   };
-
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes} onClick={(e) => { e.stopPropagation(); onSelect(); }}>
       {node.type === "text" && (
@@ -61,8 +56,6 @@ function DraggableNode({
           style={{ width: node.w ?? 220 }}
         />
       )}
-
-      {/* Drag Assist */}
       {isDragging && <div className="text-[10px] absolute -top-5 left-0 bg-black/60 px-1 rounded">{Math.round((node.x ?? 0) + (transform?.x ?? 0))}×{Math.round((node.y ?? 0) + (transform?.y ?? 0))}</div>}
     </div>
   );
@@ -85,28 +78,14 @@ export default function Canvas({
         </div>
         <div
           className="absolute inset-0"
-          style={{
-            background: tree.tree.props?.bg ?? "#0b1220",
-            backgroundSize: "cover",
-          }}
+          style={{ background: tree.tree.props?.bg ?? "#0b1220", backgroundSize: "cover" }}
           onClick={() => setSelectedId(null)}
         />
         {(tree.tree.children || []).map((n) => (
-          <DraggableNode
-            key={n.id}
-            node={n}
-            selected={selectedId === n.id}
-            onSelect={() => setSelectedId(n.id)}
-          />
+          <DraggableNode key={n.id} node={n} selected={selectedId === n.id} onSelect={() => setSelectedId(n.id)} />
         ))}
-
-        {/* Grid Overlay (8px) */}
         <svg className="absolute inset-0 pointer-events-none opacity-[0.06]">
-          <defs>
-            <pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse">
-              <path d="M 8 0 L 0 0 0 8" fill="none" stroke="white" strokeWidth="0.5" />
-            </pattern>
-          </defs>
+          <defs><pattern id="grid" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M 8 0 L 0 0 0 8" fill="none" stroke="white" strokeWidth="0.5" /></pattern></defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
         </svg>
       </div>
