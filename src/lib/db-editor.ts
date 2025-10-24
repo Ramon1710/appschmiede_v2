@@ -1,9 +1,20 @@
 import {
-  addDoc, collection, deleteDoc, doc, getDoc, getDocs,
-  orderBy, query, serverTimestamp, setDoc, Timestamp, updateDoc, where,
-  writeBatch
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
-import { db } from "@/firebase";
+import { db } from "./firebase"; // ← relativ zu src/lib
 import { PageDoc, PageTree } from "./editorTypes";
 
 const PAGES = "pages";
@@ -29,7 +40,7 @@ export async function createPage(projectId: string, name = "Neue Seite") {
     order: nextOrder,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    isHome: pages.length === 0, // erste Seite = Home
+    isHome: pages.length === 0,
   });
   await setDoc(doc(db, TREES, ref.id), {
     projectId,
@@ -69,10 +80,13 @@ export async function getPageTree(pageId: string): Promise<PageTree | null> {
 }
 
 export async function savePageTree(pageId: string, payload: Omit<PageTree, "pageId">) {
-  await setDoc(doc(db, TREES, pageId), { ...payload, pageId, updatedAt: Date.now() }, { merge: true });
+  await setDoc(
+    doc(db, TREES, pageId),
+    { ...payload, pageId, updatedAt: Date.now() },
+    { merge: true }
+  );
 }
 
-/** Seitenreihenfolge speichern */
 export async function reorderPages(projectId: string, orderedIds: string[]) {
   const batch = writeBatch(db);
   orderedIds.forEach((id, idx) => {
@@ -81,7 +95,6 @@ export async function reorderPages(projectId: string, orderedIds: string[]) {
   await batch.commit();
 }
 
-/** Startseite setzen (isHome = true; alle anderen false) */
 export async function setHomePage(projectId: string, pageId: string) {
   const pages = await listPagesByProject(projectId);
   const batch = writeBatch(db);

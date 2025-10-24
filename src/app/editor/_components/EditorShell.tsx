@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { restrictToParentElement } from "@dnd-kit/modifiers";
@@ -10,7 +11,7 @@ import { Node, PageTree } from "@/lib/editorTypes";
 import { getPageTree, savePageTree } from "@/lib/db-editor";
 import { useParams, useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/firebase";
+import { auth } from "../../../lib/firebase"; // ← relativ zu src/app/editor/_components
 import { ToastProvider, useToast } from "./Toast";
 
 const GRID = 8;
@@ -27,9 +28,19 @@ function ShellInner() {
   const [isSaving, setIsSaving] = useState(false);
   const saveTimer = useRef<any>(null);
 
-  useEffect(() => onAuthStateChanged(auth, (u) => { if (!u) router.push("/login"); }), [router]);
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (!u) router.push("/login");
+    });
+    return () => unsub();
+  }, [router]);
 
-  useEffect(() => { (async () => { const t = await getPageTree(pageId); if (t) setTree(t); })(); }, [pageId]);
+  useEffect(() => {
+    (async () => {
+      const t = await getPageTree(pageId);
+      if (t) setTree(t);
+    })();
+  }, [pageId]);
 
   const scheduleSave = (next: PageTree) => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -49,8 +60,15 @@ function ShellInner() {
     if (type === "text") base.props = { text: "Neuer Text", color: "#ffffff", fontSize: 16, align: "left" };
     if (type === "button") base.props = { label: "Button", variant: "primary" };
     if (type === "input") base.props = { placeholder: "Eingabe", value: "" };
-    const next: PageTree = { ...tree, tree: { ...tree.tree, children: [...(tree.tree.children || []), base] }, updatedAt: Date.now() };
-    setTree(next); setSelectedId(id); scheduleSave(next);
+
+    const next: PageTree = {
+      ...tree,
+      tree: { ...tree.tree, children: [...(tree.tree.children || []), base] },
+      updatedAt: Date.now(),
+    };
+    setTree(next);
+    setSelectedId(id);
+    scheduleSave(next);
   };
 
   const selectedNode = useMemo(() => {
@@ -67,7 +85,8 @@ function ShellInner() {
     const ny = snap((current.y || 0) + (e.delta?.y || 0));
     const nextChildren = (tree.tree.children || []).map((n) => (n.id === id ? { ...n, x: nx, y: ny } : n));
     const next: PageTree = { ...tree, tree: { ...tree.tree, children: nextChildren } };
-    setTree(next); scheduleSave(next);
+    setTree(next);
+    scheduleSave(next);
   };
 
   const updateSelected = (patch: Partial<Node>) => {
@@ -76,10 +95,17 @@ function ShellInner() {
       n.id === selectedId ? { ...n, ...patch, props: { ...n.props, ...(patch as any).props } } : n
     );
     const next = { ...tree, tree: { ...tree.tree, children: nextChildren } };
-    setTree(next); scheduleSave(next);
+    setTree(next);
+    scheduleSave(next);
   };
 
-  if (!tree) return <div className="h-screen w-full bg-[#0d0d0f] text-gray-300 flex items-center justify-center">Lädt Editor…</div>;
+  if (!tree) {
+    return (
+      <div className="h-screen w-full bg-[#0d0d0f] text-gray-300 flex items-center justify-center">
+        Lädt Editor…
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#0d0d0f] text-white">
