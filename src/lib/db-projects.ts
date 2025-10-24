@@ -1,3 +1,4 @@
+// src/lib/db-projects.ts
 import {
   addDoc,
   collection,
@@ -7,6 +8,7 @@ import {
   query,
   serverTimestamp,
   where,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { ProjectInfo } from "./editorTypes";
@@ -67,4 +69,12 @@ export async function createProject(name: string, uid: string): Promise<string> 
 /** Projekt löschen (Rules prüfen Rechte) */
 export async function removeProject(projectId: string): Promise<void> {
   await deleteDoc(doc(db, "projects", projectId));
+}
+
+/** Falls du Owner bist: dich selbst als 'master' in members eintragen. */
+export async function ensureMaster(projectId: string, uid: string): Promise<void> {
+  await updateDoc(doc(db, "projects", projectId), {
+    [`members.${uid}`]: "master",
+    updatedAt: serverTimestamp(),
+  });
 }

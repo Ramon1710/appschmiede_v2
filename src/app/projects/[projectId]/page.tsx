@@ -11,7 +11,9 @@ import {
   deletePage,
   getProject,
 } from "../../../lib/db-editor";
+import { ensureMaster } from "../../../lib/db-projects";
 import type { PageDoc, ProjectInfo } from "../../../lib/editorTypes";
+import { auth } from "../../../lib/firebase";
 import {
   Loader2,
   Pencil,
@@ -20,6 +22,7 @@ import {
   ExternalLink,
   RefreshCw,
   AlertTriangle,
+  KeyRound,
 } from "lucide-react";
 
 function withTimeout<T>(p: Promise<T>, ms = 8000, tag = "request"): Promise<T> {
@@ -72,7 +75,7 @@ export default function ProjectDetailPage() {
       log(`listPages:done count=${list.length}`);
 
       if (!list.length) {
-        // 3) Startseite anlegen (optional, falls Berechtigung)
+        // 3) Startseite anlegen (optional)
         try {
           log("createPage:start");
           await withTimeout(createPage(projectId, "Startseite"), 8000, "createPage");
@@ -149,13 +152,33 @@ export default function ProjectDetailPage() {
           <span className="text-sm opacity-90 break-all">{error}</span>
         </div>
 
-        <button
-          onClick={load}
-          className="inline-flex items-center gap-2 bg-[#1d1f22] hover:bg-[#26292d] px-3 py-2 rounded"
-        >
-          <RefreshCw size={16} />
-          Erneut laden
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-2 bg-[#1d1f22] hover:bg-[#26292d] px-3 py-2 rounded"
+          >
+            <RefreshCw size={16} />
+            Erneut laden
+          </button>
+
+          <button
+            onClick={async () => {
+              const u = auth.currentUser;
+              if (!u) { alert("Nicht eingeloggt."); return; }
+              try {
+                await ensureMaster(projectId, u.uid);
+                await load();
+              } catch (e: any) {
+                alert(e?.message || "Zugriff reparieren fehlgeschlagen.");
+              }
+            }}
+            className="inline-flex items-center gap-2 bg-[#0f3b1f] hover:bg-[#125a32] px-3 py-2 rounded"
+            title="Trägt dich als 'master' in dieses Projekt ein (erfordert Owner-Recht)."
+          >
+            <KeyRound size={16} />
+            Zugriff reparieren
+          </button>
+        </div>
 
         <pre className="mt-4 text-[11px] leading-5 bg-black/40 rounded p-3 overflow-auto max-h-64">
           {debug}
