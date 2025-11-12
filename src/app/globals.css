@@ -1,5 +1,7 @@
 /* src/app/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+
 html, body { height: 100%; }
 
 :root{
@@ -13,8 +15,6 @@ html, body { height: 100%; }
   --accent: #8b5cf6;
   --accent-hover: #7c3aed;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 html,body,#__next{
   height:100%;

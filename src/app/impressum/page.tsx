@@ -9,7 +9,6 @@ export default function ImpressumPage() {
             <p>Ramon Meyer<br/>Beispielstraße 1<br/>12345 Musterstadt<br/>Deutschland</p>
             <p className="mt-2">E-Mail: ramon.meyer@hotmail.de</p>
           </section>
-
           <section>
             <h2 className="font-semibold text-lg mb-2">Datenschutz</h2>
             <p>Wir speichern nur die notwendigsten Daten (E-Mail, Passwort-Hash, Projekte). Deine Daten werden sicher in Firebase gespeichert und nicht an Dritte weitergegeben.</p>

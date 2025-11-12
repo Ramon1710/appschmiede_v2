@@ -1,10 +1,12 @@
 import { Suspense } from 'react';
-import EditorClient from './EditorClient';
+import EditorPageClient from './EditorPageClient';
 
-export default function Page() {
+export const dynamic = 'force-dynamic';
+
+export default function EditorPage() {
   return (
-    <Suspense fallback={<div>Laden...</div>}>
-      <EditorClient />
+    <Suspense fallback={<div className="container p-6">Laden...</div>}>
+      <EditorPageClient />
     </Suspense>
   );
 }

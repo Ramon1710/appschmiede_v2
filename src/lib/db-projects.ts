@@ -25,6 +25,7 @@ export type Project = {
 };
 
 export async function createProject(ownerUid: string, name = 'Neues Projekt') {
+  console.log('createProject ownerUid', ownerUid);
   const ref = await addDoc(collection(db, 'projects'), {
     name,
     ownerUid,

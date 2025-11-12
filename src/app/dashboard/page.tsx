@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -26,7 +25,7 @@ export default function DashboardPage() {
     return () => unsub && unsub();
   }, [user]);
 
-  const onCreate = async () => {
+  async function onCreate() {
     if (!user) return;
     setBusy(true);
     setError(null);
@@ -40,7 +39,7 @@ export default function DashboardPage() {
     } finally {
       setBusy(false);
     }
-  };
+  }
 
   if (loading) return <div className="container p-6">Lade…</div>;
   if (!user) return null;
@@ -73,7 +72,11 @@ export default function DashboardPage() {
         ) : (
           <div className="flex flex-col gap-2">
             {projects.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded" style={{ background: 'rgba(15,23,41,0.5)' }}>
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-3 rounded"
+                style={{ background: 'rgba(15,23,41,0.5)' }}
+              >
                 <div className="font-semibold">{p.name}</div>
                 <button onClick={() => router.push(`/editor?projectId=${p.id}`)} className="btn">Öffnen</button>
               </div>

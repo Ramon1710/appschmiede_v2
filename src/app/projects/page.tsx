@@ -1,4 +1,3 @@
-// src/app/projects/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -6,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import useAuth from '@/hooks/useAuth';
 import {
   createProject,
-  listProjects,
   renameProject,
   removeProject,
   subscribeProjects,
@@ -35,7 +33,7 @@ export default function ProjectsPage() {
     return () => unsub && unsub();
   }, [user]);
 
-  const onCreate = async () => {
+  async function onCreate() {
     if (!user) return;
     setBusy(true);
     try {
@@ -48,9 +46,9 @@ export default function ProjectsPage() {
     } finally {
       setBusy(false);
     }
-  };
+  }
 
-  const onRename = async (p: Project) => {
+  async function onRename(p: Project) {
     const newName = window.prompt('Neuer Projektname', p.name);
     if (!newName || newName.trim() === '' || newName === p.name) return;
     try {
@@ -58,20 +56,20 @@ export default function ProjectsPage() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
-  const onDelete = async (p: Project) => {
+  async function onDelete(p: Project) {
     if (!confirm(`Projekt "${p.name}" wirklich löschen?`)) return;
     try {
       await removeProject(p.id);
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
-  const onOpen = (p: Project) => {
+  function onOpen(p: Project) {
     router.push(`/projects/${p.id}`);
-  };
+  }
 
   if (loading) return <div className="container p-6">Lade …</div>;
   if (!user) return null;
@@ -102,16 +100,25 @@ export default function ProjectsPage() {
         ) : (
           <div className="flex flex-col gap-3">
             {projects.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-4 rounded" style={{ background: 'rgba(15,23,41,0.5)' }}>
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-4 rounded"
+                style={{ background: 'rgba(15,23,41,0.5)' }}
+              >
                 <div>
                   <div className="font-semibold">{p.name}</div>
                   <div className="text-sm text-muted">ID: {p.id}</div>
                 </div>
-
                 <div className="flex gap-2">
                   <button onClick={() => onOpen(p)} className="btn">{t('projects.open')}</button>
                   <button onClick={() => onRename(p)} className="btn">{t('projects.rename')}</button>
-                  <button onClick={() => onDelete(p)} className="btn" style={{ borderColor: '#ef4444', color: '#ef4444' }}>{t('projects.delete')}</button>
+                  <button
+                    onClick={() => onDelete(p)}
+                    className="btn"
+                    style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                  >
+                    {t('projects.delete')}
+                  </button>
                 </div>
               </div>
             ))}
