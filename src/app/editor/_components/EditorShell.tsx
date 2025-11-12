@@ -1,11 +1,11 @@
-// path: src/app/editor/_components/EditorShell.tsx
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import type { PageTree, Node as EditorNode } from '@/lib/editorTypes';
+import { savePage } from '@/lib/db-editor'; // neu: savePage
 
 const emptyTree: PageTree = {
   id: 'local',
@@ -27,9 +27,14 @@ export default function EditorShell({ initialPageId }: Props) {
   const initial = useMemo(() => emptyTree, []);
   const [tree, setTree] = useState<PageTree>(initial);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saved, setSaved] = useState<boolean>(false);
+  const saveTimeout = useRef<null | ReturnType<typeof setTimeout>>(null);
+  const isDirty = useRef(false);
 
   const _projectId = params.get('projectId') ?? null;
+  const pageId = initialPageId ?? null;
 
+  // --- existing handlers ---
   const onRemove = useCallback((id: string) => {
     setTree((prev) => ({
       ...prev,
@@ -39,6 +44,7 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
     setSelectedId((s) => (s === id ? null : s));
+    isDirty.current = true;
   }, []);
 
   const onMove = useCallback((id: string, dx: number, dy: number) => {
@@ -57,6 +63,7 @@ export default function EditorShell({ initialPageId }: Props) {
         ),
       },
     }));
+    isDirty.current = true;
   }, []);
 
   const selectedNode = useMemo(
@@ -76,15 +83,42 @@ export default function EditorShell({ initialPageId }: Props) {
           ),
         },
       }));
+      isDirty.current = true;
     },
     [selectedId]
   );
+
+  // --- AUTOSAVE: debounce and save to Firestore when projectId & pageId provided ---
+  useEffect(() => {
+    if (!(_projectId && pageId)) {
+      // no remote saving available
+      return;
+    }
+
+    // schedule save when tree changes
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(async () => {
+      try {
+        await savePage(_projectId, pageId, tree);
+        setSaved(true);
+        isDirty.current = false;
+        setTimeout(() => setSaved(false), 1600);
+      } catch (err) {
+        console.error('Autosave failed', err);
+      }
+    }, 900);
+
+    return () => {
+      if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    };
+  }, [tree, _projectId, pageId]);
 
   return (
     <div className="grid grid-cols-[420px_1fr_360px] gap-4 p-4">
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-3">
         <div className="text-sm text-neutral-400">Projekt: {_projectId ?? '–'}</div>
         <div className="mt-3 text-neutral-300">Palette (coming soon)</div>
+        <div className="mt-2 text-xs text-neutral-400">{saved ? 'Gespeichert' : isDirty.current ? 'Änderungen…' : 'Keine Änderungen'}</div>
       </div>
 
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
