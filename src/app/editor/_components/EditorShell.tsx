@@ -4,136 +4,139 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
-import type { PageTree, Node as EditorNode } from '@/lib/editorTypes';
-import { savePage } from '@/lib/db-editor'; // neu: savePage
+import { savePage, loadPage } from '@/lib/db-editor';
+import type { PageTree } from '@/lib/db-editor';
+import { useI18n } from '@/components/I18nProviderClient';
+
+const makeId = () => Math.random().toString(36).slice(2, 9);
 
 const emptyTree: PageTree = {
   id: 'local',
   name: 'Seite 1',
-  tree: {
-    id: 'root',
-    type: 'container',
-    props: { bg: '#0b0b0f' },
-    children: [] as EditorNode[],
-  },
+  tree: { id: 'root', type: 'container', props: { bg: '#0a0e1a' }, children: [] as any[] },
 };
 
-type Props = {
-  initialPageId?: string | null;
-};
-
-export default function EditorShell({ initialPageId }: Props) {
+export default function EditorShell({ initialPageId }: { initialPageId?: string | null }) {
   const params = useSearchParams();
-  const initial = useMemo(() => emptyTree, []);
-  const [tree, setTree] = useState<PageTree>(initial);
+  const { t } = useI18n();
+  const [tree, setTree] = useState<PageTree>(emptyTree);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState<boolean>(false);
   const saveTimeout = useRef<null | ReturnType<typeof setTimeout>>(null);
   const isDirty = useRef(false);
 
   const _projectId = params.get('projectId') ?? null;
-  const pageId = initialPageId ?? null;
+  const pageId = initialPageId ?? params.get('p') ?? null;
 
-  // --- existing handlers ---
+  // Load page on mount
+  useEffect(() => {
+    if (!(_projectId && pageId)) return;
+    (async () => {
+      try {
+        const loaded = await loadPage(_projectId, pageId);
+        if (loaded) setTree(loaded);
+      } catch (err) {
+        console.error('Load page failed', err);
+      }
+    })();
+  }, [_projectId, pageId]);
+
+  const pushNode = useCallback((node: any) => {
+    setTree((prev) => ({ ...prev, tree: { ...prev.tree, children: [...(prev.tree.children ?? []), node] } }));
+    isDirty.current = true;
+  }, []);
+
+  const addText = useCallback(() => {
+    const id = makeId();
+    pushNode({ id, type: 'text', x: 20, y: 40, w: 120, h: 30, props: { text: 'Neuer Text', color: '#ffffff', fontSize: 16 } });
+    setSelectedId(id);
+  }, [pushNode]);
+
+  const addButton = useCallback(() => {
+    const id = makeId();
+    pushNode({ id, type: 'button', x: 40, y: 120, w: 100, h: 40, props: { label: 'Button', bg: '#8b5cf6', color: '#ffffff' } });
+    setSelectedId(id);
+  }, [pushNode]);
+
+  const addImage = useCallback(() => {
+    const id = makeId();
+    pushNode({ id, type: 'image', x: 60, y: 200, w: 120, h: 80, props: { src: '', alt: 'Bild' } });
+    setSelectedId(id);
+  }, [pushNode]);
+
+  const addInput = useCallback(() => {
+    const id = makeId();
+    pushNode({ id, type: 'input', x: 80, y: 300, w: 140, h: 36, props: { placeholder: 'Eingabe' } });
+    setSelectedId(id);
+  }, [pushNode]);
+
+  const addContainer = useCallback(() => {
+    const id = makeId();
+    pushNode({ id, type: 'container', x: 100, y: 400, w: 200, h: 100, props: { bg: 'rgba(139, 92, 246, 0.15)' } });
+    setSelectedId(id);
+  }, [pushNode]);
+
   const onRemove = useCallback((id: string) => {
-    setTree((prev) => ({
-      ...prev,
-      tree: {
-        ...prev.tree,
-        children: (prev.tree.children ?? []).filter((n) => n.id !== id),
-      },
-    }));
+    setTree((prev) => ({ ...prev, tree: { ...prev.tree, children: (prev.tree.children ?? []).filter((n: any) => n.id !== id) } }));
     setSelectedId((s) => (s === id ? null : s));
     isDirty.current = true;
   }, []);
 
   const onMove = useCallback((id: string, dx: number, dy: number) => {
-    setTree((prev) => ({
-      ...prev,
-      tree: {
-        ...prev.tree,
-        children: (prev.tree.children ?? []).map((n) =>
-          n.id === id
-            ? {
-                ...n,
-                x: (n.x ?? 0) + dx,
-                y: (n.y ?? 0) + dy,
-              }
-            : n
-        ),
-      },
-    }));
+    setTree((prev) => ({ ...prev, tree: { ...prev.tree, children: (prev.tree.children ?? []).map((n: any) => (n.id === id ? { ...n, x: (n.x ?? 0) + dx, y: (n.y ?? 0) + dy } : n)) } }));
     isDirty.current = true;
   }, []);
 
-  const selectedNode = useMemo(
-    () => (tree.tree.children ?? []).find((n) => n.id === selectedId) ?? null,
-    [tree, selectedId]
-  );
+  const selectedNode = useMemo(() => (tree.tree.children ?? []).find((n: any) => n.id === selectedId) ?? null, [tree, selectedId]);
 
-  const onChangeSelected = useCallback(
-    (patch: Partial<EditorNode>) => {
-      if (!selectedId) return;
-      setTree((prev) => ({
-        ...prev,
-        tree: {
-          ...prev.tree,
-          children: (prev.tree.children ?? []).map((n) =>
-            n.id === selectedId ? ({ ...n, ...patch } as EditorNode) : n
-          ),
-        },
-      }));
-      isDirty.current = true;
-    },
-    [selectedId]
-  );
+  const onChangeSelected = useCallback((patch: any) => {
+    if (!selectedId) return;
+    setTree((prev) => ({ ...prev, tree: { ...prev.tree, children: (prev.tree.children ?? []).map((n: any) => (n.id === selectedId ? { ...n, ...patch } : n)) } }));
+    isDirty.current = true;
+  }, [selectedId]);
 
-  // --- AUTOSAVE: debounce and save to Firestore when projectId & pageId provided ---
+  // AUTOSAVE
   useEffect(() => {
-    if (!(_projectId && pageId)) {
-      // no remote saving available
-      return;
-    }
-
-    // schedule save when tree changes
+    if (!(_projectId && pageId)) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(async () => {
       try {
         await savePage(_projectId, pageId, tree);
         setSaved(true);
         isDirty.current = false;
-        setTimeout(() => setSaved(false), 1600);
+        setTimeout(() => setSaved(false), 1500);
       } catch (err) {
         console.error('Autosave failed', err);
       }
-    }, 900);
-
-    return () => {
-      if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    };
+    }, 800);
+    return () => { if (saveTimeout.current) clearTimeout(saveTimeout.current); };
   }, [tree, _projectId, pageId]);
 
   return (
-    <div className="grid grid-cols-[420px_1fr_360px] gap-4 p-4">
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-3">
-        <div className="text-sm text-neutral-400">Projekt: {_projectId ?? '–'}</div>
-        <div className="mt-3 text-neutral-300">Palette (coming soon)</div>
-        <div className="mt-2 text-xs text-neutral-400">{saved ? 'Gespeichert' : isDirty.current ? 'Änderungen…' : 'Keine Änderungen'}</div>
-      </div>
+    <div className="editor-grid container">
+      <aside className="panel">
+        <div className="kicker mb-3">{t('editor.blocks')}</div>
+        <div className="flex flex-col gap-2">
+          <button onClick={addText} className="btn">{t('editor.addText')}</button>
+          <button onClick={addButton} className="btn">{t('editor.addButton')}</button>
+          <button onClick={addImage} className="btn">{t('editor.addImage')}</button>
+          <button onClick={addInput} className="btn">+ Eingabefeld</button>
+          <button onClick={addContainer} className="btn">+ Container</button>
+        </div>
+        <div className="mt-4 text-xs text-muted">{saved ? t('editor.saved') : isDirty.current ? t('editor.changes') : 'Keine Änderungen'}</div>
+      </aside>
 
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
-        <Canvas
-          tree={tree}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onRemove={onRemove}
-          onMove={onMove}
-        />
-      </div>
+      <main className="panel">
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="phone-mock">
+            <Canvas tree={tree} selectedId={selectedId} onSelect={setSelectedId} onRemove={onRemove} onMove={onMove} />
+          </div>
+        </div>
+      </main>
 
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50">
+      <aside className="panel">
         <PropertiesPanel selected={selectedNode} onChange={onChangeSelected} />
-      </div>
+      </aside>
     </div>
   );
 }

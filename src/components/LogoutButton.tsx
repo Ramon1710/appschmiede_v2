@@ -14,14 +14,14 @@ export default function LogoutButton() {
       await logout();
       router.push('/login');
     } catch {
-      // optional: show error
+      // ignore
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <button onClick={onLogout} disabled={busy} className="px-3 py-1 rounded bg-neutral-800 text-white">
+    <button onClick={onLogout} disabled={busy} className="btn">
       {busy ? 'Abmelden…' : 'Logout'}
     </button>
   );

@@ -2,10 +2,13 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { registerWithEmail } from '@/lib/auth';
+import { useI18n } from '@/components/I18nProviderClient';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +35,7 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       await registerWithEmail(email, password, name || undefined);
-      router.push('/projects');
+      router.push('/dashboard');
     } catch (err: any) {
       setMsg(err?.message ?? 'Registrierung fehlgeschlagen.');
     } finally {
@@ -41,18 +44,23 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl mb-4">Registrieren</h1>
-      <form onSubmit={submit} className="space-y-3">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" className="w-full p-2 rounded bg-neutral-800" />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E‑Mail" className="w-full p-2 rounded bg-neutral-800" />
-        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Passwort" type="password" className="w-full p-2 rounded bg-neutral-800" />
-        <input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Passwort wiederholen" type="password" className="w-full p-2 rounded bg-neutral-800" />
-        {msg && <div className="text-sm text-rose-400">{msg}</div>}
-        <button disabled={busy} type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded">
-          {busy ? 'Registriere…' : 'Registrieren'}
-        </button>
-      </form>
+    <div className="container flex items-center justify-center" style={{ minHeight: 'calc(100vh - 100px)' }}>
+      <div className="panel" style={{ width: '100%', maxWidth: 440 }}>
+        <h1 className="text-2xl font-bold mb-6">{t('register.title')}</h1>
+        <form onSubmit={submit} className="flex flex-col gap-4">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (optional)" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E‑Mail" type="email" />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Passwort" type="password" />
+          <input value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Passwort wiederholen" type="password" />
+          {msg && <div className="text-sm" style={{ color: '#ef4444' }}>{msg}</div>}
+          <button disabled={busy} type="submit" className="btn btn-primary">
+            {busy ? 'Registriere…' : t('btn.register')}
+          </button>
+        </form>
+        <div className="text-sm text-muted mt-4">
+          Schon ein Konto? <Link href="/login" className="text-accent">Login</Link>
+        </div>
+      </div>
     </div>
   );
 }
