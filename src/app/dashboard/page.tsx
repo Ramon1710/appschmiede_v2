@@ -1,109 +1,86 @@
 // src/app/dashboard/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import type { Project } from '@/types/editor';
-import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import useAuth from '@/hooks/useAuth';
+import { createProject, subscribeProjects, type Project } from '@/lib/db-projects';
+import { useI18n } from '@/components/I18nProviderClient';
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
-  const [name, setName] = useState('');
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { t } = useI18n();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login');
+  }, [loading, user, router]);
 
   useEffect(() => {
-    if (!user?.uid) return;
-    const off = subscribeProjects(user.uid, (p) => setProjects(p));
-    return () => off();
-  }, [user?.uid]);
+    if (!user) return;
+    const unsub = subscribeProjects(user.uid, setProjects);
+    return () => unsub && unsub();
+  }, [user]);
 
   const onCreate = async () => {
-    if (!user?.uid) return;
-    setLoading(true);
+    if (!user) return;
+    setBusy(true);
     setError(null);
     try {
-      await createProject(name.trim(), user.uid);
+      const id = await createProject(user.uid, name || 'Neues Projekt');
       setName('');
-    } catch (e: any) {
-      setError(e?.message || 'Fehler beim Anlegen.');
+      router.push(`/editor?projectId=${id}`);
+    } catch (err: any) {
+      setError(err?.message ?? 'Fehler beim Erstellen');
+      console.error(err);
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
-  if (!user)
-    return (
-      <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-        <div>Bitte anmelden.</div>
-      </main>
-    );
+  if (loading) return <div className="container p-6">Lade…</div>;
+  if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
-      <div className="mx-auto max-w-3xl space-y-6">
-        <header className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <span className="ml-auto text-sm opacity-70">{user.email}</span>
-        </header>
+    <div className="container" style={{ maxWidth: 800, paddingTop: 40 }}>
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
+      <div className="text-sm text-muted mb-6">{user.email}</div>
 
-        <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
-          <h2 className="font-semibold">Neues Projekt</h2>
-          <div className="flex gap-2">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Projektname"
-              className="flex-1 rounded-xl bg-neutral-800 px-3 py-2"
-            />
-            <button
-              onClick={onCreate}
-              disabled={loading || !name.trim()}
-              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
-            >
-              + Anlegen
-            </button>
-          </div>
-          {error && <div className="text-sm text-rose-400">{error}</div>}
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
-          <div className="flex items-center">
-            <h2 className="font-semibold">Meine Projekte</h2>
-          </div>
-
-          {projects.length === 0 ? (
-            <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
-          ) : (
-            <div className="space-y-2">
-              {projects.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 rounded-xl border border-white/10 p-2">
-                  <input
-                    defaultValue={p.name}
-                    onBlur={(e) => renameProject(p.id, e.target.value)}
-                    className="flex-1 bg-transparent outline-none"
-                  />
-                  <a
-                    href={`/editor?id=${p.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20"
-                  >
-                    Öffnen
-                  </a>
-                  <button
-                    onClick={() => removeProject(p.id)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500"
-                  >
-                    Löschen
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+      <div className="panel mb-6">
+        <div className="kicker mb-3">{t('projects.new')}</div>
+        <div className="flex gap-3">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Projektname"
+            className="flex-1"
+          />
+          <button onClick={onCreate} disabled={busy} className="btn btn-primary">
+            {busy ? 'Erstelle…' : '+ Anlegen'}
+          </button>
+        </div>
+        {error && <div className="text-sm mt-2" style={{ color: '#ef4444' }}>{error}</div>}
       </div>
-    </main>
+
+      <div className="panel">
+        <div className="kicker mb-3">Meine Projekte</div>
+        {projects.length === 0 ? (
+          <div className="text-sm text-muted">Keine Projekte gefunden. Lege oben ein neues an.</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {projects.map((p) => (
+              <div key={p.id} className="flex items-center justify-between p-3 rounded" style={{ background: 'rgba(15,23,41,0.5)' }}>
+                <div className="font-semibold">{p.name}</div>
+                <button onClick={() => router.push(`/editor?projectId=${p.id}`)} className="btn">Öffnen</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

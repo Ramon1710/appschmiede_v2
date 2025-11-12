@@ -10,33 +10,43 @@ export default function Header() {
   const { locale, setLocale, t } = useI18n();
 
   return (
-    <header className="container flex items-center justify-between py-4">
+    <header className="container flex items-center justify-between p-6" style={{ paddingTop: 24, paddingBottom: 24 }}>
       <div className="flex items-center gap-6">
         <div className="text-xl font-semibold">{t('app.title')}</div>
         <nav className="header-nav">
-          <Link href="/preview">{t('nav.preview')}</Link>
-          <Link href="/editor">{t('nav.editor')}</Link>
-          <Link href="/impressum">{t('nav.imprint')}</Link>
+          <Link href="/projects">Projekte</Link>
+          <Link href="/editor">Editor</Link>
         </nav>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex gap-1">
-          <button className={`btn ${locale === 'de' ? 'opacity-90' : ''}`} onClick={() => setLocale('de')}>DE</button>
-          <button className={`btn ${locale === 'en' ? 'opacity-90' : ''}`} onClick={() => setLocale('en')}>EN</button>
+        <div className="flex gap-2">
+          <button 
+            className={`btn ${locale === 'de' ? 'btn-primary' : ''}`} 
+            onClick={() => setLocale('de')}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+          >
+            DE
+          </button>
+          <button 
+            className={`btn ${locale === 'en' ? 'btn-primary' : ''}`} 
+            onClick={() => setLocale('en')}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+          >
+            EN
+          </button>
         </div>
 
         {!loading && user ? (
           <>
-            <div className="kicker">{t('header.signedInAs')}</div>
-            <div className="text-sm">{user.displayName ?? user.email}</div>
+            <div className="text-sm text-muted">Hi, {user.displayName ?? user.email}</div>
             <LogoutButton />
           </>
         ) : (
-          <nav className="flex gap-3">
+          <div className="flex gap-3">
             <Link href="/login" className="btn">{t('btn.login')}</Link>
-            <Link href="/register" className="btn">{t('btn.register')}</Link>
-          </nav>
+            <Link href="/register" className="btn btn-primary">{t('btn.register')}</Link>
+          </div>
         )}
       </div>
     </header>
