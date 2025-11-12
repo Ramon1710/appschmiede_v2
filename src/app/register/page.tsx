@@ -1,55 +1,43 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { auth, db } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import Link from 'next/link';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { registerWithEmail } from '@/lib/auth';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleRegister = async (e: FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); setLoading(true);
+    setBusy(true);
+    setError(null);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pw);
-      await updateProfile(cred.user, { displayName: name || null });
-      await setDoc(doc(db,'users',cred.user.uid),{
-        email,
-        displayName: name || null,
-        role: 'user',
-        createdAt: serverTimestamp(),
-      }, { merge: true });
-      router.replace('/dashboard');
-    } catch (err:any) {
-      setError(err.message ?? 'Registrierung fehlgeschlagen');
+      await registerWithEmail(email, password, name || undefined);
+      router.push('/projects');
+    } catch (err: any) {
+      setError(err?.message ?? 'Fehler');
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div className="container" style={{ maxWidth: 520 }}>
-      <div className="card">
-        <h2 style={{ marginTop: 0 }}>Registrieren</h2>
-        <form onSubmit={handleRegister} className="row">
-          <input className="input" placeholder="Name (optional)" value={name} onChange={e=>setName(e.target.value)} />
-          <input className="input" type="email" placeholder="E-Mail" value={email} onChange={e=>setEmail(e.target.value)} required />
-          <input className="input" type="password" placeholder="Passwort" value={pw} onChange={e=>setPw(e.target.value)} required />
-          {error && <div className="badge" style={{ background:'#20141a', borderColor:'#46232f', color:'#ffb3b3' }}>{error}</div>}
-          <button className="btn" disabled={loading}>{loading ? '…' : 'Konto erstellen'}</button>
-        </form>
-        <div style={{ marginTop: 14, color: 'var(--muted)' }}>
-          Bereits ein Konto? <Link href="/login">Anmelden</Link>
-        </div>
-      </div>
+    <div className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl mb-4">Registrieren</h1>
+      <form onSubmit={submit} className="space-y-3">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="w-full" />
+        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full" />
+        <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Passwort" type="password" className="w-full" />
+        {error && <div className="text-rose-500">{error}</div>}
+        <button disabled={busy} type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded">
+          {busy ? 'Bitte warten…' : 'Registrieren'}
+        </button>
+      </form>
     </div>
   );
 }
