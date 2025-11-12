@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import LoginContent from './LoginContent';
 
-export const dynamic = 'force-dynamic'; // verhindert SSG/Prerender-Probleme
+export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   return (
