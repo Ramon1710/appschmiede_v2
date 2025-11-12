@@ -1,6 +1,12 @@
-export type NodeType = "text" | "button" | "image" | "input";
+// path: src/lib/editorTypes.ts
 
-export interface Node {
+/** Grundtypen für den Editor **/
+
+// Welche Node-Arten erlaubt sind
+export type NodeType = 'text' | 'button' | 'image' | 'input' | 'container';
+
+// Einzelnes UI-Element im Editor
+export type Node = {
   id: string;
   type: NodeType;
   x?: number;
@@ -8,34 +14,25 @@ export interface Node {
   w?: number;
   h?: number;
   props?: Record<string, any>;
-}
+  style?: Record<string, any>;
+  children?: Node[];
+};
 
-export interface PageTree {
-  projectId: string;
-  pageId: string;
-  tree: {
-    id: "root";
-    type: "container";
-    props?: { bg?: string };
-    children: Node[];
-  };
-  updatedAt: number;
-}
-
-export interface PageDoc {
-  id: string;
-  projectId: string;
+// Der Baum einer Seite (optional id damit Objektliteral valid ist)
+export type PageTree = {
+  id?: string;
   name: string;
-  path: string;
-  order: number;
-  isHome?: boolean;
-  createdAt?: any;
-  updatedAt?: any;
-}
+  // Der Root-Container der Seite
+  tree: Node;
+  createdAt?: number;
+  updatedAt?: number;
+};
 
-export interface ProjectInfo {
+// Projekt-Typ (klein)
+export type Project = {
   id: string;
-  name?: string;
-  ownerUid: string;
-  members?: Record<string, "master" | "member">;
-}
+  name: string;
+  pages: PageTree[];
+  createdAt?: number;
+  updatedAt?: number;
+};

@@ -1,131 +1,140 @@
-// src/app/editor/_components/Canvas.tsx
 'use client';
+
 import React, { useRef } from 'react';
-import type { Project, NodeBase } from '@/types/editor';
+import type { PageTree, Node as EditorNode } from '@/lib/editorTypes';
 
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-
-export type CanvasProps = {
-  project: Project;
-  setProject: (p: Project) => void;
-  pageId: string;
+type CanvasProps = {
+  tree: PageTree;
   selectedId: string | null;
-  setSelectedId: (id: string | null) => void;
-  preview: boolean;
+  onSelect: (id: string | null) => void;
+  onRemove: (id: string) => void;
+  onMove: (id: string, dx: number, dy: number) => void;
 };
 
-function RenderNode({ node, preview }: { node: NodeBase; preview: boolean }) {
-  const common = `w-full h-full select-none overflow-hidden`;
-  if (node.type === 'text') {
-    return (
-      <div
-        className={common}
-        style={{
-          color: node.style?.color || '#fff',
-          fontSize: node.style?.fontSize || 16,
-          fontWeight: node.style?.fontWeight || 400,
-        }}
-      >
-        {node.props?.text || 'Text'}
-      </div>
-    );
+const BOUNDS = { w: 390, h: 844 };
+
+function RenderNode({ node }: { node: EditorNode }) {
+  const base = 'w-full h-full select-none overflow-hidden';
+
+  switch (node.type) {
+    case 'text':
+      return (
+        <div
+          className={base}
+          style={{
+            color: node.style?.color ?? '#fff',
+            fontSize: node.style?.fontSize ?? 16,
+            fontWeight: node.style?.fontWeight ?? 400,
+          }}
+        >
+          {node.props?.text ?? 'Text'}
+        </div>
+      );
+
+    case 'button':
+      return (
+        <button className={`${base} rounded-md border border-white/20 bg-white/10 hover:bg-white/20`}>
+          {node.props?.label ?? 'Button'}
+        </button>
+      );
+
+    case 'image':
+      return (
+        <img
+          className={`${base} object-cover`}
+          src={node.props?.src || 'https://placehold.co/320x180/1e293b/fff?text=Bild'}
+          alt=""
+        />
+      );
+
+    case 'input':
+      return (
+        <input
+          className={`${base} rounded-md bg-neutral-800 px-2`}
+          placeholder={node.props?.placeholder ?? 'Eingabe'}
+        />
+      );
+
+    case 'container':
+      return (
+        <div
+          className={base}
+          style={{ background: node.props?.bg ?? 'linear-gradient(135deg,#0b0b0f,#111827)' }}
+        />
+      );
+
+    default:
+      return null;
   }
-  if (node.type === 'button') {
-    return (
-      <button
-        className={`${common} rounded-md border border-white/20 bg-white/10 hover:bg-white/20 transition grid place-items-center`}
-        onClick={() => {
-          if (!preview) return;
-          const act = node.props?.action as { kind: 'nav'; pageId: string } | undefined;
-          if (act?.kind === 'nav') {
-            const ev = new CustomEvent('appschmiede-nav', { detail: { pageId: act.pageId } });
-            window.dispatchEvent(ev);
-          }
-        }}
-      >
-        {node.props?.label || 'Button'}
-      </button>
-    );
-  }
-  if (node.type === 'image') {
-    return <img className={`${common} object-cover`} src={node.props?.src || 'https://picsum.photos/600/400'} alt="" />;
-  }
-  if (node.type === 'input') {
-    return <input className={`${common} rounded-md bg-neutral-800 px-2`} placeholder={node.props?.placeholder || 'Eingabe'} />;
-  }
-  if (node.type === 'container') {
-    return <div className={`${common} rounded-md`} style={{ background: node.style?.background || 'linear-gradient(135deg,#111,#1f2937)' }} />;
-  }
-  return null;
 }
 
-export default function Canvas({ project, setProject, pageId, selectedId, setSelectedId, preview }: CanvasProps) {
-  const page = project.pages.find((p) => p.id === pageId)!;
-  const draggingRef = useRef<null | { id: string; dx: number; dy: number }>(null);
+export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove }: CanvasProps) {
+  const dragging = useRef<null | { id: string; startX: number; startY: number }>(null);
 
-  const onDown = (e: React.MouseEvent, id: string) => {
-    if (preview) return;
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const dx = e.clientX - rect.left;
-    const dy = e.clientY - rect.top;
-    draggingRef.current = { id, dx, dy };
-    setSelectedId(id);
+  const onMouseDown = (e: React.MouseEvent, id: string) => {
+    if (e.button !== 0) return;
+    dragging.current = { id, startX: e.clientX, startY: e.clientY };
+    onSelect(id);
   };
 
-  const onMove = (e: React.MouseEvent) => {
-    if (!draggingRef.current || preview) return;
-    const { id, dx, dy } = draggingRef.current;
-    const node = project.nodes[id];
-    setProject({
-      ...project,
-      nodes: {
-        ...project.nodes,
-        [id]: {
-          ...node,
-          frame: {
-            ...node.frame,
-            x: clamp(e.nativeEvent.offsetX - dx, 0, 390 - node.frame.w),
-            y: clamp(e.nativeEvent.offsetY - dy, 0, 844 - node.frame.h),
-          },
-        },
-      },
-    });
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging.current) return;
+    const { id, startX, startY } = dragging.current;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (dx !== 0 || dy !== 0) {
+      onMove(id, dx, dy);
+      dragging.current = { id, startX: e.clientX, startY: e.clientY };
+    }
   };
 
-  const onUp = () => {
-    draggingRef.current = null;
+  const onMouseUp = () => {
+    dragging.current = null;
   };
 
   return (
     <div
-      className="absolute inset-0"
-      onMouseMove={onMove}
-      onMouseUp={onUp}
-      onMouseLeave={onUp}
+      className="relative mx-auto"
+      style={{ width: BOUNDS.w, height: BOUNDS.h }}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
       onClick={(e) => {
-        if (e.currentTarget === e.target) setSelectedId(null);
+        if (e.currentTarget === e.target) onSelect(null);
       }}
     >
-      {page.nodeIds.map((id) => {
-        const n = project.nodes[id];
-        const isSel = id === selectedId;
-        const style: React.CSSProperties = {
-          position: 'absolute',
-          left: n.frame.x,
-          top: n.frame.y,
-          width: n.frame.w,
-          height: n.frame.h,
-          pointerEvents: preview ? 'none' : 'auto',
-        };
-        return (
-          <div key={id} style={style} className={`group ${!preview ? 'cursor-move' : ''}`} onMouseDown={(e) => onDown(e, id)}>
-            <RenderNode node={n} preview={preview} />
-            {!preview && isSel && <div className="absolute inset-0 ring-2 ring-emerald-400/70 rounded-md pointer-events-none" />}
-          </div>
-        );
-      })}
+      <div className="absolute inset-0 rounded-[36px] border border-neutral-800 bg-neutral-950 overflow-hidden">
+        {(tree.tree.children ?? []).map((n) => {
+          const style: React.CSSProperties = {
+            position: 'absolute',
+            left: n.x ?? 0,
+            top: n.y ?? 0,
+            width: n.w ?? 120,
+            height: n.h ?? 40,
+            cursor: 'move',
+          };
+          const isSel = n.id === selectedId;
+          return (
+            <div key={n.id} style={style} className="group" onMouseDown={(e) => onMouseDown(e, n.id)}>
+              <RenderNode node={n} />
+              {isSel && <div className="absolute inset-0 ring-2 ring-emerald-400/70 rounded-md pointer-events-none" />}
+              {isSel && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(n.id);
+                  }}
+                  className="absolute -right-2 -top-2 grid place-items-center w-6 h-6 rounded-full bg-rose-600 text-white text-xs shadow"
+                  title="Element löschen"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
-
-export { RenderNode };

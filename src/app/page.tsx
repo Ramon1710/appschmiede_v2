@@ -1,8 +1,9 @@
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// path: src/app/page.tsx
+import { redirect } from 'next/navigation';
+
+// Startseite leitet direkt zum Editor
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
-const r = useRouter();
-useEffect(() => { r.replace('/editor'); }, [r]);
-return null;
+  redirect('/editor');
 }

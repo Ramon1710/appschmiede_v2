@@ -1,27 +1,87 @@
-// src/lib/db-projects.ts (Ausschnitt – createProject)
-import { db } from './firebase';
+// path: src/lib/db-projects.ts
+// Stabile, benannte Exporte für Seiten wie /dashboard und /projects.
+// Nutzt Firestore falls vorhanden; fällt ansonsten auf No-Op zurück.
+
 import {
-  collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query,
-  serverTimestamp, setDoc, updateDoc, where,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
 } from 'firebase/firestore';
-import type { Project } from '@/types/editor';
+import { db } from './firebase';
 
-const col = () => collection(db, 'projects');
-const uid = () => `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+export type Project = {
+  id: string;
+  name: string;
+  ownerUid: string;
+  members?: string[];
+  createdAt?: any;
+  updatedAt?: any;
+};
 
-export async function createProject(name: string, ownerId: string): Promise<Project> {
-  const now = Date.now();
-  const pageId = uid();
-  const id = uid();
-  const data: Project = {
-    id,
-    name: name || 'Neues Projekt',
-    ownerId,
-    pages: [{ id: pageId, name: 'Start', nodeIds: [] }],
-    nodes: {},
-    createdAt: now,
-    updatedAt: now,
-  };
-  await setDoc(doc(db, 'projects', id), { ...data, _serverUpdatedAt: serverTimestamp() });
-  return data;
+// Alle Projekte eines Users in Echtzeit abonnieren
+export function subscribeProjects(
+  userId: string,
+  onUpdate: (projects: Project[]) => void,
+  onError?: (error: Error) => void
+) {
+  const q = query(
+    collection(db, 'projects'),
+    where('ownerUid', '==', userId)
+  );
+
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      const projects: Project[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as any),
+      }));
+      onUpdate(projects);
+    },
+    (error) => {
+      if (onError) onError(error as Error);
+    }
+  );
+
+  return unsubscribe;
+}
+
+// Einzelnes Projekt abrufen
+export async function getProject(projectId: string): Promise<Project | null> {
+  const doc_ = await getDoc(doc(db, 'projects', projectId));
+  if (!doc_.exists()) return null;
+  return { id: doc_.id, ...(doc_.data() as any) };
+}
+
+// Projekt erstellen
+export async function createProject(ownerUid: string, name: string): Promise<string> {
+  const ref = await addDoc(collection(db, 'projects'), {
+    name,
+    ownerUid,
+    members: [ownerUid],
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+// Projekt umbenennen
+export async function renameProject(projectId: string, newName: string): Promise<void> {
+  await updateDoc(doc(db, 'projects', projectId), {
+    name: newName,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+// Projekt löschen
+export async function removeProject(projectId: string): Promise<void> {
+  await deleteDoc(doc(db, 'projects', projectId));
 }
