@@ -14,7 +14,7 @@ export default function LogoutButton() {
       await logout();
       router.push('/login');
     } catch {
-      // ignore
+      // optional: show error
     } finally {
       setBusy(false);
     }
