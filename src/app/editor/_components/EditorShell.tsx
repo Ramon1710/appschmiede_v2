@@ -10,13 +10,15 @@ import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, createPageWithContent } from '@/lib/db-editor';
 
+const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
+
 const emptyTree: PageTree = {
   id: 'local',
   name: 'Seite 1',
   tree: {
     id: 'root',
     type: 'container',
-    props: {},
+    props: { bg: DEFAULT_PAGE_BACKGROUND },
     children: [],
   },
 };
@@ -84,15 +86,52 @@ export default function EditorShell({ initialPageId }: Props) {
     [tree, selectedId]
   );
 
+  const pageBackground = useMemo(() => {
+    const raw = tree.tree.props?.bg;
+    return typeof raw === 'string' && raw.trim() ? raw : DEFAULT_PAGE_BACKGROUND;
+  }, [tree]);
+
+  const setPageBackground = useCallback((value: string) => {
+    const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND;
+    setTree((prev) => ({
+      ...prev,
+      tree: {
+        ...prev.tree,
+        props: { ...(prev.tree.props ?? {}), bg: next },
+      },
+    }));
+    isDirty.current = true;
+  }, []);
+
+  const generatePageBackground = useCallback((description: string) => {
+    const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
+    const hash = [...description].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const first = colors[hash % colors.length];
+    const second = colors[(hash + 3) % colors.length];
+    const third = colors[(hash + 5) % colors.length];
+    const gradient = `linear-gradient(140deg, ${first}, ${second}, ${third})`;
+    setPageBackground(gradient);
+  }, [setPageBackground]);
+
+  const resetPageBackground = useCallback(() => {
+    setPageBackground(DEFAULT_PAGE_BACKGROUND);
+  }, [setPageBackground]);
+
   const updateNode = useCallback(
     (id: string, patch: Partial<EditorNode>) => {
       setTree((prev) => ({
         ...prev,
         tree: {
           ...prev.tree,
-          children: (prev.tree.children ?? []).map((n) =>
-            n.id === id ? { ...n, ...patch } : n
-          ),
+          children: (prev.tree.children ?? []).map((n) => {
+            if (n.id !== id) return n;
+            return {
+              ...n,
+              ...patch,
+              props: patch.props ? { ...(n.props ?? {}), ...patch.props } : n.props,
+              style: patch.style ? { ...(n.style ?? {}), ...patch.style } : n.style,
+            };
+          }),
         },
       }));
       isDirty.current = true;
@@ -100,7 +139,7 @@ export default function EditorShell({ initialPageId }: Props) {
     []
   );
 
-  const addNode = useCallback((type: NodeType, defaultProps: Record<string, any> = {}) => {
+  const addNode = useCallback((type: NodeType, defaultProps: Record<string, unknown> = {}) => {
     const newNode: EditorNode = {
       id: crypto.randomUUID(),
       type,
@@ -341,6 +380,7 @@ export default function EditorShell({ initialPageId }: Props) {
           onRemove={onRemove}
           onMove={onMove}
           onResize={(id, patch) => updateNode(id, patch)}
+          onUpdateNode={(id, patch) => updateNode(id, patch)}
         />
       </div>
 
@@ -350,6 +390,10 @@ export default function EditorShell({ initialPageId }: Props) {
           onUpdate={(patch) => {
             if (selectedId) updateNode(selectedId, patch);
           }}
+          pageBackground={pageBackground}
+          onChangeBackground={setPageBackground}
+          onGenerateBackground={generatePageBackground}
+          onResetBackground={resetPageBackground}
         />
       </div>
       </div>

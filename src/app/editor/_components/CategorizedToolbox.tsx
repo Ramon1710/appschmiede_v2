@@ -1,7 +1,7 @@
 // src/app/editor/_components/CategorizedToolbox.tsx
 'use client';
 import React, { useState } from 'react';
-import type { NodeType, NodeProps } from '@/lib/editorTypes';
+import type { NodeType, NodeProps, NavbarItem } from '@/lib/editorTypes';
 
 interface ToolboxProps {
   onAdd: (type: NodeType, defaultProps?: NodeProps) => void;
@@ -35,7 +35,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         { type: 'button', label: 'Button', icon: '🔘' },
         { type: 'input', label: 'Eingabefeld', icon: '📥' },
         { type: 'image', label: 'Bild', icon: '🖼️' },
-        { type: 'container', label: 'Hintergrund', icon: '🎨', defaultProps: { bg: '#1a1a1a' } },
       ],
     },
     {
@@ -44,8 +43,9 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       items: [
         { type: 'input', label: 'Email-Feld', icon: '📧', defaultProps: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
         { type: 'input', label: 'Passwort-Feld', icon: '🔒', defaultProps: { placeholder: 'Passwort', inputType: 'password' } },
-        { type: 'button', label: 'Login-Button', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login' } },
-        { type: 'button', label: 'Registrieren', icon: '📝', defaultProps: { label: 'Registrieren', action: 'navigate', targetPage: 'register' } },
+        { type: 'button', label: 'Login-Button', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login', target: '/login' } },
+        { type: 'button', label: 'Registrieren', icon: '📝', defaultProps: { label: 'Registrieren', action: 'register', target: '/register' } },
+        { type: 'button', label: 'Passwort vergessen', icon: '🧠', defaultProps: { label: 'Passwort vergessen?', action: 'reset-password', target: '/reset' } },
         { type: 'button', label: 'Foto hochladen', icon: '📷', defaultProps: { label: 'Foto wählen', action: 'upload-photo' } },
       ],
     },
@@ -73,7 +73,19 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Kopfzeile & Navigation',
       icon: '🧭',
       items: [
-        { type: 'container', label: 'Navigationsleiste', icon: '🧭', defaultProps: { component: 'navbar' } },
+        {
+          type: 'container',
+          label: 'Navigationsleiste',
+          icon: '🧭',
+          defaultProps: {
+            component: 'navbar',
+            navItems: [
+              { id: crypto.randomUUID(), label: 'Home', action: 'navigate', target: '/' } as NavbarItem,
+              { id: crypto.randomUUID(), label: 'Editor', action: 'navigate', target: '/editor' } as NavbarItem,
+              { id: crypto.randomUUID(), label: 'Logout', action: 'logout' } as NavbarItem,
+            ],
+          },
+        },
         { type: 'button', label: 'Logout', icon: '🚪', defaultProps: { label: 'Abmelden', action: 'logout' } },
         { type: 'button', label: 'Dropdown-Menü', icon: '📋', defaultProps: { component: 'dropdown' } },
       ],
@@ -82,12 +94,50 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Unternehmen',
       icon: '🏢',
       items: [
-        { type: 'container', label: 'Zeiterfassung', icon: '⏱️', defaultProps: { component: 'time-tracking' } },
-        { type: 'container', label: 'Ordnerstruktur', icon: '📁', defaultProps: { component: 'folder-structure' } },
-        { type: 'container', label: 'Aufgabenverteilung', icon: '📋', defaultProps: { component: 'task-manager' } },
-        { type: 'container', label: 'Rechteverwaltung', icon: '🔐', defaultProps: { component: 'permissions' } },
+        {
+          type: 'container',
+          label: 'Zeiterfassung',
+          icon: '⏱️',
+          defaultProps: {
+            component: 'time-tracking',
+            timeTracking: { entries: [] },
+          },
+        },
+        {
+          type: 'container',
+          label: 'Ordnerstruktur',
+          icon: '📁',
+          defaultProps: {
+            component: 'folder-structure',
+            folderTree: [
+              { id: crypto.randomUUID(), name: 'Vertrieb', children: [] },
+              { id: crypto.randomUUID(), name: 'Marketing', children: [] },
+            ],
+          },
+        },
+        {
+          type: 'container',
+          label: 'Aufgabenverteilung',
+          icon: '📋',
+          defaultProps: {
+            component: 'task-manager',
+            tasks: [
+              { id: crypto.randomUUID(), title: 'Kickoff vorbereiten', done: false },
+              { id: crypto.randomUUID(), title: 'UX-Wireframes', done: true },
+            ],
+          },
+        },
         { type: 'container', label: 'Analytics', icon: '📊', defaultProps: { component: 'analytics' } },
-        { type: 'container', label: 'Support/Tickets', icon: '🎫', defaultProps: { component: 'support' } },
+        {
+          type: 'container',
+          label: 'Support/Tickets',
+          icon: '🎫',
+          defaultProps: {
+            component: 'support',
+            supportChannel: 'ticket',
+            supportTarget: 'support@appschmiede.dev',
+          },
+        },
         { type: 'container', label: 'Tabelle', icon: '📊', defaultProps: { component: 'table' } },
       ],
     },
@@ -95,11 +145,11 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Medien & Inhalte',
       icon: '📹',
       items: [
-        { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar' } },
-        { type: 'container', label: 'Todo-Liste', icon: '✅', defaultProps: { component: 'todo' } },
-        { type: 'container', label: 'Kartenansicht (GPS)', icon: '🗺️', defaultProps: { component: 'map' } },
-        { type: 'container', label: 'Videoplayer', icon: '📹', defaultProps: { component: 'video-player' } },
-        { type: 'button', label: 'Audio Recorder', icon: '🎤', defaultProps: { action: 'record-audio' } },
+        { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        { type: 'container', label: 'Todo-Liste', icon: '✅', defaultProps: { component: 'todo', todoItems: [] } },
+        { type: 'container', label: 'Kartenansicht (GPS)', icon: '🗺️', defaultProps: { component: 'map', mapLocation: 'Berlin, Germany' } },
+        { type: 'container', label: 'Videoplayer', icon: '📹', defaultProps: { component: 'video-player', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' } },
+        { type: 'container', label: 'Audio Recorder', icon: '🎤', defaultProps: { component: 'audio-recorder', audioNotes: [] } },
       ],
     },
     {

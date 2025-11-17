@@ -19,10 +19,12 @@ import type { PageTree } from '@/lib/editorTypes';
 
 export type { PageTree } from '@/lib/editorTypes';
 
+const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
+
 const createFallbackTree = (): PageTree['tree'] => ({
   id: 'root',
   type: 'container',
-  props: {},
+  props: { bg: DEFAULT_PAGE_BACKGROUND },
   children: [],
 });
 

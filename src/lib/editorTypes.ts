@@ -4,28 +4,105 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+// Aktionen, die Buttons und Navigationseinträge unterstützen
+export type ButtonAction =
+  | 'none'
+  | 'navigate'
+  | 'url'
+  | 'chat'
+  | 'call'
+  | 'email'
+  | 'login'
+  | 'logout'
+  | 'register'
+  | 'reset-password'
+  | 'upload-photo'
+  | 'record-audio'
+  | 'toggle-theme'
+  | 'support-ticket';
+
+export type NavbarItem = {
+  id: string;
+  label: string;
+  action: ButtonAction;
+  target?: string;
+  targetPage?: string;
+  url?: string;
+  icon?: string;
+};
+
+export type TaskItem = {
+  id: string;
+  title: string;
+  done: boolean;
+  assignee?: string;
+};
+
+export type FolderNode = {
+  id: string;
+  name: string;
+  children?: FolderNode[];
+};
+
+export type TimeEntry = {
+  id: string;
+  label: string;
+  seconds: number;
+  startedAt?: string;
+  endedAt?: string;
+};
+
+export type AudioNote = {
+  id: string;
+  label: string;
+  createdAt: string;
+  url: string;
+};
+
 // Welche Node-Arten erlaubt sind
 export type NodeType =
   | 'text'
   | 'button'
   | 'image'
   | 'input'
-  | 'container'
-  | 'chat'
-  | 'qr-code'
-  | 'time-tracking'
-  | 'calendar'
-  | 'todo'
-  | 'map'
-  | 'video'
-  | 'table'
-  | 'navbar'
-  | 'dropdown'
-  | 'game'
-  | 'avatar';
+  | 'container';
 
-export type NodeProps = Record<string, unknown>;
 export type NodeStyle = Record<string, unknown>;
+
+export type NodeProps = {
+  text?: string;
+  label?: string;
+  icon?: string;
+  action?: ButtonAction;
+  target?: string;
+  targetPage?: string;
+  url?: string;
+  phoneNumber?: string;
+  emailAddress?: string;
+  inputType?: string;
+  placeholder?: string;
+  template?: string;
+  src?: string;
+  bg?: string;
+  component?: string;
+  navItems?: NavbarItem[];
+  timeTracking?: {
+    entries: TimeEntry[];
+  };
+  folderTree?: FolderNode[];
+  tasks?: TaskItem[];
+  todoItems?: TaskItem[];
+  supportChannel?: 'email' | 'chat' | 'ticket';
+  supportTarget?: string;
+  calendarFocusDate?: string;
+  mapLocation?: string;
+  videoUrl?: string;
+  audioNotes?: AudioNote[];
+  qrUrl?: string;
+  coordinates?: string;
+  originalFileName?: string;
+  [key: string]: unknown;
+};
 
 // Einzelnes UI-Element im Editor
 export type Node = {

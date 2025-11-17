@@ -39,6 +39,7 @@ export default function Header() {
         <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Dashboard</Link>
         <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
         <Link href="/editor" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Editor</Link>
+        <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>
       </nav>
 
       <div className="flex items-center gap-3 text-sm">
