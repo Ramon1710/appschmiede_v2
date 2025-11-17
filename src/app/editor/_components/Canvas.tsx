@@ -33,8 +33,65 @@ function RenderNode({ node }: { node: EditorNode }) {
       );
 
     case 'button':
+      const handleButtonClick = () => {
+        const action = node.props?.action;
+        const target = node.props?.target;
+        
+        if (!action) return;
+        
+        switch (action) {
+          case 'navigate':
+            if (target) window.location.href = target;
+            break;
+          case 'url':
+            if (target) window.open(target, '_blank');
+            break;
+          case 'login':
+            console.log('🔐 Login action triggered');
+            // TODO: Implement login logic
+            break;
+          case 'logout':
+            console.log('🚪 Logout action triggered');
+            // TODO: Implement logout logic
+            break;
+          case 'chat':
+            if (target) window.open(`sms:${target}`, '_blank');
+            break;
+          case 'call':
+            if (target) window.open(`tel:${target}`, '_blank');
+            break;
+          case 'email':
+            if (target) window.open(`mailto:${target}`, '_blank');
+            break;
+          case 'upload-photo':
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) console.log('📷 Photo selected:', file.name);
+              // TODO: Upload to Firebase Storage
+            };
+            input.click();
+            break;
+          case 'record-audio':
+            console.log('🎤 Audio recording triggered');
+            // TODO: Implement audio recording
+            break;
+          case 'toggle-theme':
+            document.documentElement.classList.toggle('dark');
+            console.log('🌓 Theme toggled');
+            break;
+          default:
+            console.log('Unknown action:', action);
+        }
+      };
+      
       return (
-        <button className={`${base} rounded-md border border-white/20 bg-white/10 hover:bg-white/20 flex items-center justify-center gap-2`}>
+        <button 
+          onClick={handleButtonClick}
+          className={`${base} rounded-md border border-white/20 bg-white/10 hover:bg-white/20 flex items-center justify-center gap-2`}
+        >
           {node.props?.icon && <span>{node.props.icon}</span>}
           {node.props?.label ?? 'Button'}
         </button>

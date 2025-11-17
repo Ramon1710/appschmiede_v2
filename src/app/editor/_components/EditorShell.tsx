@@ -109,10 +109,11 @@ export default function EditorShell({ initialPageId }: Props) {
       try {
         await savePage(_projectId, currentPageId, tree);
         isDirty.current = false;
+        console.log('✅ Autosave successful');
       } catch (err) {
-        console.error('Autosave failed', err);
+        console.error('❌ Autosave failed', err);
       }
-    }, 60000);
+    }, 2000);
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
