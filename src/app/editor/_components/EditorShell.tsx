@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
@@ -143,12 +144,34 @@ export default function EditorShell({ initialPageId }: Props) {
     return () => off();
   }, [_projectId, currentPageId]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectedId) return;
+      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.closest('input, textarea') || target.contentEditable === 'true')) {
+        return;
+      }
+      e.preventDefault();
+      onRemove(selectedId);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, onRemove]);
+
   return (
     <div className="flex flex-col h-screen">
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <div className="w-80 border-r border-[#222] flex flex-col bg-[#0b0b0f]/90 backdrop-blur-sm">
           <div className="p-4 border-b border-[#222] space-y-2">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-md bg-white/10 hover:bg-white/20 px-3 py-2 text-sm transition"
+            >
+              <span className="text-lg">←</span>
+              <span>Zurück zum Dashboard</span>
+            </Link>
             <div className="flex items-center gap-2">
               <select
                 className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
