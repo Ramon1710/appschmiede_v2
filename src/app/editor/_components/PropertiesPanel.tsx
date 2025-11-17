@@ -5,12 +5,23 @@ import React from 'react';
 import type { Node as EditorNode } from '@/lib/editorTypes';
 
 interface PropertiesPanelProps {
-  node: EditorNode;
+  node: EditorNode | null;
   onUpdate: (patch: Partial<EditorNode>) => void;
 }
 
 export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps) {
-  if (!node) return <div className="p-3 text-neutral-400">Kein Element ausgewählt.</div>;
+  if (!node) {
+    return (
+      <div className="p-4 space-y-4 text-sm bg-[#0b0b0f] h-full overflow-y-auto">
+        <div className="font-semibold text-lg border-b border-[#222] pb-2">Eigenschaften</div>
+        <div className="flex flex-col items-center justify-center h-64 text-neutral-400 text-center">
+          <div className="text-4xl mb-2">🎨</div>
+          <div>Kein Element ausgewählt</div>
+          <div className="text-xs mt-2">Wähle ein Element aus, um es zu bearbeiten</div>
+        </div>
+      </div>
+    );
+  }
 
   const setFrame = (k: 'x' | 'y' | 'w' | 'h', v: number) =>
     onUpdate({ [k]: Number.isFinite(v) ? v : 0 } as any);

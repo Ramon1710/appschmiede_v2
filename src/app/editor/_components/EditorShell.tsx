@@ -191,14 +191,14 @@ export default function EditorShell({ initialPageId }: Props) {
         />
       </div>
 
-      {selectedId && selectedNode && (
-        <div className="w-80 border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm">
-          <PropertiesPanel
-            node={selectedNode}
-            onUpdate={(patch) => updateNode(selectedId, patch)}
-          />
-        </div>
-      )}
+      <div className="w-80 border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm">
+        <PropertiesPanel
+          node={selectedNode}
+          onUpdate={(patch) => {
+            if (selectedId) updateNode(selectedId, patch);
+          }}
+        />
+      </div>
       </div>
     </div>
   );
