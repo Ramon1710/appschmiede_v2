@@ -34,7 +34,8 @@ function RenderNode({ node }: { node: EditorNode }) {
 
     case 'button':
       return (
-        <button className={`${base} rounded-md border border-white/20 bg-white/10 hover:bg-white/20`}>
+        <button className={`${base} rounded-md border border-white/20 bg-white/10 hover:bg-white/20 flex items-center justify-center gap-2`}>
+          {node.props?.icon && <span>{node.props.icon}</span>}
           {node.props?.label ?? 'Button'}
         </button>
       );
@@ -49,14 +50,61 @@ function RenderNode({ node }: { node: EditorNode }) {
       );
 
     case 'input':
+      const inputType = node.props?.inputType || 'text';
+      if (inputType === 'checkbox') {
+        return (
+          <label className={`${base} flex items-center gap-2 px-2`}>
+            <input type="checkbox" className="w-4 h-4" />
+            <span className="text-sm">{node.props?.label || 'Checkbox'}</span>
+          </label>
+        );
+      }
       return (
         <input
-          className={`${base} rounded-md bg-neutral-800 px-2`}
+          type={inputType}
+          className={`${base} rounded-md bg-neutral-800 px-2 text-sm`}
           placeholder={node.props?.placeholder ?? 'Eingabe'}
         />
       );
 
     case 'container':
+      const component = node.props?.component;
+      if (component === 'chat') {
+        return <div className={`${base} border border-emerald-500/30 bg-neutral-900 flex items-center justify-center text-xs text-emerald-400`}>💬 Chatfenster</div>;
+      }
+      if (component === 'qr-code') {
+        return <div className={`${base} border border-blue-500/30 bg-neutral-900 flex items-center justify-center text-xs text-blue-400`}>📱 QR-Code</div>;
+      }
+      if (component === 'time-tracking') {
+        return <div className={`${base} border border-purple-500/30 bg-neutral-900 flex items-center justify-center text-xs text-purple-400`}>⏱️ Zeiterfassung</div>;
+      }
+      if (component === 'calendar') {
+        return <div className={`${base} border border-orange-500/30 bg-neutral-900 flex items-center justify-center text-xs text-orange-400`}>📅 Kalender</div>;
+      }
+      if (component === 'todo') {
+        return <div className={`${base} border border-green-500/30 bg-neutral-900 flex items-center justify-center text-xs text-green-400`}>✅ Todo</div>;
+      }
+      if (component === 'map') {
+        return <div className={`${base} border border-cyan-500/30 bg-neutral-900 flex items-center justify-center text-xs text-cyan-400`}>🗺️ Karte</div>;
+      }
+      if (component === 'video-player') {
+        return <div className={`${base} border border-red-500/30 bg-neutral-900 flex items-center justify-center text-xs text-red-400`}>📹 Video</div>;
+      }
+      if (component === 'table') {
+        return <div className={`${base} border border-yellow-500/30 bg-neutral-900 flex items-center justify-center text-xs text-yellow-400`}>📊 Tabelle</div>;
+      }
+      if (component === 'navbar') {
+        return <div className={`${base} border border-indigo-500/30 bg-neutral-900 flex items-center justify-center text-xs text-indigo-400`}>🧭 Navigation</div>;
+      }
+      if (component === 'game-tictactoe') {
+        return <div className={`${base} border border-pink-500/30 bg-neutral-900 flex items-center justify-center text-xs text-pink-400`}>❌ Tic Tac Toe</div>;
+      }
+      if (component === 'game-snake') {
+        return <div className={`${base} border border-lime-500/30 bg-neutral-900 flex items-center justify-center text-xs text-lime-400`}>🐍 Snake</div>;
+      }
+      if (component === 'game-dice') {
+        return <div className={`${base} border border-amber-500/30 bg-neutral-900 flex items-center justify-center text-xs text-amber-400`}>🎲 Würfel</div>;
+      }
       return (
         <div
           className={base}
@@ -65,7 +113,7 @@ function RenderNode({ node }: { node: EditorNode }) {
       );
 
     default:
-      return null;
+      return <div className={`${base} border border-white/20 bg-neutral-800 flex items-center justify-center text-xs`}>Unbekannter Typ</div>;
   }
 }
 

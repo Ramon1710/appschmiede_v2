@@ -114,6 +114,15 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
         <div className="space-y-2">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Button</div>
           <div>
+            <label className="text-xs text-gray-400">Icon (Emoji oder Unicode)</label>
+            <input
+              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+              placeholder="z.B. 🔘 oder ✓"
+              value={node.props?.icon ?? ''}
+              onChange={(e) => setProps({ icon: e.target.value })}
+            />
+          </div>
+          <div>
             <label className="text-xs text-gray-400">Label</label>
             <input
               className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -134,6 +143,11 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
               <option value="chat">Chat starten</option>
               <option value="call">Anrufen</option>
               <option value="email">E-Mail senden</option>
+              <option value="login">Login</option>
+              <option value="logout">Logout</option>
+              <option value="upload-photo">Foto hochladen</option>
+              <option value="record-audio">Audio aufnehmen</option>
+              <option value="toggle-theme">Dark/Light Mode</option>
             </select>
           </div>
 
@@ -211,12 +225,28 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
         <div className="space-y-2">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Eingabefeld</div>
           <div>
-            <label className="text-xs text-gray-400">Platzhalter</label>
+            <label className="text-xs text-gray-400">Typ</label>
+            <select
+              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+              value={node.props?.inputType ?? 'text'}
+              onChange={(e) => setProps({ inputType: e.target.value })}
+            >
+              <option value="text">Text</option>
+              <option value="email">E-Mail</option>
+              <option value="password">Passwort</option>
+              <option value="tel">Telefon</option>
+              <option value="number">Zahl</option>
+              <option value="date">Datum</option>
+              <option value="checkbox">Checkbox</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400">Platzhalter / Label</label>
             <input
               className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
               placeholder="z.B. Name eingeben..."
-              value={node.props?.placeholder ?? ''}
-              onChange={(e) => setProps({ placeholder: e.target.value })}
+              value={node.props?.placeholder ?? node.props?.label ?? ''}
+              onChange={(e) => setProps({ placeholder: e.target.value, label: e.target.value })}
             />
           </div>
         </div>

@@ -1,0 +1,156 @@
+// src/app/editor/_components/CategorizedToolbox.tsx
+'use client';
+import React, { useState } from 'react';
+import type { NodeType } from '@/lib/editorTypes';
+
+interface ToolboxProps {
+  onAdd: (type: NodeType, defaultProps?: Record<string, any>) => void;
+}
+
+type Category = {
+  name: string;
+  icon: string;
+  items: Array<{ type: NodeType; label: string; icon: string; defaultProps?: Record<string, any> }>;
+};
+
+export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
+  const [expanded, setExpanded] = useState<string[]>(['allgemein']);
+
+  const categories: Category[] = [
+    {
+      name: 'Seiten-Vorlagen',
+      icon: '📄',
+      items: [
+        { type: 'container', label: 'Startseite', icon: '🏠', defaultProps: { template: 'startseite' } },
+        { type: 'container', label: 'Login-Fenster', icon: '🔐', defaultProps: { template: 'login' } },
+        { type: 'container', label: 'Registrierung', icon: '📝', defaultProps: { template: 'register' } },
+        { type: 'container', label: 'Passwort vergessen', icon: '🔑', defaultProps: { template: 'password-reset' } },
+      ],
+    },
+    {
+      name: 'Allgemeine Buttons',
+      icon: '🎨',
+      items: [
+        { type: 'text', label: 'Text', icon: '📝' },
+        { type: 'button', label: 'Button', icon: '🔘' },
+        { type: 'input', label: 'Eingabefeld', icon: '📥' },
+        { type: 'image', label: 'Bild', icon: '🖼️' },
+        { type: 'container', label: 'Hintergrund', icon: '🎨', defaultProps: { bg: '#1a1a1a' } },
+      ],
+    },
+    {
+      name: 'Login & Auth',
+      icon: '🔐',
+      items: [
+        { type: 'input', label: 'Email-Feld', icon: '📧', defaultProps: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+        { type: 'input', label: 'Passwort-Feld', icon: '🔒', defaultProps: { placeholder: 'Passwort', inputType: 'password' } },
+        { type: 'button', label: 'Login-Button', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login' } },
+        { type: 'button', label: 'Registrieren', icon: '📝', defaultProps: { label: 'Registrieren', action: 'navigate', targetPage: 'register' } },
+        { type: 'button', label: 'Foto hochladen', icon: '📷', defaultProps: { label: 'Foto wählen', action: 'upload-photo' } },
+      ],
+    },
+    {
+      name: 'Kommunikation',
+      icon: '💬',
+      items: [
+        { type: 'container', label: 'Chatfenster', icon: '💬', defaultProps: { component: 'chat' } },
+        { type: 'button', label: 'Anrufbutton', icon: '📞', defaultProps: { label: 'Anrufen', action: 'call' } },
+        { type: 'button', label: 'Werbung', icon: '📢', defaultProps: { component: 'ad-banner' } },
+      ],
+    },
+    {
+      name: 'Interaktiv',
+      icon: '✨',
+      items: [
+        { type: 'container', label: 'QR-Code', icon: '📱', defaultProps: { component: 'qr-code' } },
+        { type: 'container', label: 'KI-Chat', icon: '🤖', defaultProps: { component: 'ai-chat' } },
+        { type: 'button', label: 'Dark/Light Mode', icon: '🌓', defaultProps: { action: 'toggle-theme' } },
+        { type: 'input', label: 'Checkbox', icon: '☑️', defaultProps: { inputType: 'checkbox', label: 'Zustimmen' } },
+        { type: 'input', label: 'Datum', icon: '📅', defaultProps: { inputType: 'date' } },
+      ],
+    },
+    {
+      name: 'Kopfzeile & Navigation',
+      icon: '🧭',
+      items: [
+        { type: 'container', label: 'Navigationsleiste', icon: '🧭', defaultProps: { component: 'navbar' } },
+        { type: 'button', label: 'Logout', icon: '🚪', defaultProps: { label: 'Abmelden', action: 'logout' } },
+        { type: 'button', label: 'Dropdown-Menü', icon: '📋', defaultProps: { component: 'dropdown' } },
+      ],
+    },
+    {
+      name: 'Unternehmen',
+      icon: '🏢',
+      items: [
+        { type: 'container', label: 'Zeiterfassung', icon: '⏱️', defaultProps: { component: 'time-tracking' } },
+        { type: 'container', label: 'Ordnerstruktur', icon: '📁', defaultProps: { component: 'folder-structure' } },
+        { type: 'container', label: 'Aufgabenverteilung', icon: '📋', defaultProps: { component: 'task-manager' } },
+        { type: 'container', label: 'Rechteverwaltung', icon: '🔐', defaultProps: { component: 'permissions' } },
+        { type: 'container', label: 'Analytics', icon: '📊', defaultProps: { component: 'analytics' } },
+        { type: 'container', label: 'Support/Tickets', icon: '🎫', defaultProps: { component: 'support' } },
+        { type: 'container', label: 'Tabelle', icon: '📊', defaultProps: { component: 'table' } },
+      ],
+    },
+    {
+      name: 'Medien & Inhalte',
+      icon: '📹',
+      items: [
+        { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar' } },
+        { type: 'container', label: 'Todo-Liste', icon: '✅', defaultProps: { component: 'todo' } },
+        { type: 'container', label: 'Kartenansicht (GPS)', icon: '🗺️', defaultProps: { component: 'map' } },
+        { type: 'container', label: 'Videoplayer', icon: '📹', defaultProps: { component: 'video-player' } },
+        { type: 'button', label: 'Audio Recorder', icon: '🎤', defaultProps: { action: 'record-audio' } },
+      ],
+    },
+    {
+      name: 'Spaß & Games',
+      icon: '🎮',
+      items: [
+        { type: 'container', label: 'Tic Tac Toe', icon: '❌', defaultProps: { component: 'game-tictactoe' } },
+        { type: 'container', label: 'Würfel', icon: '🎲', defaultProps: { component: 'game-dice' } },
+        { type: 'container', label: 'Snake', icon: '🐍', defaultProps: { component: 'game-snake' } },
+        { type: 'container', label: 'Avatar erstellen', icon: '👤', defaultProps: { component: 'avatar-creator' } },
+      ],
+    },
+  ];
+
+  const toggle = (cat: string) => {
+    setExpanded((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  return (
+    <div className="space-y-1 p-2">
+      {categories.map((cat) => {
+        const isExpanded = expanded.includes(cat.name);
+        return (
+          <div key={cat.name} className="border border-white/10 rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggle(cat.name)}
+              className="w-full flex items-center gap-2 px-3 py-2 bg-neutral-900 hover:bg-neutral-800 text-left text-sm font-semibold"
+            >
+              <span>{cat.icon}</span>
+              <span className="flex-1">{cat.name}</span>
+              <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
+            </button>
+            {isExpanded && (
+              <div className="bg-neutral-950/50 p-2 space-y-1">
+                {cat.items.map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => onAdd(item.type, item.defaultProps)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

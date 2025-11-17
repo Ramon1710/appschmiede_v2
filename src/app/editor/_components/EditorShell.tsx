@@ -4,7 +4,7 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
-import PageSidebar from './PageSidebar';
+import CategorizedToolbox from './CategorizedToolbox';
 import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage } from '@/lib/db-editor';
 
@@ -146,7 +146,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
   return (
     <div className="flex h-screen bg-[#0b0b0f]">
-      <div className="w-64 border-r border-[#222] flex flex-col">
+      <div className="w-80 border-r border-[#222] flex flex-col">
         <div className="p-4 border-b border-[#222] space-y-2">
           <div className="flex items-center gap-2">
             <a href="/dashboard" className="text-xs text-neutral-300 hover:underline">← Zurück</a>
@@ -180,7 +180,7 @@ export default function EditorShell({ initialPageId }: Props) {
           {saved && <div className="text-xs text-green-500 mt-1">Gespeichert</div>}
         </div>
         <div className="flex-1 overflow-y-auto">
-          <PageSidebar onAdd={addNode} />
+          <CategorizedToolbox onAdd={addNode} />
         </div>
       </div>
 

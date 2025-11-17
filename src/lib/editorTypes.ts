@@ -3,7 +3,24 @@
 /** Grundtypen für den Editor **/
 
 // Welche Node-Arten erlaubt sind
-export type NodeType = 'text' | 'button' | 'image' | 'input' | 'container';
+export type NodeType = 
+  | 'text' 
+  | 'button' 
+  | 'image' 
+  | 'input' 
+  | 'container'
+  | 'chat'
+  | 'qr-code'
+  | 'time-tracking'
+  | 'calendar'
+  | 'todo'
+  | 'map'
+  | 'video'
+  | 'table'
+  | 'navbar'
+  | 'dropdown'
+  | 'game'
+  | 'avatar';
 
 // Einzelnes UI-Element im Editor
 export type Node = {
