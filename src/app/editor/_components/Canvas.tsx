@@ -12,7 +12,7 @@ type CanvasProps = {
   onResize: (id: string, patch: Partial<EditorNode>) => void;
 };
 
-const BOUNDS = { w: 390, h: 844 };
+const BOUNDS = { w: 360, h: 720 };
 
 function RenderNode({ node }: { node: EditorNode }) {
   const base = 'w-full h-full select-none overflow-hidden';

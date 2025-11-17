@@ -144,10 +144,10 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [_projectId, currentPageId]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b0b0f]">
+    <div className="flex flex-col h-screen">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-80 border-r border-[#222] flex flex-col">
+        <div className="w-80 border-r border-[#222] flex flex-col bg-[#0b0b0f]/90 backdrop-blur-sm">
           <div className="p-4 border-b border-[#222] space-y-2">
             <div className="flex items-center gap-2">
               <select
@@ -192,7 +192,7 @@ export default function EditorShell({ initialPageId }: Props) {
       </div>
 
       {selectedId && selectedNode && (
-        <div className="w-80 border-l border-[#222]">
+        <div className="w-80 border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm">
           <PropertiesPanel
             node={selectedNode}
             onUpdate={(patch) => updateNode(selectedId, patch)}

@@ -1,0 +1,36 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Brain Icon (AI) -->
+  <path d="M300 80C320 80 340 95 345 115C350 120 360 125 365 135C368 145 365 155 360 165C365 170 368 178 368 187C368 197 364 206 357 212C360 218 362 225 362 232C362 247 352 260 338 265C332 285 315 300 295 300L285 300" stroke="url(#gradient1)" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <circle cx="310" cy="135" r="5" fill="url(#gradient1)"/>
+  <circle cx="330" cy="160" r="5" fill="url(#gradient1)"/>
+  <circle cx="320" cy="185" r="5" fill="url(#gradient1)"/>
+  <circle cx="340" cy="210" r="5" fill="url(#gradient1)"/>
+  <line x1="310" y1="135" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
+  <line x1="330" y1="160" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
+  <line x1="320" y1="185" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
+  <line x1="340" y1="210" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
+  <path d="M375 105L385 95L395 105" stroke="url(#gradient1)" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M380 100L390 90" stroke="url(#gradient1)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Anvil (Forge/Build) -->
+  <rect x="160" y="240" width="180" height="25" rx="5" fill="url(#gradient2)"/>
+  <path d="M280 265L350 265L340 290L270 290Z" fill="url(#gradient2)"/>
+  <path d="M160 265L280 265L270 290L150 290Z" fill="url(#gradient2)"/>
+  <rect x="200" y="190" width="100" height="50" rx="8" fill="url(#gradient2)"/>
+  <path d="M300 215L350 215L345 240L295 240Z" fill="url(#gradient2)"/>
+  
+  <!-- Building Blocks -->
+  <rect x="60" y="240" width="70" height="70" rx="8" stroke="url(#gradient2)" stroke-width="8" fill="none"/>
+  <rect x="60" y="330" width="70" height="70" rx="8" stroke="url(#gradient2)" stroke-width="8" fill="none"/>
+  
+  <defs>
+    <linearGradient id="gradient1" x1="300" y1="80" x2="368" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="gradient2" x1="60" y1="190" x2="350" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+</svg>
