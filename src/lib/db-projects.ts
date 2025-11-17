@@ -19,23 +19,27 @@ import { db } from '@/lib/firebase';
 export type Project = {
   id: string;
   name: string;
-  ownerUid: string;
+  ownerId: string;
+  ownerUid?: string; // Kompatibilitätsfeld zu alten Rules
+  members?: string[];
   createdAt?: any;
   updatedAt?: any;
 };
 
-export async function createProject(name: string, ownerUid: string) {
+export async function createProject(name: string, ownerId: string) {
   const ref = await addDoc(collection(db, 'projects'), {
     name,
-    ownerUid,
+    ownerId,
+    ownerUid: ownerId, // für evtl. alte Regeln
+    members: [ownerId],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
   return ref.id;
 }
 
-export async function listProjects(ownerUid: string) {
-  const q = query(collection(db, 'projects'), where('ownerUid', '==', ownerUid));
+export async function listProjects(ownerId: string) {
+  const q = query(collection(db, 'projects'), where('ownerId', '==', ownerId));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Project[];
 }
@@ -48,8 +52,8 @@ export async function removeProject(projectId: string) {
   await deleteDoc(doc(db, 'projects', projectId));
 }
 
-export function subscribeProjects(ownerUid: string, onUpdate: (projects: Project[]) => void) {
-  const q = query(collection(db, 'projects'), where('ownerUid', '==', ownerUid));
+export function subscribeProjects(ownerId: string, onUpdate: (projects: Project[]) => void) {
+  const q = query(collection(db, 'projects'), where('ownerId', '==', ownerId));
   const unsub = onSnapshot(q, (snap) => {
     const projects = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Project[];
     onUpdate(projects);

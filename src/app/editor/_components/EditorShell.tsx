@@ -31,7 +31,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
 
-  const _projectId = params.get('projectId') ?? null;
+  // Unterstütze sowohl ?projectId= als auch ?id=
+  const _projectId = params.get('projectId') ?? params.get('id') ?? null;
   const pageId = initialPageId ?? null;
 
   const onRemove = useCallback((id: string) => {
@@ -122,7 +123,11 @@ export default function EditorShell({ initialPageId }: Props) {
   return (
     <div className="flex h-screen bg-[#0b0b0f]">
       <div className="w-64 border-r border-[#222] flex flex-col">
-        <div className="p-4 border-b border-[#222]">
+        <div className="p-4 border-b border-[#222] space-y-2">
+          <div className="flex items-center gap-2">
+            <a href="/dashboard" className="text-xs text-neutral-300 hover:underline">← Zurück</a>
+            <a href="/projects" className="ml-auto text-xs text-neutral-300 hover:underline">Projekte</a>
+          </div>
           <h2 className="text-sm font-semibold text-white">Projekt: {tree.name}</h2>
           {saved && <div className="text-xs text-green-500 mt-1">Gespeichert</div>}
         </div>

@@ -89,7 +89,7 @@ export default function ProjectsIndexPage() {
                     onBlur={(e) => renameProject(p.id, e.target.value)}
                     className="flex-1 bg-transparent outline-none"
                   />
-                  <a href={`/projects/${p.id}`} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20">
+                  <a href={`/editor?id=${p.id}`} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20">
                     Öffnen
                   </a>
                   <button onClick={() => removeProject(p.id)} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500">
