@@ -27,7 +27,6 @@ export default function EditorShell({ initialPageId }: Props) {
   const params = useSearchParams();
   const [tree, setTree] = useState<PageTree>(emptyTree);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
 
@@ -109,13 +108,11 @@ export default function EditorShell({ initialPageId }: Props) {
     saveTimeout.current = setTimeout(async () => {
       try {
         await savePage(_projectId, currentPageId, tree);
-        setSaved(true);
         isDirty.current = false;
-        setTimeout(() => setSaved(false), 1600);
       } catch (err) {
         console.error('Autosave failed', err);
       }
-    }, 900);
+    }, 60000);
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
@@ -177,7 +174,6 @@ export default function EditorShell({ initialPageId }: Props) {
               }}
             >+ Seite</button>
           </div>
-          {saved && <div className="text-xs text-green-500 mt-1">Gespeichert</div>}
         </div>
         <div className="flex-1 overflow-y-auto">
           <CategorizedToolbox onAdd={addNode} />
