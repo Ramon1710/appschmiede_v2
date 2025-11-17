@@ -4,7 +4,11 @@ import React, { useState } from 'react';
 import { logout } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
-export default function LogoutButton() {
+type LogoutButtonProps = {
+  className?: string;
+};
+
+export default function LogoutButton({ className }: LogoutButtonProps) {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
@@ -21,7 +25,11 @@ export default function LogoutButton() {
   };
 
   return (
-    <button onClick={onLogout} disabled={busy} className="px-3 py-1 rounded bg-neutral-800 text-white">
+    <button
+      onClick={onLogout}
+      disabled={busy}
+      className={`w-full rounded bg-neutral-800 px-3 py-1 text-white transition hover:bg-neutral-700 disabled:opacity-60 ${className ?? ''}`.trim()}
+    >
       {busy ? 'Abmelden…' : 'Logout'}
     </button>
   );

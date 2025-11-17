@@ -35,7 +35,7 @@ function RenderNode({ node }: { node: EditorNode }) {
     case 'button':
       const handleButtonClick = () => {
         const action = node.props?.action;
-        const target = node.props?.target;
+        const target = node.props?.target ?? node.props?.targetPage;
         
         if (!action) return;
         

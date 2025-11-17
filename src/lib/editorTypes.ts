@@ -2,12 +2,14 @@
 
 /** Grundtypen für den Editor **/
 
+import type { Timestamp } from 'firebase/firestore';
+
 // Welche Node-Arten erlaubt sind
-export type NodeType = 
-  | 'text' 
-  | 'button' 
-  | 'image' 
-  | 'input' 
+export type NodeType =
+  | 'text'
+  | 'button'
+  | 'image'
+  | 'input'
   | 'container'
   | 'chat'
   | 'qr-code'
@@ -22,6 +24,9 @@ export type NodeType =
   | 'game'
   | 'avatar';
 
+export type NodeProps = Record<string, unknown>;
+export type NodeStyle = Record<string, unknown>;
+
 // Einzelnes UI-Element im Editor
 export type Node = {
   id: string;
@@ -30,8 +35,8 @@ export type Node = {
   y?: number;
   w?: number;
   h?: number;
-  props?: Record<string, any>;
-  style?: Record<string, any>;
+  props?: NodeProps;
+  style?: NodeStyle;
   children?: Node[];
 };
 
@@ -41,8 +46,9 @@ export type PageTree = {
   name: string;
   // Der Root-Container der Seite
   tree: Node;
-  createdAt?: number;
-  updatedAt?: number;
+  folder?: string | null;
+  createdAt?: Timestamp | null;
+  updatedAt?: Timestamp | null;
 };
 
 // Projekt-Typ (klein)
@@ -50,6 +56,6 @@ export type Project = {
   id: string;
   name: string;
   pages: PageTree[];
-  createdAt?: number;
-  updatedAt?: number;
+  createdAt?: Timestamp | null;
+  updatedAt?: Timestamp | null;
 };

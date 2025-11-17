@@ -5,8 +5,8 @@ export interface NodeBase {
   id: string;
   type: NodeType;
   frame: { x: number; y: number; w: number; h: number };
-  style?: Record<string, any>;
-  props?: Record<string, any>;
+  style?: Record<string, unknown>;
+  props?: Record<string, unknown>;
   children?: string[];
 }
 

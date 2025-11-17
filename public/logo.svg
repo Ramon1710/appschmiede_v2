@@ -1,36 +1,46 @@
-<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Brain Icon (AI) -->
-  <path d="M300 80C320 80 340 95 345 115C350 120 360 125 365 135C368 145 365 155 360 165C365 170 368 178 368 187C368 197 364 206 357 212C360 218 362 225 362 232C362 247 352 260 338 265C332 285 315 300 295 300L285 300" stroke="url(#gradient1)" stroke-width="8" stroke-linecap="round" fill="none"/>
-  <circle cx="310" cy="135" r="5" fill="url(#gradient1)"/>
-  <circle cx="330" cy="160" r="5" fill="url(#gradient1)"/>
-  <circle cx="320" cy="185" r="5" fill="url(#gradient1)"/>
-  <circle cx="340" cy="210" r="5" fill="url(#gradient1)"/>
-  <line x1="310" y1="135" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
-  <line x1="330" y1="160" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
-  <line x1="320" y1="185" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
-  <line x1="340" y1="210" x2="325" y2="150" stroke="url(#gradient1)" stroke-width="3"/>
-  <path d="M375 105L385 95L395 105" stroke="url(#gradient1)" stroke-width="4" stroke-linecap="round" fill="none"/>
-  <path d="M380 100L390 90" stroke="url(#gradient1)" stroke-width="4" stroke-linecap="round"/>
-  
-  <!-- Anvil (Forge/Build) -->
-  <rect x="160" y="240" width="180" height="25" rx="5" fill="url(#gradient2)"/>
-  <path d="M280 265L350 265L340 290L270 290Z" fill="url(#gradient2)"/>
-  <path d="M160 265L280 265L270 290L150 290Z" fill="url(#gradient2)"/>
-  <rect x="200" y="190" width="100" height="50" rx="8" fill="url(#gradient2)"/>
-  <path d="M300 215L350 215L345 240L295 240Z" fill="url(#gradient2)"/>
-  
-  <!-- Building Blocks -->
-  <rect x="60" y="240" width="70" height="70" rx="8" stroke="url(#gradient2)" stroke-width="8" fill="none"/>
-  <rect x="60" y="330" width="70" height="70" rx="8" stroke="url(#gradient2)" stroke-width="8" fill="none"/>
-  
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gradient1" x1="300" y1="80" x2="368" y2="300" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#EC4899"/>
-      <stop offset="100%" stop-color="#A855F7"/>
+    <linearGradient id="frame" x1="68" y1="52" x2="444" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55DDFE"/>
+      <stop offset="0.33" stop-color="#5FB8FF"/>
+      <stop offset="0.66" stop-color="#6F8DFF"/>
+      <stop offset="1" stop-color="#9960FF"/>
     </linearGradient>
-    <linearGradient id="gradient2" x1="60" y1="190" x2="350" y2="400" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#06B6D4"/>
-      <stop offset="100%" stop-color="#3B82F6"/>
+    <linearGradient id="innerStroke" x1="96" y1="80" x2="416" y2="432" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A3B63" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#101733" stop-opacity="0.9"/>
+    </linearGradient>
+    <radialGradient id="panel" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(208)">
+      <stop offset="0" stop-color="#1F2952"/>
+      <stop offset="1" stop-color="#090F23"/>
+    </radialGradient>
+    <linearGradient id="glyph" x1="152" y1="168" x2="344" y2="352" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8FE7FF"/>
+      <stop offset="1" stop-color="#B98BFF"/>
+    </linearGradient>
+    <linearGradient id="cursor" x1="164" y1="232" x2="280" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#58E2FF"/>
+      <stop offset="1" stop-color="#8E79FF"/>
     </linearGradient>
   </defs>
+
+  <rect x="52" y="52" width="408" height="408" rx="112" fill="url(#frame)"/>
+  <rect x="82" y="82" width="348" height="348" rx="94" fill="url(#panel)" stroke="url(#innerStroke)" stroke-width="4"/>
+
+  <g fill="none" stroke="url(#glyph)" stroke-linecap="round" stroke-linejoin="round" stroke-width="18">
+    <polyline points="200,180 150,232 200,284"/>
+    <polyline points="252,180 302,232 252,284"/>
+    <line x1="226" y1="180" x2="226" y2="284"/>
+  </g>
+
+  <path d="M170 220L316 336L248 352L224 400L170 220Z" fill="url(#cursor)"/>
+
+  <g transform="translate(270 150)">
+    <path d="M82 16C100 16 116 30 120 46C138 48 152 64 152 82C152 94 148 106 140 114C144 120 146 130 146 138C146 168 124 190 96 190H82C66 190 52 204 52 222C52 240 38 254 20 254C2 254 -12 240 -12 222V102C-12 62 20 30 60 30H62C68 20 78 14 90 14C92 14 94 15 96 16C100 16 104 17 108 18" stroke="url(#glyph)" stroke-width="18" stroke-linecap="round" fill="none"/>
+    <circle cx="106" cy="56" r="12" fill="url(#glyph)"/>
+    <circle cx="122" cy="96" r="11" fill="url(#glyph)" opacity="0.9"/>
+    <circle cx="110" cy="136" r="10" fill="url(#glyph)" opacity="0.7"/>
+    <line x1="106" y1="56" x2="122" y2="96" stroke="url(#glyph)" stroke-width="8" stroke-linecap="round"/>
+    <line x1="122" y1="96" x2="110" y2="136" stroke="url(#glyph)" stroke-width="8" stroke-linecap="round"/>
+  </g>
 </svg>

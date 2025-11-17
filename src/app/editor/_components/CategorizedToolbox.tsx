@@ -1,16 +1,16 @@
 // src/app/editor/_components/CategorizedToolbox.tsx
 'use client';
 import React, { useState } from 'react';
-import type { NodeType } from '@/lib/editorTypes';
+import type { NodeType, NodeProps } from '@/lib/editorTypes';
 
 interface ToolboxProps {
-  onAdd: (type: NodeType, defaultProps?: Record<string, any>) => void;
+  onAdd: (type: NodeType, defaultProps?: NodeProps) => void;
 }
 
 type Category = {
   name: string;
   icon: string;
-  items: Array<{ type: NodeType; label: string; icon: string; defaultProps?: Record<string, any> }>;
+  items: Array<{ type: NodeType; label: string; icon: string; defaultProps?: NodeProps }>;
 };
 
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
@@ -22,7 +22,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Seiten-Vorlagen',
       icon: '📄',
       items: [
-        { type: 'container', label: 'Startseite', icon: '🏠', defaultProps: { template: 'startseite' } },
         { type: 'container', label: 'Login-Fenster', icon: '🔐', defaultProps: { template: 'login' } },
         { type: 'container', label: 'Registrierung', icon: '📝', defaultProps: { template: 'register' } },
         { type: 'container', label: 'Passwort vergessen', icon: '🔑', defaultProps: { template: 'password-reset' } },

@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { Node as EditorNode } from '@/lib/editorTypes';
+import type { Node as EditorNode, NodeProps, NodeStyle } from '@/lib/editorTypes';
 
 interface PropertiesPanelProps {
   node: EditorNode | null;
@@ -26,11 +26,30 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
   const setFrame = (k: 'x' | 'y' | 'w' | 'h', v: number) =>
     onUpdate({ [k]: Number.isFinite(v) ? v : 0 } as any);
 
-  const setProps = (patch: Record<string, any>) =>
+  const setProps = (patch: NodeProps) =>
     onUpdate({ props: { ...(node.props ?? {}), ...patch } });
 
-  const setStyle = (patch: Record<string, any>) =>
+  const setStyle = (patch: NodeStyle) =>
     onUpdate({ style: { ...(node.style ?? {}), ...patch } });
+
+  const promptGradient = () => {
+    const description = window.prompt('Beschreibe den Hintergrund. Beispiel: "dunkler Weltraum mit violetten Akzenten"');
+    if (!description) return;
+    const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
+    const hash = [...description].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const first = colors[hash % colors.length];
+    const second = colors[(hash + 3) % colors.length];
+    const third = colors[(hash + 5) % colors.length];
+    const gradient = `linear-gradient(140deg, ${first}, ${second}, ${third})`;
+    setProps({ bg: gradient });
+  };
+
+  const promptImage = () => {
+    const description = window.prompt('Welches Motiv soll das Bild zeigen? Beispiel: "modernes Team im Chat"');
+    if (!description) return;
+    const url = `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(description)}`;
+    setProps({ src: url });
+  };
 
   return (
     <div className="p-4 space-y-4 text-sm bg-[#0b0b0f] h-full overflow-y-auto">
@@ -225,6 +244,11 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
               onChange={(e) => setProps({ src: e.target.value })}
             />
           </div>
+          <button
+            type="button"
+            onClick={promptImage}
+            className="w-full rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
+          >KI Bild generieren</button>
           <div className="text-xs text-gray-500 italic">
             Tipp: Bild-Upload kommt in einem späteren Update
           </div>
@@ -276,6 +300,11 @@ export default function PropertiesPanel({ node, onUpdate }: PropertiesPanelProps
               onChange={(e) => setProps({ bg: e.target.value })}
             />
           </div>
+          <button
+            type="button"
+            onClick={promptGradient}
+            className="w-full rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
+          >KI Hintergrund generieren</button>
         </div>
       )}
     </div>
