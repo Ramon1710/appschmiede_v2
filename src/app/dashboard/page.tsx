@@ -50,67 +50,60 @@ export default function DashboardPage() {
     <>
       <Header />
       <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
-      <div className="mx-auto max-w-3xl space-y-6">
-        <header className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <span className="ml-auto text-sm opacity-70">{user.email}</span>
-        </header>
+        <div className="mx-auto max-w-4xl space-y-6">
+          <header className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <span className="ml-auto text-sm opacity-70">{user.email}</span>
+          </header>
 
-        <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
-          <h2 className="font-semibold">Neues Projekt</h2>
-          <div className="flex gap-2">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Projektname"
-              className="flex-1 rounded-xl bg-neutral-800 px-3 py-2"
-            />
-            <button
-              onClick={onCreate}
-              disabled={loading || !name.trim()}
-              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
+          {/* Quick Links */}
+          <section className="grid grid-cols-2 gap-4">
+            <a
+              href="/projects"
+              className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900 p-6 hover:bg-neutral-800 transition"
             >
-              + Anlegen
-            </button>
-          </div>
-          {error && <div className="text-sm text-rose-400">{error}</div>}
-        </section>
+              <div className="text-4xl">📁</div>
+              <span className="font-semibold">Projekte</span>
+              <span className="text-xs text-neutral-400">Alle Projekte verwalten</span>
+            </a>
+            <a
+              href="/editor"
+              className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900 p-6 hover:bg-neutral-800 transition"
+            >
+              <div className="text-4xl">✏️</div>
+              <span className="font-semibold">Editor</span>
+              <span className="text-xs text-neutral-400">Neues Projekt erstellen</span>
+            </a>
+          </section>
 
-        <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
-          <div className="flex items-center">
-            <h2 className="font-semibold">Meine Projekte</h2>
-          </div>
-
-          {projects.length === 0 ? (
-            <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
-          ) : (
-            <div className="space-y-2">
-              {projects.map((p) => (
-                <div key={p.id} className="flex items-center gap-2 rounded-xl border border-white/10 p-2">
-                  <input
-                    defaultValue={p.name}
-                    onBlur={(e) => renameProject(p.id, e.target.value)}
-                    className="flex-1 bg-transparent outline-none"
-                  />
+          {/* Recent Projects */}
+          <section className="rounded-2xl border border-white/10 bg-neutral-900 p-4 space-y-3">
+            <h2 className="font-semibold">Zuletzt bearbeitet</h2>
+            {projects.length === 0 ? (
+              <div className="text-sm opacity-70">Keine Projekte gefunden. Erstelle ein neues Projekt über "Projekte".</div>
+            ) : (
+              <div className="space-y-2">
+                {projects.slice(0, 5).map((p) => (
                   <a
+                    key={p.id}
                     href={`/editor?id=${p.id}`}
-                    className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20"
+                    className="flex items-center gap-3 rounded-xl border border-white/10 p-3 hover:bg-neutral-800 transition"
                   >
-                    Öffnen
+                    <div className="text-2xl">📄</div>
+                    <div className="flex-1">
+                      <div className="font-medium">{p.name}</div>
+                      <div className="text-xs text-neutral-400">
+                        {p.updatedAt?.toDate ? new Date(p.updatedAt.toDate()).toLocaleDateString('de-DE') : 'Neu'}
+                      </div>
+                    </div>
+                    <div className="text-sm text-neutral-400">→</div>
                   </a>
-                  <button
-                    onClick={() => removeProject(p.id)}
-                    className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500"
-                  >
-                    Löschen
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-    </main>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
     </>
   );
 }

@@ -15,6 +15,7 @@ type Category = {
 
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
   const [expanded, setExpanded] = useState<string[]>(['allgemein']);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories: Category[] = [
     {
@@ -114,43 +115,65 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
     },
   ];
 
-  const toggle = (cat: string) => {
-    setExpanded((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
+  const toggle = (name: string) => {
+    setExpanded((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
   };
 
+  // Filter categories and items based on search query
+  const filteredCategories = categories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter((item) =>
+        item.label.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+    }))
+    .filter((cat) => cat.items.length > 0);
+
   return (
-    <div className="space-y-1 p-2">
-      {categories.map((cat) => {
-        const isExpanded = expanded.includes(cat.name);
-        return (
-          <div key={cat.name} className="border border-white/10 rounded-lg overflow-hidden">
-            <button
-              onClick={() => toggle(cat.name)}
-              className="w-full flex items-center gap-2 px-3 py-2 bg-neutral-900 hover:bg-neutral-800 text-left text-sm font-semibold"
-            >
-              <span>{cat.icon}</span>
-              <span className="flex-1">{cat.name}</span>
-              <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
-            </button>
-            {isExpanded && (
-              <div className="bg-neutral-950/50 p-2 space-y-1">
-                {cat.items.map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={() => onAdd(item.type, item.defaultProps)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
-                  >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <div className="flex flex-col h-full">
+      {/* Search Bar */}
+      <div className="p-3 border-b border-[#222]">
+        <input
+          type="text"
+          placeholder="Komponente suchen..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-neutral-900 border border-[#333] rounded px-3 py-2 text-sm placeholder:text-neutral-500"
+        />
+      </div>
+
+      {/* Categories */}
+      <div className="flex-1 overflow-y-auto space-y-1 p-2">
+        {filteredCategories.map((cat) => {
+          const isExpanded = expanded.includes(cat.name);
+          return (
+            <div key={cat.name} className="border border-white/10 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggle(cat.name)}
+                className="w-full flex items-center gap-2 px-3 py-2 bg-neutral-900 hover:bg-neutral-800 text-left text-sm font-semibold"
+              >
+                <span>{cat.icon}</span>
+                <span className="flex-1">{cat.name}</span>
+                <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
+              </button>
+              {isExpanded && (
+                <div className="bg-neutral-950/50 p-2 space-y-1">
+                  {cat.items.map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => onAdd(item.type, item.defaultProps)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

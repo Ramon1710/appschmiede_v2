@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
+import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage } from '@/lib/db-editor';
 
@@ -143,43 +144,41 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [_projectId, currentPageId]);
 
   return (
-    <div className="flex h-screen bg-[#0b0b0f]">
-      <div className="w-80 border-r border-[#222] flex flex-col">
-        <div className="p-4 border-b border-[#222] space-y-2">
-          <div className="flex items-center gap-2">
-            <a href="/dashboard" className="text-xs text-neutral-300 hover:underline">← Zurück</a>
-            <a href="/projects" className="ml-auto text-xs text-neutral-300 hover:underline">Projekte</a>
+    <div className="flex flex-col h-screen bg-[#0b0b0f]">
+      <Header />
+      <div className="flex flex-1 overflow-hidden">
+        <div className="w-80 border-r border-[#222] flex flex-col">
+          <div className="p-4 border-b border-[#222] space-y-2">
+            <div className="flex items-center gap-2">
+              <select
+                className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
+                value={currentPageId ?? ''}
+                onChange={(e) => {
+                  const id = e.target.value || null;
+                  setCurrentPageId(id);
+                  const sel = pages.find((p) => p.id === id);
+                  if (sel) setTree(sel as any);
+                }}
+              >
+                {pages.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <button
+                className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
+                onClick={async () => {
+                  if (!_projectId) return;
+                  const idx = pages.length + 1;
+                  const id = await createPage(_projectId, `Seite ${idx}`);
+                  setCurrentPageId(id ?? null);
+                }}
+              >+ Seite</button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
-              value={currentPageId ?? ''}
-              onChange={(e) => {
-                const id = e.target.value || null;
-                setCurrentPageId(id);
-                const sel = pages.find((p) => p.id === id);
-                if (sel) setTree(sel as any);
-              }}
-            >
-              {pages.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <button
-              className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
-              onClick={async () => {
-                if (!_projectId) return;
-                const idx = pages.length + 1;
-                const id = await createPage(_projectId, `Seite ${idx}`);
-                setCurrentPageId(id ?? null);
-              }}
-            >+ Seite</button>
+          <div className="flex-1 overflow-y-auto">
+            <CategorizedToolbox onAdd={addNode} />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
-          <CategorizedToolbox onAdd={addNode} />
-        </div>
-      </div>
 
       <div className="flex-1">
         <Canvas
@@ -200,6 +199,7 @@ export default function EditorShell({ initialPageId }: Props) {
           />
         </div>
       )}
+      </div>
     </div>
   );
 }

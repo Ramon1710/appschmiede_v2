@@ -126,41 +126,82 @@ function RenderNode({ node }: { node: EditorNode }) {
 
     case 'container':
       const component = node.props?.component;
+      const handleContainerClick = () => {
+        if (component === 'chat') {
+          console.log('💬 Chat opened');
+          // TODO: Open chat interface
+        } else if (component === 'qr-code') {
+          const url = node.props?.qrUrl || window.location.href;
+          console.log('📱 QR-Code for:', url);
+          // TODO: Generate QR code
+        } else if (component === 'time-tracking') {
+          console.log('⏱️ Time tracking started');
+          // TODO: Start/stop time tracking
+        } else if (component === 'calendar') {
+          console.log('📅 Calendar opened');
+          // TODO: Show calendar view
+        } else if (component === 'todo') {
+          console.log('✅ Todo list opened');
+          // TODO: Show todo list
+        } else if (component === 'map') {
+          const coords = node.props?.coordinates || '0,0';
+          console.log('🗺️ Map location:', coords);
+          // TODO: Show map with coordinates
+        } else if (component === 'video-player') {
+          const videoUrl = node.props?.videoUrl;
+          if (videoUrl) window.open(videoUrl, '_blank');
+          console.log('📹 Video player:', videoUrl);
+        } else if (component === 'navbar') {
+          console.log('🧭 Navigation menu');
+          // TODO: Show navigation menu
+        } else if (component === 'game-tictactoe') {
+          console.log('❌ Tic Tac Toe game started');
+          // TODO: Start game
+        } else if (component === 'game-snake') {
+          console.log('🐍 Snake game started');
+          // TODO: Start game
+        } else if (component === 'game-dice') {
+          const result = Math.floor(Math.random() * 6) + 1;
+          console.log('🎲 Dice rolled:', result);
+          alert(`🎲 Du hast eine ${result} gewürfelt!`);
+        }
+      };
+
       if (component === 'chat') {
-        return <div className={`${base} border border-emerald-500/30 bg-neutral-900 flex items-center justify-center text-xs text-emerald-400`}>💬 Chatfenster</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-emerald-500/30 bg-neutral-900 flex items-center justify-center text-xs text-emerald-400 cursor-pointer hover:bg-emerald-950`}>💬 Chatfenster</div>;
       }
       if (component === 'qr-code') {
-        return <div className={`${base} border border-blue-500/30 bg-neutral-900 flex items-center justify-center text-xs text-blue-400`}>📱 QR-Code</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-blue-500/30 bg-neutral-900 flex items-center justify-center text-xs text-blue-400 cursor-pointer hover:bg-blue-950`}>📱 QR-Code</div>;
       }
       if (component === 'time-tracking') {
-        return <div className={`${base} border border-purple-500/30 bg-neutral-900 flex items-center justify-center text-xs text-purple-400`}>⏱️ Zeiterfassung</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-purple-500/30 bg-neutral-900 flex items-center justify-center text-xs text-purple-400 cursor-pointer hover:bg-purple-950`}>⏱️ Zeiterfassung</div>;
       }
       if (component === 'calendar') {
-        return <div className={`${base} border border-orange-500/30 bg-neutral-900 flex items-center justify-center text-xs text-orange-400`}>📅 Kalender</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-orange-500/30 bg-neutral-900 flex items-center justify-center text-xs text-orange-400 cursor-pointer hover:bg-orange-950`}>📅 Kalender</div>;
       }
       if (component === 'todo') {
-        return <div className={`${base} border border-green-500/30 bg-neutral-900 flex items-center justify-center text-xs text-green-400`}>✅ Todo</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-green-500/30 bg-neutral-900 flex items-center justify-center text-xs text-green-400 cursor-pointer hover:bg-green-950`}>✅ Todo</div>;
       }
       if (component === 'map') {
-        return <div className={`${base} border border-cyan-500/30 bg-neutral-900 flex items-center justify-center text-xs text-cyan-400`}>🗺️ Karte</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-cyan-500/30 bg-neutral-900 flex items-center justify-center text-xs text-cyan-400 cursor-pointer hover:bg-cyan-950`}>🗺️ Karte</div>;
       }
       if (component === 'video-player') {
-        return <div className={`${base} border border-red-500/30 bg-neutral-900 flex items-center justify-center text-xs text-red-400`}>📹 Video</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-red-500/30 bg-neutral-900 flex items-center justify-center text-xs text-red-400 cursor-pointer hover:bg-red-950`}>📹 Video</div>;
       }
       if (component === 'table') {
         return <div className={`${base} border border-yellow-500/30 bg-neutral-900 flex items-center justify-center text-xs text-yellow-400`}>📊 Tabelle</div>;
       }
       if (component === 'navbar') {
-        return <div className={`${base} border border-indigo-500/30 bg-neutral-900 flex items-center justify-center text-xs text-indigo-400`}>🧭 Navigation</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-indigo-500/30 bg-neutral-900 flex items-center justify-center text-xs text-indigo-400 cursor-pointer hover:bg-indigo-950`}>🧭 Navigation</div>;
       }
       if (component === 'game-tictactoe') {
-        return <div className={`${base} border border-pink-500/30 bg-neutral-900 flex items-center justify-center text-xs text-pink-400`}>❌ Tic Tac Toe</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-pink-500/30 bg-neutral-900 flex items-center justify-center text-xs text-pink-400 cursor-pointer hover:bg-pink-950`}>❌ Tic Tac Toe</div>;
       }
       if (component === 'game-snake') {
-        return <div className={`${base} border border-lime-500/30 bg-neutral-900 flex items-center justify-center text-xs text-lime-400`}>🐍 Snake</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-lime-500/30 bg-neutral-900 flex items-center justify-center text-xs text-lime-400 cursor-pointer hover:bg-lime-950`}>🐍 Snake</div>;
       }
       if (component === 'game-dice') {
-        return <div className={`${base} border border-amber-500/30 bg-neutral-900 flex items-center justify-center text-xs text-amber-400`}>🎲 Würfel</div>;
+        return <div onClick={handleContainerClick} className={`${base} border border-amber-500/30 bg-neutral-900 flex items-center justify-center text-xs text-amber-400 cursor-pointer hover:bg-amber-950`}>🎲 Würfel</div>;
       }
       return (
         <div
