@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import Header from '@/components/Header';
 import type { Project } from '@/types/editor';
 import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
 
@@ -26,10 +27,8 @@ export default function ProjectsIndexPage() {
     setLoading(true);
     setError(null);
     try {
-      const p = await createProject(name.trim(), user.uid);
+      await createProject(name.trim(), user.uid);
       setName('');
-      // optional: direkt auf Detailseite
-      // location.href = `/projects/${p.id}`;
     } catch (e: any) {
       setError(e?.message || 'Fehler beim Anlegen.');
     } finally {
@@ -39,13 +38,18 @@ export default function ProjectsIndexPage() {
 
   if (!user)
     return (
-      <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-        <div>Bitte anmelden.</div>
-      </main>
+      <>
+        <Header />
+        <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
+          <div>Bitte anmelden.</div>
+        </main>
+      </>
     );
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
+    <>
+      <Header />
+      <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <header className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -98,5 +102,6 @@ export default function ProjectsIndexPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

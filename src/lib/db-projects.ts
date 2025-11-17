@@ -24,7 +24,7 @@ export type Project = {
   updatedAt?: any;
 };
 
-export async function createProject(ownerUid: string, name = 'Neues Projekt') {
+export async function createProject(name: string, ownerUid: string) {
   const ref = await addDoc(collection(db, 'projects'), {
     name,
     ownerUid,

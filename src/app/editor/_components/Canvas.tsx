@@ -94,16 +94,18 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove }:
 
   return (
     <div
-      className="relative mx-auto"
-      style={{ width: BOUNDS.w, height: BOUNDS.h }}
+      className="relative mx-auto flex items-center justify-center h-full p-6"
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
-      onClick={(e) => {
-        if (e.currentTarget === e.target) onSelect(null);
-      }}
     >
-      <div className="absolute inset-0 rounded-[36px] border border-neutral-800 bg-neutral-950 overflow-hidden">
+      <div
+        className="relative bg-neutral-950 rounded-[36px] border border-neutral-800 overflow-hidden shadow-2xl"
+        style={{ width: BOUNDS.w, height: BOUNDS.h }}
+        onClick={(e) => {
+          if (e.currentTarget === e.target) onSelect(null);
+        }}
+      >
         {(tree.tree.children ?? []).map((n) => {
           const style: React.CSSProperties = {
             position: 'absolute',

@@ -4,8 +4,9 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
-import type { PageTree, Node as EditorNode } from '@/lib/editorTypes';
-import { savePage } from '@/lib/db-editor'; // neu: savePage
+import PageSidebar from './PageSidebar';
+import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
+import { savePage } from '@/lib/db-editor';
 
 const emptyTree: PageTree = {
   id: 'local',
@@ -13,8 +14,8 @@ const emptyTree: PageTree = {
   tree: {
     id: 'root',
     type: 'container',
-    props: { bg: '#0b0b0f' },
-    children: [] as EditorNode[],
+    props: {},
+    children: [],
   },
 };
 
@@ -24,17 +25,15 @@ type Props = {
 
 export default function EditorShell({ initialPageId }: Props) {
   const params = useSearchParams();
-  const initial = useMemo(() => emptyTree, []);
-  const [tree, setTree] = useState<PageTree>(initial);
+  const [tree, setTree] = useState<PageTree>(emptyTree);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [saved, setSaved] = useState<boolean>(false);
-  const saveTimeout = useRef<null | ReturnType<typeof setTimeout>>(null);
+  const [saved, setSaved] = useState(false);
+  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
 
   const _projectId = params.get('projectId') ?? null;
   const pageId = initialPageId ?? null;
 
-  // --- existing handlers ---
   const onRemove = useCallback((id: string) => {
     setTree((prev) => ({
       ...prev,
@@ -53,13 +52,7 @@ export default function EditorShell({ initialPageId }: Props) {
       tree: {
         ...prev.tree,
         children: (prev.tree.children ?? []).map((n) =>
-          n.id === id
-            ? {
-                ...n,
-                x: (n.x ?? 0) + dx,
-                y: (n.y ?? 0) + dy,
-              }
-            : n
+          n.id === id ? { ...n, x: (n.x ?? 0) + dx, y: (n.y ?? 0) + dy } : n
         ),
       },
     }));
@@ -71,31 +64,45 @@ export default function EditorShell({ initialPageId }: Props) {
     [tree, selectedId]
   );
 
-  const onChangeSelected = useCallback(
-    (patch: Partial<EditorNode>) => {
-      if (!selectedId) return;
+  const updateNode = useCallback(
+    (id: string, patch: Partial<EditorNode>) => {
       setTree((prev) => ({
         ...prev,
         tree: {
           ...prev.tree,
           children: (prev.tree.children ?? []).map((n) =>
-            n.id === selectedId ? ({ ...n, ...patch } as EditorNode) : n
+            n.id === id ? { ...n, ...patch } : n
           ),
         },
       }));
       isDirty.current = true;
     },
-    [selectedId]
+    []
   );
 
-  // --- AUTOSAVE: debounce and save to Firestore when projectId & pageId provided ---
-  useEffect(() => {
-    if (!(_projectId && pageId)) {
-      // no remote saving available
-      return;
-    }
+  const addNode = useCallback((type: NodeType, defaultProps: Record<string, any> = {}) => {
+    const newNode: EditorNode = {
+      id: crypto.randomUUID(),
+      type,
+      x: 100,
+      y: 100,
+      w: 240,
+      h: type === 'text' ? 60 : type === 'button' ? 40 : 120,
+      props: { ...defaultProps },
+    };
+    setTree((t) => ({
+      ...t,
+      tree: {
+        ...t.tree,
+        children: [...(t.tree.children ?? []), newNode],
+      },
+    }));
+    setSelectedId(newNode.id);
+    isDirty.current = true;
+  }, []);
 
-    // schedule save when tree changes
+  useEffect(() => {
+    if (!(_projectId && pageId)) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(async () => {
       try {
@@ -107,21 +114,24 @@ export default function EditorShell({ initialPageId }: Props) {
         console.error('Autosave failed', err);
       }
     }, 900);
-
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
   }, [tree, _projectId, pageId]);
 
   return (
-    <div className="grid grid-cols-[420px_1fr_360px] gap-4 p-4">
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-3">
-        <div className="text-sm text-neutral-400">Projekt: {_projectId ?? '–'}</div>
-        <div className="mt-3 text-neutral-300">Palette (coming soon)</div>
-        <div className="mt-2 text-xs text-neutral-400">{saved ? 'Gespeichert' : isDirty.current ? 'Änderungen…' : 'Keine Änderungen'}</div>
+    <div className="flex h-screen bg-[#0b0b0f]">
+      <div className="w-64 border-r border-[#222] flex flex-col">
+        <div className="p-4 border-b border-[#222]">
+          <h2 className="text-sm font-semibold text-white">Projekt: {tree.name}</h2>
+          {saved && <div className="text-xs text-green-500 mt-1">Gespeichert</div>}
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <PageSidebar onAdd={addNode} />
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-4">
+      <div className="flex-1">
         <Canvas
           tree={tree}
           selectedId={selectedId}
@@ -131,9 +141,14 @@ export default function EditorShell({ initialPageId }: Props) {
         />
       </div>
 
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50">
-        <PropertiesPanel selected={selectedNode} onChange={onChangeSelected} />
-      </div>
+      {selectedId && selectedNode && (
+        <div className="w-80 border-l border-[#222]">
+          <PropertiesPanel
+            node={selectedNode}
+            onUpdate={(patch) => updateNode(selectedId, patch)}
+          />
+        </div>
+      )}
     </div>
   );
 }

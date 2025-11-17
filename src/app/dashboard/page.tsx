@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import Header from '@/components/Header';
 import type { Project } from '@/types/editor';
 import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
 
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   }, [user?.uid]);
 
   const onCreate = async () => {
-    if (!user?.uid) return;
+    if (!user?.uid || !name.trim()) return;
     setLoading(true);
     setError(null);
     try {
@@ -37,13 +38,18 @@ export default function DashboardPage() {
 
   if (!user)
     return (
-      <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-        <div>Bitte anmelden.</div>
-      </main>
+      <>
+        <Header />
+        <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
+          <div>Bitte anmelden.</div>
+        </main>
+      </>
     );
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
+    <>
+      <Header />
+      <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <header className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -105,5 +111,6 @@ export default function DashboardPage() {
         </section>
       </div>
     </main>
+    </>
   );
 }

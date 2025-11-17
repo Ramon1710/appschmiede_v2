@@ -9,12 +9,18 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-export async function registerWithEmail(email: string, password: string, displayName?: string): Promise<User> {
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  displayName?: string,
+  company?: string
+): Promise<User> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (displayName) await updateProfile(cred.user, { displayName });
   await setDoc(doc(db, 'users', cred.user.uid), {
     email,
     displayName: displayName ?? null,
+    company: company ?? null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
