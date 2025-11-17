@@ -6,7 +6,7 @@ import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import PageSidebar from './PageSidebar';
 import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
-import { savePage } from '@/lib/db-editor';
+import { savePage, subscribePages, createPage } from '@/lib/db-editor';
 
 const emptyTree: PageTree = {
   id: 'local',
@@ -33,7 +33,8 @@ export default function EditorShell({ initialPageId }: Props) {
 
   // Unterstütze sowohl ?projectId= als auch ?id=
   const _projectId = params.get('projectId') ?? params.get('id') ?? null;
-  const pageId = initialPageId ?? null;
+  const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? null);
+  const [pages, setPages] = useState<Array<{ id: string; name: string; tree?: any }>>([]);
 
   const onRemove = useCallback((id: string) => {
     setTree((prev) => ({
@@ -103,11 +104,11 @@ export default function EditorShell({ initialPageId }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!(_projectId && pageId)) return;
+    if (!(_projectId && currentPageId)) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(async () => {
       try {
-        await savePage(_projectId, pageId, tree);
+        await savePage(_projectId, currentPageId, tree);
         setSaved(true);
         isDirty.current = false;
         setTimeout(() => setSaved(false), 1600);
@@ -118,7 +119,30 @@ export default function EditorShell({ initialPageId }: Props) {
     return () => {
       if (saveTimeout.current) clearTimeout(saveTimeout.current);
     };
-  }, [tree, _projectId, pageId]);
+  }, [tree, _projectId, currentPageId]);
+
+  // Seitenliste abonnieren und initiale Seite setzen
+  useEffect(() => {
+    if (!_projectId) return;
+    const off = subscribePages(_projectId, (pgs) => {
+      setPages(pgs as any);
+      if (!currentPageId) {
+        if (pgs.length > 0) {
+          setCurrentPageId(pgs[0].id ?? null);
+          setTree(pgs[0] as any);
+        } else {
+          (async () => {
+            const id = await createPage(_projectId, 'Seite 1');
+            setCurrentPageId(id);
+          })();
+        }
+      } else {
+        const sel = pgs.find((p) => p.id === currentPageId);
+        if (sel) setTree(sel as any);
+      }
+    });
+    return () => off();
+  }, [_projectId, currentPageId]);
 
   return (
     <div className="flex h-screen bg-[#0b0b0f]">
@@ -128,7 +152,31 @@ export default function EditorShell({ initialPageId }: Props) {
             <a href="/dashboard" className="text-xs text-neutral-300 hover:underline">← Zurück</a>
             <a href="/projects" className="ml-auto text-xs text-neutral-300 hover:underline">Projekte</a>
           </div>
-          <h2 className="text-sm font-semibold text-white">Projekt: {tree.name}</h2>
+          <div className="flex items-center gap-2">
+            <select
+              className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
+              value={currentPageId ?? ''}
+              onChange={(e) => {
+                const id = e.target.value || null;
+                setCurrentPageId(id);
+                const sel = pages.find((p) => p.id === id);
+                if (sel) setTree(sel as any);
+              }}
+            >
+              {pages.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <button
+              className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
+              onClick={async () => {
+                if (!_projectId) return;
+                const idx = pages.length + 1;
+                const id = await createPage(_projectId, `Seite ${idx}`);
+                setCurrentPageId(id ?? null);
+              }}
+            >+ Seite</button>
+          </div>
           {saved && <div className="text-xs text-green-500 mt-1">Gespeichert</div>}
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -143,6 +191,7 @@ export default function EditorShell({ initialPageId }: Props) {
           onSelect={setSelectedId}
           onRemove={onRemove}
           onMove={onMove}
+          onResize={(id, patch) => updateNode(id, patch)}
         />
       </div>
 
