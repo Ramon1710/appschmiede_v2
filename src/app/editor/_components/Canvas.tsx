@@ -90,13 +90,13 @@ const runAction = async (
       if (target) window.open(target, '_blank', 'noopener');
       break;
     case 'login':
-      window.open(target ?? '/login', '_blank', 'noopener');
+      window.alert('🔐 Login-Demo: Hier würdest du deinen eigenen Login-Flow integrieren.');
       break;
     case 'register':
-      window.open(target ?? '/register', '_blank', 'noopener');
+      window.alert('📝 Registrierung-Demo: Binde hier deinen echten Registrierungsprozess ein.');
       break;
     case 'reset-password':
-      window.open(target ?? '/reset', '_blank', 'noopener');
+      window.alert('🔑 Passwort-zurücksetzen-Demo: Leite hier auf deine echte Reset-Logik weiter.');
       break;
     case 'logout':
       window.alert('🚪 Logout-Aktion: Hier könntest du deinen Auth-Flow einbinden.');

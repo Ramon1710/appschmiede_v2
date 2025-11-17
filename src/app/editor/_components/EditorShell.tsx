@@ -44,6 +44,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiReplace, setAiReplace] = useState(true);
+  const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
 
@@ -64,7 +65,7 @@ export default function EditorShell({ initialPageId }: Props) {
         children: (prev.tree.children ?? []).filter((n) => n.id !== id),
       },
     }));
-    setSelectedId((s) => (s === id ? null : s));
+    setSelectedId((current) => (current === id ? null : current));
     isDirty.current = true;
   }, []);
 
@@ -149,11 +150,11 @@ export default function EditorShell({ initialPageId }: Props) {
       h: type === 'text' ? 60 : type === 'button' ? 40 : 120,
       props: { ...defaultProps },
     };
-    setTree((t) => ({
-      ...t,
+    setTree((prev) => ({
+      ...prev,
       tree: {
-        ...t.tree,
-        children: [...(t.tree.children ?? []), newNode],
+        ...prev.tree,
+        children: [...(prev.tree.children ?? []), newNode],
       },
     }));
     setSelectedId(newNode.id);
@@ -177,7 +178,6 @@ export default function EditorShell({ initialPageId }: Props) {
     };
   }, [tree, _projectId, currentPageId]);
 
-  // Seitenliste abonnieren und initiale Seite setzen
   useEffect(() => {
     if (!_projectId) return;
     const off = subscribePages(_projectId, (pgs) => {
@@ -201,14 +201,14 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [_projectId, currentPageId]);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (!selectedId) return;
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
-      const target = e.target as HTMLElement | null;
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+      const target = event.target as HTMLElement | null;
       if (target && (target.closest('input, textarea') || target.contentEditable === 'true')) {
         return;
       }
-      e.preventDefault();
+      event.preventDefault();
       onRemove(selectedId);
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -216,8 +216,12 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [selectedId, onRemove]);
 
   const runAiGenerator = useCallback(async () => {
-    if (!(_projectId && aiPrompt.trim())) {
+    if (!aiPrompt.trim()) {
       setAiError('Bitte gib eine Beschreibung ein.');
+      return;
+    }
+    if (!_projectId) {
+      setAiError('Bitte öffne zuerst ein Projekt oder speichere dein aktuelles Projekt, bevor du die KI nutzt.');
       return;
     }
     setAiBusy(true);
@@ -296,106 +300,265 @@ export default function EditorShell({ initialPageId }: Props) {
     URL.revokeObjectURL(url);
   }, [_projectId, pages]);
 
+  const handlePageSelection = useCallback((id: string | null) => {
+    setCurrentPageId(id);
+    const sel = pages.find((p) => p.id === id);
+    if (sel) setTree(sel);
+  }, [pages]);
+
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-screen flex-col bg-[#05070e]">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-80 border-r border-[#222] flex flex-col bg-[#0b0b0f]/90 backdrop-blur-sm">
-          <div className="p-4 border-b border-[#222] space-y-2">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-md bg-white/10 hover:bg-white/20 px-3 py-2 text-sm transition"
-            >
-              <span className="text-lg">←</span>
-              <span>Zurück zum Dashboard</span>
-            </Link>
-            <div className="flex items-center justify-between gap-2">
-              <button
-                className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
-                onClick={() => onExport()}
-                disabled={!pages.length}
-              >Exportieren</button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
-                onClick={() => {
-                  setAiError(null);
-                  setAiOpen(true);
-                }}
-              >KI Generator</button>
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
-                value={currentPageId ?? ''}
-                onChange={(e) => {
-                  const id = e.target.value || null;
-                  setCurrentPageId(id);
-                  const sel = pages.find((p) => p.id === id);
-                  if (sel) setTree(sel);
-                }}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col lg:flex-row">
+          <aside className="hidden w-[19rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex">
+            <div className="space-y-3 border-b border-[#222] p-4">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
               >
-                {pages.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <button
-                className="text-xs px-2 py-1 rounded bg-rose-500/20 border border-rose-500/40 text-rose-200 hover:bg-rose-500/30 disabled:opacity-40"
-                disabled={!_projectId || !currentPageId || pages.length <= 1}
-                onClick={async () => {
-                  if (!(_projectId && currentPageId) || pages.length <= 1) return;
-                  const confirmed = window.confirm('Seite wirklich löschen?');
-                  if (!confirmed) return;
-                  try {
-                    await deletePage(_projectId, currentPageId);
-                    setSelectedId(null);
-                    setCurrentPageId(null);
-                  } catch (err) {
-                    console.error('Seite konnte nicht gelöscht werden', err);
-                  }
-                }}
-              >
-                - Seite
-              </button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
-                onClick={async () => {
-                  if (!_projectId) return;
-                  const idx = pages.length + 1;
-                  const id = await createPage(_projectId, `Seite ${idx}`);
-                  setCurrentPageId(id ?? null);
-                }}
-              >+ Seite</button>
+                <span className="text-lg">←</span>
+                <span>Zurück zum Dashboard</span>
+              </Link>
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  className="rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20 disabled:opacity-40"
+                  onClick={onExport}
+                  disabled={!pages.length}
+                >
+                  Exportieren
+                </button>
+                <button
+                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
+                  onClick={() => {
+                    setAiError(null);
+                    setAiOpen(true);
+                  }}
+                >
+                  KI Generator
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  className="flex-1 rounded border border-[#333] bg-neutral-900 px-2 py-1 text-sm"
+                  value={currentPageId ?? ''}
+                  onChange={(event) => handlePageSelection(event.target.value || null)}
+                >
+                  {pages.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <button
+                  className="rounded border border-rose-500/40 bg-rose-500/20 px-2 py-1 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
+                  disabled={!_projectId || !currentPageId || pages.length <= 1}
+                  onClick={async () => {
+                    if (!(_projectId && currentPageId) || pages.length <= 1) return;
+                    const confirmed = window.confirm('Seite wirklich löschen?');
+                    if (!confirmed) return;
+                    try {
+                      await deletePage(_projectId, currentPageId);
+                      setSelectedId(null);
+                      setCurrentPageId(null);
+                    } catch (err) {
+                      console.error('Seite konnte nicht gelöscht werden', err);
+                    }
+                  }}
+                >
+                  - Seite
+                </button>
+                <button
+                  className="rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20"
+                  onClick={async () => {
+                    if (!_projectId) return;
+                    const idx = pages.length + 1;
+                    const id = await createPage(_projectId, `Seite ${idx}`);
+                    handlePageSelection(id ?? null);
+                  }}
+                >
+                  + Seite
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <CategorizedToolbox onAdd={addNode} />
-          </div>
+            <div className="flex-1 overflow-y-auto">
+              <CategorizedToolbox onAdd={addNode} />
+            </div>
+          </aside>
+
+          <main className="flex flex-1 flex-col overflow-hidden">
+            <div className="border-b border-[#111] bg-[#0b0b0f]/95 px-4 py-3 shadow-inner lg:hidden">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
+                >
+                  <span className="text-lg">←</span>
+                  <span>Dashboard</span>
+                </Link>
+                <button
+                  className="rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20 disabled:opacity-40"
+                  onClick={onExport}
+                  disabled={!pages.length}
+                >
+                  Export
+                </button>
+                <button
+                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
+                  onClick={() => {
+                    setAiError(null);
+                    setAiOpen(true);
+                  }}
+                >
+                  KI
+                </button>
+              </div>
+              <div className="mt-3">
+                <select
+                  className="w-full rounded border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
+                  value={currentPageId ?? ''}
+                  onChange={(event) => handlePageSelection(event.target.value || null)}
+                >
+                  {pages.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  className="flex-1 rounded border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
+                  disabled={!_projectId || !currentPageId || pages.length <= 1}
+                  onClick={async () => {
+                    if (!(_projectId && currentPageId) || pages.length <= 1) return;
+                    const confirmed = window.confirm('Seite wirklich löschen?');
+                    if (!confirmed) return;
+                    try {
+                      await deletePage(_projectId, currentPageId);
+                      setSelectedId(null);
+                      setCurrentPageId(null);
+                    } catch (err) {
+                      console.error('Seite konnte nicht gelöscht werden', err);
+                    }
+                  }}
+                >
+                  - Seite
+                </button>
+                <button
+                  className="flex-1 rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
+                  onClick={async () => {
+                    if (!_projectId) return;
+                    const idx = pages.length + 1;
+                    const id = await createPage(_projectId, `Seite ${idx}`);
+                    handlePageSelection(id ?? null);
+                  }}
+                >
+                  + Seite
+                </button>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <button
+                  type="button"
+                  className={`rounded-lg border px-3 py-2 font-medium transition ${
+                    mobilePanel === 'toolbox'
+                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
+                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                  }`}
+                  onClick={() => setMobilePanel('toolbox')}
+                >
+                  Werkzeuge
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-lg border px-3 py-2 font-medium transition ${
+                    mobilePanel === 'canvas'
+                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
+                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                  }`}
+                  onClick={() => setMobilePanel('canvas')}
+                >
+                  Canvas
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-lg border px-3 py-2 font-medium transition ${
+                    mobilePanel === 'properties'
+                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
+                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                  }`}
+                  onClick={() => setMobilePanel('properties')}
+                >
+                  Eigenschaften
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {mobilePanel === 'toolbox' && (
+                <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
+                  <CategorizedToolbox onAdd={addNode} />
+                </div>
+              )}
+              {mobilePanel === 'canvas' && (
+                <div className="flex flex-1 flex-col overflow-hidden px-4 py-4 lg:hidden">
+                  <div className="flex flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#070a13]/80 p-3 shadow-2xl">
+                    <Canvas
+                      tree={tree}
+                      selectedId={selectedId}
+                      onSelect={setSelectedId}
+                      onRemove={onRemove}
+                      onMove={onMove}
+                      onResize={(id, patch) => updateNode(id, patch)}
+                      onUpdateNode={(id, patch) => updateNode(id, patch)}
+                    />
+                  </div>
+                </div>
+              )}
+              {mobilePanel === 'properties' && (
+                <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                    <PropertiesPanel
+                      node={selectedNode}
+                      onUpdate={(patch) => {
+                        if (selectedId) updateNode(selectedId, patch);
+                      }}
+                      pageBackground={pageBackground}
+                      onChangeBackground={setPageBackground}
+                      onGenerateBackground={generatePageBackground}
+                      onResetBackground={resetPageBackground}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="hidden flex-1 overflow-hidden p-6 lg:flex">
+                <div className="flex flex-1 overflow-hidden rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                  <Canvas
+                    tree={tree}
+                    selectedId={selectedId}
+                    onSelect={setSelectedId}
+                    onRemove={onRemove}
+                    onMove={onMove}
+                    onResize={(id, patch) => updateNode(id, patch)}
+                    onUpdateNode={(id, patch) => updateNode(id, patch)}
+                  />
+                </div>
+              </div>
+            </div>
+          </main>
+
+          <aside className="hidden w-[22rem] flex-shrink-0 flex-col border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex">
+            <div className="flex-1 overflow-y-auto p-4">
+              <PropertiesPanel
+                node={selectedNode}
+                onUpdate={(patch) => {
+                  if (selectedId) updateNode(selectedId, patch);
+                }}
+                pageBackground={pageBackground}
+                onChangeBackground={setPageBackground}
+                onGenerateBackground={generatePageBackground}
+                onResetBackground={resetPageBackground}
+              />
+            </div>
+          </aside>
         </div>
-
-      <div className="flex-1">
-        <Canvas
-          tree={tree}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onRemove={onRemove}
-          onMove={onMove}
-          onResize={(id, patch) => updateNode(id, patch)}
-          onUpdateNode={(id, patch) => updateNode(id, patch)}
-        />
-      </div>
-
-      <div className="w-80 border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm">
-        <PropertiesPanel
-          node={selectedNode}
-          onUpdate={(patch) => {
-            if (selectedId) updateNode(selectedId, patch);
-          }}
-          pageBackground={pageBackground}
-          onChangeBackground={setPageBackground}
-          onGenerateBackground={generatePageBackground}
-          onResetBackground={resetPageBackground}
-        />
-      </div>
       </div>
 
       {aiOpen && (
@@ -404,7 +567,7 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="space-y-2 pb-4">
               <h2 className="text-xl font-semibold text-neutral-100">KI-Seitengenerator</h2>
               <p className="text-sm text-neutral-400">
-                Beschreibe, welche App du brauchst, z.&nbsp;B. „Erstelle mir eine Chat-App mit Registrierung und Übersicht, wer online ist“.
+                Beschreibe, welche App du brauchst, z. B. „Erstelle mir eine Chat-App mit Registrierung und Übersicht, wer online ist“.
               </p>
             </div>
             <textarea
@@ -436,13 +599,17 @@ export default function EditorShell({ initialPageId }: Props) {
                 className="rounded-lg px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100"
                 onClick={() => (!aiBusy ? setAiOpen(false) : null)}
                 disabled={aiBusy}
-              >Abbrechen</button>
+              >
+                Abbrechen
+              </button>
               <button
                 type="button"
                 className="rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-60"
-                onClick={() => runAiGenerator()}
+                onClick={runAiGenerator}
                 disabled={aiBusy}
-              >{aiBusy ? 'Erstelle…' : 'Seiten erzeugen'}</button>
+              >
+                {aiBusy ? 'Erstelle…' : 'Seiten erzeugen'}
+              </button>
             </div>
           </div>
         </div>
@@ -450,3 +617,4 @@ export default function EditorShell({ initialPageId }: Props) {
     </div>
   );
 }
+

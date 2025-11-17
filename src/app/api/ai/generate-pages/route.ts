@@ -42,18 +42,6 @@ const defaultWidths: Record<Node['type'], number> = {
   image: 296,
   input: 296,
   container: 296,
-  chat: 296,
-  'qr-code': 296,
-  'time-tracking': 296,
-  calendar: 296,
-  todo: 296,
-  map: 296,
-  video: 296,
-  table: 296,
-  navbar: 296,
-  dropdown: 296,
-  game: 296,
-  avatar: 296,
 };
 
 const defaultHeights: Record<Node['type'], number> = {
@@ -62,18 +50,6 @@ const defaultHeights: Record<Node['type'], number> = {
   image: 180,
   input: 52,
   container: 160,
-  chat: 200,
-  'qr-code': 160,
-  'time-tracking': 160,
-  calendar: 180,
-  todo: 140,
-  map: 200,
-  video: 180,
-  table: 180,
-  navbar: 80,
-  dropdown: 80,
-  game: 200,
-  avatar: 180,
 };
 
 function makeId() {
@@ -109,6 +85,7 @@ function stackNodes(inputs: StackInput[], options?: { startY?: number; gap?: num
   return inputs.map((input) => {
     const node = makeNode(input.type, {
       y: cursor,
+      x: input.props?.component === 'navbar' ? 24 : undefined,
       w: input.width,
       h: input.height,
       props: input.props,
@@ -130,6 +107,23 @@ function page(name: string, palette: Palette, children: Node[], folder?: string 
       children,
     },
   };
+}
+
+type NavEntry = {
+  label: string;
+  targetPage: string;
+  icon?: string;
+};
+
+function createNavItems(entries: NavEntry[]) {
+  return entries.map((entry) => ({
+    id: makeId(),
+    label: entry.label,
+    action: 'navigate',
+    target: `#${entry.targetPage.toLowerCase()}`,
+    targetPage: entry.targetPage,
+    icon: entry.icon,
+  }));
 }
 
 function buildAuthPages(prompt: string, palette: Palette): GeneratedPage[] {
@@ -312,51 +306,69 @@ function buildHomePage(prompt: string, palette: Palette): GeneratedPage {
   const wantsRegister = /register|registrier|signup/.test(prompt);
   const wantsLogin = /login|signin|anmelden/.test(prompt);
 
-  const nodes = stackNodes(
-    [
-      {
-        type: 'text',
-        props: { text: 'Deine App, erstellt von KI' },
-        style: { fontSize: 30, fontWeight: 600 },
-      },
-      {
-        type: 'text',
-        props: {
-          text: 'Erkunde Seiten, verwalte Benutzer und arbeite in Echtzeit zusammen – alles aus einer Oberfläche.',
+  const navbar = makeNode('container', {
+    y: 32,
+    h: 64,
+    props: {
+      component: 'navbar',
+      navItems: createNavItems([
+        { label: 'Dashboard', targetPage: 'Start', icon: '🏠' },
+        wantsRegister ? { label: 'Registrieren', targetPage: 'Registrierung', icon: '📝' } : null,
+        wantsLogin ? { label: 'Login', targetPage: 'Login', icon: '🔐' } : null,
+        wantsChat ? { label: 'Chat', targetPage: 'Chat', icon: '💬' } : null,
+      ].filter(Boolean) as NavEntry[]),
+    },
+  });
+
+  const nodes = [
+    navbar,
+    ...stackNodes(
+      [
+        {
+          type: 'text',
+          props: { text: 'Deine App, erstellt von KI' },
+          style: { fontSize: 30, fontWeight: 600 },
         },
-        style: { fontSize: 17, lineHeight: 1.5 },
-        height: 96,
-      },
-      wantsRegister
-        ? {
-            type: 'button',
-            props: { label: 'Registrieren', action: 'navigate', target: 'registrierung', targetPage: 'Registrierung' },
-            width: 220,
-          }
-        : null,
-      wantsLogin
-        ? {
-            type: 'button',
-            props: { label: 'Login', action: 'navigate', target: 'login', targetPage: 'Login' },
-            width: 220,
-          }
-        : null,
-      wantsChat
-        ? {
-            type: 'button',
-            props: { label: 'Zum Chat', action: 'navigate', target: 'chat', targetPage: 'Chat' },
-            width: 220,
-          }
-        : null,
-      {
-        type: 'image',
-        props: {
-          src: 'https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=800&q=80',
+        {
+          type: 'text',
+          props: {
+            text: 'Erkunde Seiten, verwalte Benutzer und arbeite in Echtzeit zusammen – alles aus einer Oberfläche.',
+          },
+          style: { fontSize: 17, lineHeight: 1.5 },
+          height: 96,
         },
-        height: 200,
-      },
-    ].filter(Boolean) as StackInput[]
-  );
+        wantsRegister
+          ? {
+              type: 'button',
+              props: { label: 'Registrieren', action: 'navigate', target: 'registrierung', targetPage: 'Registrierung' },
+              width: 220,
+            }
+          : null,
+        wantsLogin
+          ? {
+              type: 'button',
+              props: { label: 'Login', action: 'navigate', target: 'login', targetPage: 'Login' },
+              width: 220,
+            }
+          : null,
+        wantsChat
+          ? {
+              type: 'button',
+              props: { label: 'Zum Chat', action: 'navigate', target: 'chat', targetPage: 'Chat' },
+              width: 220,
+            }
+          : null,
+        {
+          type: 'image',
+          props: {
+            src: 'https://images.unsplash.com/photo-1525182008055-f88b95ff7980?auto=format&fit=crop&w=800&q=80',
+          },
+          height: 200,
+        },
+      ].filter(Boolean) as StackInput[],
+      { startY: 128 }
+    ),
+  ];
 
   return page('Start', palette, nodes, 'Übersicht');
 }
@@ -383,12 +395,310 @@ function buildDefaultPages(palette: Palette): GeneratedPage[] {
   return [page('Dashboard', palette, analyticsNodes, 'Übersicht')];
 }
 
+function buildCompanySuitePages(prompt: string, palette: Palette): GeneratedPage[] {
+  const mentionsCompany = /unternehmen|firma|team|belegschaft|business/.test(prompt);
+  const mentionsProjects = /projekt/.test(prompt);
+  const mentionsTime = /zeit|time|stunden|arbeitszeit|tracking/.test(prompt);
+  const mentionsTasks = /aufgabe|task|todo|verteilung/.test(prompt);
+  const mentionsNotifications = /benachrichtig|notification|hinweis/.test(prompt);
+  const mentionsChat = /chat|kommunikation|messag|talk/.test(prompt);
+
+  if (!(mentionsCompany || mentionsProjects || mentionsTime || mentionsTasks || mentionsChat)) {
+    return [];
+  }
+
+  const navEntries: NavEntry[] = [
+    { label: 'Dashboard', targetPage: 'Unternehmen' },
+  ];
+  if (mentionsTime) navEntries.push({ label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' });
+  if (mentionsTasks) navEntries.push({ label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' });
+  if (mentionsChat) navEntries.push({ label: 'Kommunikation', targetPage: 'Kommunikation', icon: '💬' });
+  if (mentionsProjects) navEntries.push({ label: 'Projekte', targetPage: 'Projekte', icon: '📁' });
+
+  const navbar = makeNode('container', {
+    y: 32,
+    h: 64,
+    props: {
+      component: 'navbar',
+      navItems: createNavItems(navEntries),
+      supportTarget: 'support@unternehmen.app',
+    },
+  });
+
+  const dashboardNodes: Node[] = [
+    navbar,
+    ...stackNodes(
+      [
+        {
+          type: 'text',
+          props: { text: 'Unternehmensübersicht' },
+          style: { fontSize: 28, fontWeight: 600 },
+        },
+        {
+          type: 'text',
+          props: {
+            text: 'Aktuelle Projekte, Team-Updates und Benachrichtigungen auf einen Blick.',
+          },
+          style: { fontSize: 16, lineHeight: 1.5 },
+          height: 72,
+        },
+        mentionsTime
+          ? {
+              type: 'container',
+              props: {
+                component: 'time-tracking',
+                timeTracking: {
+                  entries: [
+                    { id: makeId(), label: 'Projekt Alpha', seconds: 3600, startedAt: new Date().toISOString() },
+                    { id: makeId(), label: 'Projekt Beta', seconds: 5400, endedAt: new Date().toISOString() },
+                  ],
+                },
+              },
+              height: 180,
+            }
+          : null,
+        mentionsTasks
+          ? {
+              type: 'container',
+              props: {
+                component: 'task-manager',
+                tasks: [
+                  { id: makeId(), title: 'Onboarding vorbereiten', done: false },
+                  { id: makeId(), title: 'Projektstatus prüfen', done: true },
+                ],
+              },
+              height: 180,
+            }
+          : null,
+        mentionsNotifications
+          ? {
+              type: 'container',
+              props: {
+                component: 'todo',
+                todoItems: [
+                  { id: makeId(), title: 'HR-Update veröffentlichen', done: false },
+                  { id: makeId(), title: 'Budgetfreigabe prüfen', done: false },
+                ],
+              },
+              height: 160,
+            }
+          : null,
+      ].filter(Boolean) as StackInput[],
+      { startY: 124 }
+    ),
+  ];
+
+  const pages: GeneratedPage[] = [page('Unternehmen', palette, dashboardNodes, 'Übersicht')];
+
+  if (mentionsTime) {
+    const timeNodes = [
+      navbar,
+      ...stackNodes(
+        [
+          {
+            type: 'text',
+            props: { text: 'Zeiterfassung nach Projekt' },
+            style: { fontSize: 26, fontWeight: 600 },
+          },
+          {
+            type: 'container',
+            props: {
+              component: 'time-tracking',
+              timeTracking: {
+                entries: [
+                  {
+                    id: makeId(),
+                    label: 'Projekt Alpha - UX Konzept',
+                    seconds: 7200,
+                    startedAt: new Date(Date.now() - 7200 * 1000).toISOString(),
+                    endedAt: new Date().toISOString(),
+                  },
+                  {
+                    id: makeId(),
+                    label: 'Projekt Beta - API Entwicklung',
+                    seconds: 3600,
+                    startedAt: new Date(Date.now() - 3600 * 1000).toISOString(),
+                  },
+                ],
+              },
+            },
+            height: 220,
+          },
+          mentionsProjects
+            ? {
+                type: 'container',
+                props: {
+                  component: 'folder-structure',
+                  folderTree: [
+                    { id: makeId(), name: 'Projekt Alpha', children: [{ id: makeId(), name: 'Sprint 1' }] },
+                    { id: makeId(), name: 'Projekt Beta', children: [{ id: makeId(), name: 'QA' }] },
+                  ],
+                },
+                height: 200,
+              }
+            : null,
+        ].filter(Boolean) as StackInput[],
+        { startY: 124 }
+      ),
+    ];
+    pages.push(page('Zeiterfassung', palette, timeNodes, 'Team')); // folder Team
+  }
+
+  if (mentionsTasks || mentionsNotifications) {
+    const taskNodes = [
+      navbar,
+      ...stackNodes(
+        [
+          {
+            type: 'text',
+            props: { text: 'Aufgaben & Benachrichtigungen' },
+            style: { fontSize: 26, fontWeight: 600 },
+          },
+          mentionsTasks
+            ? {
+                type: 'container',
+                props: {
+                  component: 'task-manager',
+                  tasks: [
+                    { id: makeId(), title: 'Projekt Kickoff planen', done: false },
+                    { id: makeId(), title: 'Design-Review freigeben', done: false },
+                    { id: makeId(), title: 'Sprintabschluss bestätigen', done: true },
+                  ],
+                },
+                height: 220,
+              }
+            : null,
+          mentionsNotifications
+            ? {
+                type: 'container',
+                props: {
+                  component: 'todo',
+                  todoItems: [
+                    { id: makeId(), title: 'Benachrichtigung: Neue Aufgabe für Alex', done: false },
+                    { id: makeId(), title: 'Reminder: Stundenzettel einreichen', done: false },
+                  ],
+                },
+                height: 180,
+              }
+            : null,
+          {
+            type: 'button',
+            props: { label: 'Neue Aufgabe zuweisen', action: 'support-ticket', supportTarget: 'tasks@unternehmen.app' },
+          },
+        ].filter(Boolean) as StackInput[],
+        { startY: 124 }
+      ),
+    ];
+    pages.push(page('Aufgaben', palette, taskNodes, 'Team'));
+  }
+
+  if (mentionsChat) {
+    const chatNodes = [
+      navbar,
+      ...stackNodes(
+        [
+          {
+            type: 'text',
+            props: { text: 'Teamkommunikation' },
+            style: { fontSize: 26, fontWeight: 600 },
+          },
+          {
+            type: 'container',
+            props: { component: 'chat' },
+            height: 240,
+          },
+          {
+            type: 'button',
+            props: { label: 'Bild hochladen', action: 'upload-photo' },
+          },
+          {
+            type: 'container',
+            props: {
+              component: 'support',
+              supportChannel: 'chat',
+              supportTarget: 'support@unternehmen.app',
+            },
+            height: 160,
+          },
+        ] as StackInput[],
+        { startY: 124 }
+      ),
+    ];
+    pages.push(page('Kommunikation', palette, chatNodes, 'Team'));
+  }
+
+  if (mentionsProjects) {
+    const projectNodes = [
+      navbar,
+      ...stackNodes(
+        [
+          {
+            type: 'text',
+            props: { text: 'Projektübersicht' },
+            style: { fontSize: 26, fontWeight: 600 },
+          },
+          {
+            type: 'container',
+            props: {
+              component: 'folder-structure',
+              folderTree: [
+                {
+                  id: makeId(),
+                  name: 'Projekt Alpha',
+                  children: [
+                    { id: makeId(), name: 'Design' },
+                    { id: makeId(), name: 'Umsetzung' },
+                  ],
+                },
+                {
+                  id: makeId(),
+                  name: 'Projekt Beta',
+                  children: [
+                    { id: makeId(), name: 'Sprint 1' },
+                    { id: makeId(), name: 'Sprint 2' },
+                  ],
+                },
+              ],
+            },
+            height: 240,
+          },
+          mentionsNotifications
+            ? {
+                type: 'container',
+                props: {
+                  component: 'support',
+                  supportChannel: 'ticket',
+                  supportTarget: 'pm@unternehmen.app',
+                  supportTickets: [
+                    {
+                      id: makeId(),
+                      subject: 'Statusupdate Projekt Alpha',
+                      message: 'Bitte Marketing-Slider aktualisieren.',
+                      createdAt: new Date().toISOString(),
+                      channel: 'ticket',
+                    },
+                  ],
+                },
+                height: 180,
+              }
+            : null,
+        ].filter(Boolean) as StackInput[],
+        { startY: 124 }
+      ),
+    ];
+    pages.push(page('Projekte', palette, projectNodes, 'Übersicht'));
+  }
+
+  return pages;
+}
+
 function buildPages(prompt: string): GeneratedPage[] {
   const palette = pickPalette(prompt);
   const result: GeneratedPage[] = [];
 
   result.push(buildHomePage(prompt, palette));
   buildDefaultPages(palette).forEach((p) => result.push(p));
+  buildCompanySuitePages(prompt, palette).forEach((p) => result.push(p));
   buildAuthPages(prompt, palette).forEach((p) => result.push(p));
   buildChatPages(prompt, palette).forEach((p) => result.push(p));
   buildPresencePage(prompt, palette).forEach((p) => result.push(p));

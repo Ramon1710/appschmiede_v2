@@ -64,9 +64,27 @@ export default function ProfilePage() {
       if (user.displayName !== displayName) {
         await updateProfile(user, { displayName: displayName || undefined });
       }
+
+      let emailErrorMessage: string | null = null;
+      let nextEmail = email || null;
       if (email && user.email !== email) {
-        await updateEmail(user, email);
+        try {
+          await updateEmail(user, email);
+        } catch (error) {
+          console.warn('updateEmail failed', error);
+          const firebaseCode = (error as { code?: string }).code;
+          if (firebaseCode === 'auth/requires-recent-login') {
+            emailErrorMessage = 'E-Mail konnte nicht geändert werden. Bitte melde dich kurz ab und wieder an.';
+          } else if (firebaseCode === 'auth/email-already-in-use') {
+            emailErrorMessage = 'Diese E-Mail-Adresse wird bereits verwendet.';
+          } else {
+            emailErrorMessage = 'E-Mail-Adresse konnte nicht aktualisiert werden.';
+          }
+          nextEmail = user.email ?? null;
+          setEmail(user.email ?? '');
+        }
       }
+
       const ref = doc(db, 'users', user.uid);
       await setDoc(
         ref,
@@ -76,12 +94,13 @@ export default function ProfilePage() {
           lastName: lastName || null,
           company: company || null,
           phone: phone || null,
-          email: email || null,
+          email: nextEmail,
           updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
-      setStatus('Änderungen gespeichert.');
+
+      setStatus(emailErrorMessage ? `Gespeichert, aber Hinweis: ${emailErrorMessage}` : 'Änderungen gespeichert.');
     } catch (error) {
       console.error('Profil konnte nicht aktualisiert werden', error);
       const firebaseCode = (error as { code?: string }).code;
