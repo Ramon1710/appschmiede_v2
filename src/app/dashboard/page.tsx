@@ -81,7 +81,7 @@ export default function DashboardPage() {
               </div>
               <div className="relative mx-auto flex h-48 w-48 items-center justify-center md:mx-0 md:h-56 md:w-56">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-500 via-blue-500 to-fuchsia-600 blur-3xl opacity-40" />
-                <Image src="/logo.svg" alt="AppSchmiede Logo" width={220} height={220} priority className="relative drop-shadow-2xl" />
+                <Image src="/logo.png" alt="AppSchmiede Logo" width={220} height={220} priority className="relative drop-shadow-2xl" />
               </div>
             </section>
 

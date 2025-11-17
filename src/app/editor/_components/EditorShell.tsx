@@ -270,6 +270,20 @@ export default function EditorShell({ initialPageId }: Props) {
               <span className="text-lg">←</span>
               <span>Zurück zum Dashboard</span>
             </Link>
+            <div className="flex items-center justify-between gap-2">
+              <button
+                className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
+                onClick={() => onExport()}
+                disabled={!pages.length}
+              >Exportieren</button>
+              <button
+                className="text-xs px-2 py-1 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
+                onClick={() => {
+                  setAiError(null);
+                  setAiOpen(true);
+                }}
+              >KI Generator</button>
+            </div>
             <div className="flex items-center gap-2">
               <select
                 className="flex-1 bg-neutral-900 border border-[#333] rounded px-2 py-1 text-sm"
@@ -301,7 +315,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   }
                 }}
               >
-                Entfernen
+                - Seite
               </button>
               <button
                 className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
@@ -312,18 +326,6 @@ export default function EditorShell({ initialPageId }: Props) {
                   setCurrentPageId(id ?? null);
                 }}
               >+ Seite</button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20"
-                onClick={() => onExport()}
-                disabled={!pages.length}
-              >Exportieren</button>
-              <button
-                className="text-xs px-2 py-1 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
-                onClick={() => {
-                  setAiError(null);
-                  setAiOpen(true);
-                }}
-              >KI Generator</button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">

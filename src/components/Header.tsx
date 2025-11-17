@@ -29,7 +29,7 @@ export default function Header() {
         <Link href="/" className="relative flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-fuchsia-500 blur-lg opacity-40 group-hover:opacity-70 transition" />
-            <Image src="/logo.svg" alt="AppSchmiede" className="relative z-10 drop-shadow-lg" width={64} height={64} priority />
+            <Image src="/logo.png" alt="AppSchmiede" className="relative z-10 drop-shadow-lg" width={64} height={64} priority />
           </div>
           <div className="leading-tight">
             <span className="text-2xl font-bold tracking-tight text-white group-hover:text-cyan-200 transition">AppSchmiede</span>
