@@ -7,7 +7,7 @@ import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
 import Header from '@/components/Header';
-import type { PageTree, Node as EditorNode, NodeType } from '@/lib/editorTypes';
+import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, createPageWithContent } from '@/lib/db-editor';
 
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
@@ -134,244 +134,250 @@ export default function EditorShell({ initialPageId }: Props) {
             };
           }),
         },
-          const applyTemplate = useCallback((template: string) => {
-            const defaultWidths: Record<NodeType, number> = {
-              text: 296,
-              button: 240,
-              image: 296,
-              input: 296,
-              container: 296,
-            };
-
-            const defaultHeights: Record<NodeType, number> = {
-              text: 60,
-              button: 48,
-              image: 200,
-              input: 52,
-              container: 200,
-            };
-
-            const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
-              id: crypto.randomUUID(),
-              type,
-              x: overrides.x ?? 32,
-              y: overrides.y ?? 96,
-              w: overrides.w ?? defaultWidths[type],
-              h: overrides.h ?? defaultHeights[type],
-              props: overrides.props ?? {},
-              style: overrides.style ?? {},
-              children: overrides.children,
-            });
-
-            const stack = (
-              items: Array<{ type: NodeType; node?: Partial<EditorNode> }>,
-              startY = 96,
-              gap = 24
-            ) => {
-              let cursor = startY;
-              return items.map(({ type, node }) => {
-                const next = createNode(type, { ...node, y: node?.y ?? cursor });
-                cursor += (next.h ?? defaultHeights[type]) + gap;
-                return next;
-              });
-            };
-
-            let nodes: EditorNode[] = [];
-            let background: string | undefined;
-
-            if (template === 'login') {
-              background = 'linear-gradient(155deg,#0b1220,#142238)';
-              nodes = stack([
-                {
-                  type: 'text',
-                  node: {
-                    props: { text: 'Willkommen zurück!' },
-                    style: { fontSize: 28, fontWeight: 600 },
-                  },
-                },
-                {
-                  type: 'text',
-                  node: {
-                    h: 72,
-                    style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
-                    props: { text: 'Melde dich mit deinem Konto an, um deine Projekte zu bearbeiten.' },
-                  },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Benutzername oder E-Mail', inputType: 'text' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Passwort', inputType: 'password' } },
-                },
-                {
-                  type: 'button',
-                  node: { props: { label: 'Anmelden', action: 'login' } },
-                },
-                {
-                  type: 'button',
-                  node: {
-                    w: 260,
-                    props: {
-                      label: 'Zur Registrierung',
-                      action: 'navigate',
-                      target: 'registrierung',
-                      targetPage: 'Registrierung',
-                    },
-                  },
-                },
-                {
-                  type: 'button',
-                  node: {
-                    w: 260,
-                    props: {
-                      label: 'Passwort vergessen?',
-                      action: 'navigate',
-                      target: 'passwort',
-                      targetPage: 'Passwort',
-                    },
-                  },
-                },
-              ]);
-            } else if (template === 'register') {
-              background = 'linear-gradient(160deg,#101b32,#172a45)';
-              nodes = stack([
-                {
-                  type: 'text',
-                  node: {
-                    props: { text: 'Registrierung' },
-                    style: { fontSize: 27, fontWeight: 600 },
-                  },
-                },
-                {
-                  type: 'text',
-                  node: {
-                    h: 72,
-                    style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
-                    props: { text: 'Lege dein Konto an und starte direkt mit der App-Erstellung.' },
-                  },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Vorname', inputType: 'text' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Name', inputType: 'text' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Adresse', inputType: 'text' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Unternehmen', inputType: 'text' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'Passwort', inputType: 'password' } },
-                },
-                {
-                  type: 'button',
-                  node: { props: { label: 'Bild hochladen', action: 'upload-photo' } },
-                },
-                {
-                  type: 'button',
-                  node: {
-                    props: {
-                      label: 'Registrieren',
-                      action: 'register',
-                      target: 'login',
-                      targetPage: 'Login',
-                    },
-                  },
-                },
-              ]);
-            } else if (template === 'password-reset') {
-              background = 'linear-gradient(170deg,#0d172b,#1c2d4a)';
-              nodes = stack([
-                {
-                  type: 'text',
-                  node: {
-                    props: { text: 'Passwort zurücksetzen' },
-                    style: { fontSize: 26, fontWeight: 600 },
-                  },
-                },
-                {
-                  type: 'text',
-                  node: {
-                    h: 72,
-                    style: { fontSize: 15, lineHeight: 1.55, color: '#cbd5f5' },
-                    props: {
-                      text: 'Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, um ein neues Passwort festzulegen.',
-                    },
-                  },
-                },
-                {
-                  type: 'input',
-                  node: { props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
-                },
-                {
-                  type: 'button',
-                  node: {
-                    props: {
-                      label: 'Neues Passwort senden',
-                      action: 'reset-password',
-                    },
-                  },
-                },
-                {
-                  type: 'button',
-                  node: {
-                    props: {
-                      label: 'Zurück zum Login',
-                      action: 'navigate',
-                      target: 'login',
-                      targetPage: 'Login',
-                    },
-                  },
-                },
-              ]);
-            }
-
-            if (!nodes.length) {
-              return false;
-            }
-
-            setTree((prev) => ({
-              ...prev,
-              tree: {
-                ...prev.tree,
-                props: {
-                  ...(prev.tree.props ?? {}),
-                  bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
-                },
-                children: nodes,
-              },
-            }));
-            setSelectedId(null);
-            isDirty.current = true;
-            return true;
-          }, []);
-
       }));
-            if (typeof defaultProps.template === 'string') {
-              const applied = applyTemplate(defaultProps.template);
-              if (applied) {
-                return;
-              }
-            }
       isDirty.current = true;
     },
     []
   );
 
-  const addNode = useCallback((type: NodeType, defaultProps: Record<string, unknown> = {}) => {
+  const applyTemplate = useCallback((template: string) => {
+    const defaultWidths: Record<NodeType, number> = {
+      text: 296,
+      button: 240,
+      image: 296,
+      input: 296,
+      container: 296,
+    };
+
+    const defaultHeights: Record<NodeType, number> = {
+      text: 60,
+      button: 48,
+      image: 200,
+      input: 52,
+      container: 200,
+    };
+
+    const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
+      id: crypto.randomUUID(),
+      type,
+      x: overrides.x ?? 32,
+      y: overrides.y ?? 96,
+      w: overrides.w ?? defaultWidths[type],
+      h: overrides.h ?? defaultHeights[type],
+      props: overrides.props ?? {},
+      style: overrides.style ?? {},
+      children: overrides.children,
+    });
+
+    const stack = (
+      items: Array<{ type: NodeType; node?: Partial<EditorNode> }>,
+      startY = 96,
+      gap = 24
+    ) => {
+      let cursor = startY;
+      return items.map(({ type, node }) => {
+        const next = createNode(type, { ...node, y: node?.y ?? cursor });
+        cursor += (next.h ?? defaultHeights[type]) + gap;
+        return next;
+      });
+    };
+
+    let nodes: EditorNode[] = [];
+    let background: string | undefined;
+
+    if (template === 'login') {
+      background = 'linear-gradient(155deg,#0b1220,#142238)';
+      nodes = stack([
+        {
+          type: 'text',
+          node: {
+            props: { text: 'Willkommen zurück!' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+        },
+        {
+          type: 'text',
+          node: {
+            h: 72,
+            style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+            props: { text: 'Melde dich mit deinem Konto an, um deine Projekte zu bearbeiten.' },
+          },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Benutzername oder E-Mail', inputType: 'text' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Passwort', inputType: 'password' } },
+        },
+        {
+          type: 'button',
+          node: { props: { label: 'Anmelden', action: 'login' } },
+        },
+        {
+          type: 'button',
+          node: {
+            w: 260,
+            props: {
+              label: 'Zur Registrierung',
+              action: 'navigate',
+              target: 'registrierung',
+              targetPage: 'Registrierung',
+            },
+          },
+        },
+        {
+          type: 'button',
+          node: {
+            w: 260,
+            props: {
+              label: 'Passwort vergessen?',
+              action: 'navigate',
+              target: 'passwort',
+              targetPage: 'Passwort',
+            },
+          },
+        },
+      ]);
+    } else if (template === 'register') {
+      background = 'linear-gradient(160deg,#101b32,#172a45)';
+      nodes = stack([
+        {
+          type: 'text',
+          node: {
+            props: { text: 'Registrierung' },
+            style: { fontSize: 27, fontWeight: 600 },
+          },
+        },
+        {
+          type: 'text',
+          node: {
+            h: 72,
+            style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+            props: { text: 'Lege dein Konto an und starte direkt mit der App-Erstellung.' },
+          },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Vorname', inputType: 'text' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Name', inputType: 'text' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Adresse', inputType: 'text' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Unternehmen', inputType: 'text' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'Passwort', inputType: 'password' } },
+        },
+        {
+          type: 'button',
+          node: { props: { label: 'Bild hochladen', action: 'upload-photo' } },
+        },
+        {
+          type: 'button',
+          node: {
+            props: {
+              label: 'Registrieren',
+              action: 'register',
+              target: 'login',
+              targetPage: 'Login',
+            },
+          },
+        },
+      ]);
+    } else if (template === 'password-reset') {
+      background = 'linear-gradient(170deg,#0d172b,#1c2d4a)';
+      nodes = stack([
+        {
+          type: 'text',
+          node: {
+            props: { text: 'Passwort zurücksetzen' },
+            style: { fontSize: 26, fontWeight: 600 },
+          },
+        },
+        {
+          type: 'text',
+          node: {
+            h: 72,
+            style: { fontSize: 15, lineHeight: 1.55, color: '#cbd5f5' },
+            props: {
+              text: 'Gib deine E-Mail-Adresse ein. Wir senden dir einen Link, um ein neues Passwort festzulegen.',
+            },
+          },
+        },
+        {
+          type: 'input',
+          node: { props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+        },
+        {
+          type: 'button',
+          node: {
+            props: {
+              label: 'Neues Passwort senden',
+              action: 'reset-password',
+            },
+          },
+        },
+        {
+          type: 'button',
+          node: {
+            props: {
+              label: 'Zurück zum Login',
+              action: 'navigate',
+              target: 'login',
+              targetPage: 'Login',
+            },
+          },
+        },
+      ]);
+    }
+
+    if (!nodes.length) {
+      return false;
+    }
+
+    setTree((prev) => ({
+      ...prev,
+      tree: {
+        ...prev.tree,
+        props: {
+          ...(prev.tree.props ?? {}),
+          bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
+        },
+        children: nodes,
+      },
+    }));
+    setSelectedId(null);
+    isDirty.current = true;
+    return true;
+  }, []);
+
+  const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
+    if (typeof defaultProps.template === 'string') {
+      const applied = applyTemplate(defaultProps.template);
+      if (applied) {
+        return;
+      }
+    }
+
+    const nodeProps = { ...defaultProps } as NodeProps;
+    if ('template' in nodeProps) {
+      delete nodeProps.template;
+    }
+
     const newNode: EditorNode = {
       id: crypto.randomUUID(),
       type,
@@ -379,8 +385,9 @@ export default function EditorShell({ initialPageId }: Props) {
       y: 100,
       w: 240,
       h: type === 'text' ? 60 : type === 'button' ? 40 : 120,
-      props: { ...defaultProps },
+      props: nodeProps,
     };
+
     setTree((prev) => ({
       ...prev,
       tree: {
