@@ -61,11 +61,26 @@ export default function ProfilePage() {
     try {
       setBusy(true);
       setStatus(null);
+      let profileErrorMessage: string | null = null;
+      let emailErrorMessage: string | null = null;
+      let displayNameToPersist = displayName;
+
       if (user.displayName !== displayName) {
-        await updateProfile(user, { displayName: displayName || undefined });
+        try {
+          await updateProfile(user, { displayName: displayName || undefined });
+        } catch (error) {
+          console.warn('updateProfile failed', error);
+          const firebaseCode = (error as { code?: string }).code;
+          if (firebaseCode === 'auth/requires-recent-login') {
+            profileErrorMessage = 'Anzeigename konnte nicht geändert werden. Bitte melde dich kurz ab und wieder an.';
+          } else {
+            profileErrorMessage = 'Anzeigename konnte nicht aktualisiert werden.';
+          }
+          displayNameToPersist = user.displayName ?? '';
+          setDisplayName(displayNameToPersist);
+        }
       }
 
-      let emailErrorMessage: string | null = null;
       let nextEmail = email || null;
       if (email && user.email !== email) {
         try {
@@ -89,7 +104,7 @@ export default function ProfilePage() {
       await setDoc(
         ref,
         {
-          displayName: displayName || null,
+          displayName: displayNameToPersist || null,
           firstName: firstName || null,
           lastName: lastName || null,
           company: company || null,
@@ -100,7 +115,8 @@ export default function ProfilePage() {
         { merge: true }
       );
 
-      setStatus(emailErrorMessage ? `Gespeichert, aber Hinweis: ${emailErrorMessage}` : 'Änderungen gespeichert.');
+      const hints = [profileErrorMessage, emailErrorMessage].filter(Boolean);
+      setStatus(hints.length ? `Gespeichert, aber Hinweis: ${hints.join(' ')}` : 'Änderungen gespeichert.');
     } catch (error) {
       console.error('Profil konnte nicht aktualisiert werden', error);
       const firebaseCode = (error as { code?: string }).code;

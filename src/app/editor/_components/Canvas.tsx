@@ -12,74 +12,6 @@ import type {
   FolderNode,
   NodeProps,
 } from '@/lib/editorTypes';
-
-type CanvasProps = {
-  tree: PageTree;
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
-  onRemove: (id: string) => void;
-  onMove: (id: string, dx: number, dy: number) => void;
-  onResize: (id: string, patch: Partial<EditorNode>) => void;
-  onUpdateNode: (id: string, patch: Partial<EditorNode>) => void;
-};
-
-const BOUNDS = { w: 360, h: 720 };
-
-const createId = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return Math.random().toString(36).slice(2);
-};
-
-const formatDuration = (seconds: number) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return [hours, minutes, secs]
-    .map((part) => part.toString().padStart(2, '0'))
-    .join(' : ');
-};
-
-const isNavbarItemArray = (value: unknown): value is NavbarItem[] =>
-  Array.isArray(value) && value.every((item) => Boolean(item) && typeof item.id === 'string' && typeof item.label === 'string');
-
-const ensureNavItems = (props: NodeProps | undefined): NavbarItem[] => {
-  if (props && isNavbarItemArray(props.navItems)) return props.navItems;
-  return [];
-};
-
-const ensureTaskList = (items: unknown): TaskItem[] =>
-  Array.isArray(items)
-    ? (items.filter((entry): entry is TaskItem => typeof entry === 'object' && entry !== null && typeof (entry as TaskItem).id === 'string') as TaskItem[])
-    : [];
-
-const ensureFolderTree = (nodes: unknown): FolderNode[] =>
-  Array.isArray(nodes)
-    ? (nodes.filter((entry): entry is FolderNode => typeof entry === 'object' && entry !== null && typeof (entry as FolderNode).id === 'string') as FolderNode[])
-    : [];
-
-const ensureTimeEntries = (value: unknown): TimeEntry[] =>
-  Array.isArray(value)
-    ? (value.filter((entry): entry is TimeEntry => typeof entry === 'object' && entry !== null && typeof (entry as TimeEntry).id === 'string') as TimeEntry[])
-    : [];
-
-const ensureAudioNotes = (value: unknown): AudioNote[] =>
-  Array.isArray(value)
-    ? (value.filter((entry): entry is AudioNote => typeof entry === 'object' && entry !== null && typeof (entry as AudioNote).id === 'string' && typeof (entry as AudioNote).url === 'string') as AudioNote[])
-    : [];
-
-const runAction = async (
-  action: ButtonAction | undefined,
-  options: {
-    target?: string;
-    targetPage?: string;
-    url?: string;
-    phoneNumber?: string;
-    emailAddress?: string;
-    supportTarget?: string;
-  } = {}
-) => {
   if (!action) return;
   const target = options.target ?? options.targetPage ?? options.url;
   switch (action) {
@@ -1249,16 +1181,19 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
 
   return (
     <div
-      className="relative mx-auto flex items-center justify-center h-full p-6"
+      className="relative mx-auto flex h-full w-full items-start justify-center overflow-x-hidden overflow-y-auto p-6"
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
+      onMouseDown={(event) => {
+        if (event.currentTarget === event.target) onSelect(null);
+      }}
     >
       <div
-        className="relative rounded-[36px] border border-neutral-800 overflow-hidden shadow-2xl"
+        className="relative shrink-0 overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
         style={{ width: BOUNDS.w, height: BOUNDS.h, background: rootBackground }}
-        onClick={(e) => {
-          if (e.currentTarget === e.target) onSelect(null);
+        onMouseDown={(event) => {
+          if (event.currentTarget === event.target) onSelect(null);
         }}
       >
         {(tree.tree.children ?? []).map((n) => {
