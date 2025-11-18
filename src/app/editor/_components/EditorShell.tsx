@@ -366,10 +366,21 @@ export default function EditorShell({ initialPageId }: Props) {
     });
 
     if (_projectId && currentPageId && nextTree) {
-      void savePage(_projectId, currentPageId, nextTree);
+      const payload = nextTree;
+      (async () => {
+        try {
+          await savePage(_projectId, currentPageId, payload);
+          isDirty.current = false;
+        } catch (err) {
+          console.error('Template save failed', err);
+          isDirty.current = true;
+        }
+      })();
     }
     setSelectedId(null);
-    isDirty.current = true;
+    if (!(_projectId && currentPageId)) {
+      isDirty.current = true;
+    }
     return true;
   }, [_projectId, currentPageId]);
 
