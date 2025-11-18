@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
@@ -28,16 +28,54 @@ type Props = {
 };
 
 export default function EditorShell({ initialPageId }: Props) {
-  const params = useSearchParams();
+  const searchParams = useSearchParams();
+  const routeParams = useParams<{ projectId?: string; pageId?: string }>();
   const [tree, setTree] = useState<PageTree>(emptyTree);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
+  const latestTree = useRef<PageTree>(emptyTree);
   const suppressAutoCreate = useRef(false);
 
   // Unterstütze sowohl ?projectId= als auch ?id=
-  const _projectId = params.get('projectId') ?? params.get('id') ?? null;
-  const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? null);
+  const queryProjectId = searchParams.get('projectId') ?? searchParams.get('id');
+  const paramsProjectId = typeof routeParams?.projectId === 'string' ? routeParams.projectId : null;
+  const _projectId = queryProjectId ?? paramsProjectId ?? null;
+
+  const queryPageId = searchParams.get('pageId') ?? searchParams.get('p');
+  const paramsPageId = typeof routeParams?.pageId === 'string' ? routeParams.pageId : null;
+
+  const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
+    useEffect(() => {
+      latestTree.current = tree;
+    }, [tree]);
+
+    useEffect(() => {
+      const nextResolved = initialPageId ?? paramsPageId ?? queryPageId ?? null;
+      if (!nextResolved) return;
+      setCurrentPageId((prev) => (prev === nextResolved ? prev : nextResolved));
+    }, [initialPageId, paramsPageId, queryPageId]);
+
+    useEffect(() => {
+      return () => {
+        if (saveTimeout.current) {
+          clearTimeout(saveTimeout.current);
+          saveTimeout.current = null;
+        }
+        if (!(_projectId && currentPageId)) return;
+        if (!isDirty.current) return;
+        const snapshot = latestTree.current;
+        (async () => {
+          try {
+            await savePage(_projectId, currentPageId, snapshot);
+            isDirty.current = false;
+          } catch (err) {
+            console.error('Flush before leave failed', err);
+          }
+        })();
+      };
+    }, [_projectId, currentPageId]);
+
   const [pages, setPages] = useState<PageTree[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
@@ -349,6 +387,8 @@ export default function EditorShell({ initialPageId }: Props) {
       return false;
     }
 
+    isDirty.current = true;
+
     let nextTree: PageTree | null = null;
     setTree((prev) => {
       nextTree = {
@@ -367,6 +407,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
     if (_projectId && currentPageId && nextTree) {
       const payload = nextTree;
+      latestTree.current = payload;
       (async () => {
         try {
           await savePage(_projectId, currentPageId, payload);
@@ -378,9 +419,6 @@ export default function EditorShell({ initialPageId }: Props) {
       })();
     }
     setSelectedId(null);
-    if (!(_projectId && currentPageId)) {
-      isDirty.current = true;
-    }
     return true;
   }, [_projectId, currentPageId]);
 
@@ -451,7 +489,9 @@ export default function EditorShell({ initialPageId }: Props) {
         }
       } else {
         const sel = pgs.find((p) => p.id === currentPageId);
-        if (sel) setTree(sel);
+        if (sel && !isDirty.current) {
+          setTree(sel);
+        }
       }
     });
     return () => off();
