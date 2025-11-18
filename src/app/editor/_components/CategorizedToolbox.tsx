@@ -23,8 +23,8 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       icon: '📄',
       items: [
         { type: 'container', label: 'Login-Fenster', icon: '🔐', defaultProps: { template: 'login' } },
-        { type: 'container', label: 'Registrierung', icon: '📝', defaultProps: { template: 'register' } },
-        { type: 'container', label: 'Passwort vergessen', icon: '🔑', defaultProps: { template: 'password-reset' } },
+        { type: 'container', label: 'Registrierungs-Fenster', icon: '📝', defaultProps: { template: 'register' } },
+        { type: 'container', label: 'Passwort-Vergessen-Fenster', icon: '🔑', defaultProps: { template: 'password-reset' } },
       ],
     },
     {

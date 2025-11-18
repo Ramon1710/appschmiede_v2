@@ -349,21 +349,29 @@ export default function EditorShell({ initialPageId }: Props) {
       return false;
     }
 
-    setTree((prev) => ({
-      ...prev,
-      tree: {
-        ...prev.tree,
-        props: {
-          ...(prev.tree.props ?? {}),
-          bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
+    let nextTree: PageTree | null = null;
+    setTree((prev) => {
+      nextTree = {
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: {
+            ...(prev.tree.props ?? {}),
+            bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
+          },
+          children: nodes,
         },
-        children: nodes,
-      },
-    }));
+      };
+      return nextTree;
+    });
+
+    if (_projectId && currentPageId && nextTree) {
+      void savePage(_projectId, currentPageId, nextTree);
+    }
     setSelectedId(null);
     isDirty.current = true;
     return true;
-  }, []);
+  }, [_projectId, currentPageId]);
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
