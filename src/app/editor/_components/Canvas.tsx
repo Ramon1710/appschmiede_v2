@@ -12,6 +12,8 @@ import type {
   FolderNode,
   NodeProps,
 } from '@/lib/editorTypes';
+
+const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) => {
   if (!action) return;
   const target = options.target ?? options.targetPage ?? options.url;
   switch (action) {
