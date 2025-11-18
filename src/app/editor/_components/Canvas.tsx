@@ -89,6 +89,8 @@ const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) 
   }
 };
 
+const BOUNDS = { w: 414, h: 896 } as const;
+
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
     <div className="text-xs uppercase tracking-widest text-indigo-200/70">Navigation</div>

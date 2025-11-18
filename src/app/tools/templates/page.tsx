@@ -6,6 +6,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
+import Header from '@/components/Header';
 
 type Template = {
   id: string;
@@ -446,9 +447,10 @@ export default function TemplatesPage() {
 
   if (!user)
     return (
-      <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-        Bitte anmelden.
-      </main>
+      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
+        <Header />
+        <main className="grid flex-1 place-items-center p-6">Bitte anmelden.</main>
+      </div>
     );
 
   const createFromTemplate = async (tpl: Template) => {
@@ -479,31 +481,34 @@ export default function TemplatesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-3xl font-semibold">Vorlagenbibliothek</h1>
-          <p className="text-sm text-neutral-400">
-            Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt
-            weiter angepasst werden.
-          </p>
-        </header>
-        <div className="grid gap-4 md:grid-cols-3">
-          {templates.map((tpl) => (
-            <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
-              <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
-              <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
-              <button
-                type="button"
-                onClick={() => createFromTemplate(tpl)}
-                className="mt-4 w-full rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/20"
-              >
-                Projekt erstellen
-              </button>
-            </div>
-          ))}
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
+      <Header />
+      <main className="flex-1 p-6">
+        <div className="mx-auto max-w-5xl space-y-6">
+          <header className="space-y-1">
+            <h1 className="text-3xl font-semibold">Vorlagenbibliothek</h1>
+            <p className="text-sm text-neutral-400">
+              Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt
+              weiter angepasst werden.
+            </p>
+          </header>
+          <div className="grid gap-4 md:grid-cols-3">
+            {templates.map((tpl) => (
+              <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
+                <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
+                <button
+                  type="button"
+                  onClick={() => createFromTemplate(tpl)}
+                  className="mt-4 w-full rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/20"
+                >
+                  Projekt erstellen
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
