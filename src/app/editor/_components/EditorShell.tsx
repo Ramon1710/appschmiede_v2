@@ -267,7 +267,7 @@ export default function EditorShell({ initialPageId }: Props) {
   useEffect(() => {
     if (!user?.uid) {
       setProjects([]);
-          <button
+      return;
     }
     const off = subscribeProjects(user.uid, (next) => setProjects(next));
     return () => off();
@@ -281,9 +281,9 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [derivedProjectId, manualProjectId, projects]);
 
-            className={`group relative min-w-[13rem] rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
+  useEffect(() => {
     if (!_projectId || !projects.length) return;
-                ? 'border-white/5 bg-white/5 text-neutral-500'
+    if (projects.some((p) => p.id === _projectId)) return;
     const fallbackId = projects[0]?.id ?? null;
     setManualProjectId(fallbackId);
   }, [_projectId, projects]);
