@@ -80,6 +80,35 @@ const createCompanySuiteTemplate = (): Template => ({
   projectName: 'Unternehmens-App',
   pages: [
     {
+      name: 'Login',
+      folder: 'Onboarding',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
+        children: stack([
+          {
+            type: 'text',
+            props: { text: 'Willkommen zurück in der Unternehmens-App' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+          {
+            type: 'text',
+            h: 84,
+            props: {
+              text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
+            },
+            style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
+          },
+          { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Einloggen', action: 'login' } },
+          { type: 'button', props: { label: 'Passwort vergessen', action: 'reset-password' } },
+          { type: 'button', props: { label: 'Neues Team registrieren', action: 'register' } },
+        ], { startY: 80 }),
+      },
+    },
+    {
       name: 'Unternehmen',
       folder: 'Übersicht',
       tree: {
@@ -281,6 +310,32 @@ const createChatAppTemplate = (): Template => ({
   projectName: 'Teamchat',
   pages: [
     {
+      name: 'Login',
+      folder: 'Onboarding',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(140deg,#050c18,#101b2e)' },
+        children: stack([
+          {
+            type: 'text',
+            props: { text: 'Teamchat Login' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+          {
+            type: 'text',
+            h: 72,
+            style: { fontSize: 15, color: '#cbd5f5', lineHeight: 1.6 },
+            props: { text: 'Melde dich mit deinem Firmenaccount an, um Chats und Supporttickets zu sehen.' },
+          },
+          { type: 'input', props: { placeholder: 'E-Mail', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Login', action: 'login' } },
+          { type: 'button', props: { label: 'Invitations-Link anfordern', action: 'support-ticket' } },
+        ]),
+      },
+    },
+    {
       name: 'Start',
       folder: 'Übersicht',
       tree: {
@@ -376,6 +431,32 @@ const createEventTemplate = (): Template => ({
   description: 'Kalender, Karte, QR-Einlass und Aufgabenliste für dein nächstes Event.',
   projectName: 'Event-App',
   pages: [
+    {
+      name: 'Login',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#030b15,#111f2f)' },
+        children: stack([
+          {
+            type: 'text',
+            props: { text: 'Event Hub Login' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+          {
+            type: 'text',
+            h: 72,
+            style: { fontSize: 15, lineHeight: 1.5, color: '#d8e4ff' },
+            props: { text: 'Greife auf Teilnehmerverwaltung, Check-in und Community-Komponenten zu.' },
+          },
+          { type: 'input', props: { placeholder: 'Event-E-Mail', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Login', action: 'login' } },
+          { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+        ], { startY: 88 }),
+      },
+    },
     {
       name: 'Event',
       folder: 'Events',

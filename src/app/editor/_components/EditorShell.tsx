@@ -185,7 +185,7 @@ export default function EditorShell({ initialPageId }: Props) {
         }
       })();
     };
-  }, [_projectId, currentPageId, applyTreeUpdate]);
+  }, [_projectId, currentPageId]);
 
   const [pages, setPages] = useState<PageTree[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
