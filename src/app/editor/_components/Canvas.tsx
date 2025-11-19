@@ -1256,3 +1256,101 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     </div>
   );
 }
+
+function createId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function formatDuration(seconds: number) {
+  const safeSeconds = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  const mins = Math.floor(safeSeconds / 60).toString().padStart(2, '0');
+  const secs = (safeSeconds % 60).toString().padStart(2, '0');
+  return `${mins}:${secs}`;
+}
+
+function ensureNavItems(props?: NodeProps): NavbarItem[] {
+  const items = Array.isArray(props?.navItems) ? props!.navItems! : [];
+  return items.every((item) => typeof item?.id === 'string')
+    ? items
+    : [
+        {
+          id: createId(),
+          label: 'Dashboard',
+          action: 'navigate',
+          target: '#dashboard',
+        },
+        {
+          id: createId(),
+          label: 'Kontakt',
+          action: 'navigate',
+          target: '#contact',
+        },
+      ];
+}
+
+function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return [
+      {
+        id: createId(),
+        label: 'Demo Task',
+        seconds: 1800,
+        startedAt: new Date(Date.now() - 1800 * 1000).toISOString(),
+        endedAt: new Date().toISOString(),
+      },
+    ];
+  }
+  return entries.map((entry) => ({
+    id: typeof entry.id === 'string' ? entry.id : createId(),
+    label: entry.label ?? 'Task',
+    seconds: typeof entry.seconds === 'number' ? entry.seconds : 0,
+    startedAt: entry.startedAt ?? new Date().toISOString(),
+    endedAt: entry.endedAt,
+  }));
+}
+
+function ensureFolderTree(nodes?: FolderNode[] | null): FolderNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return [
+      {
+        id: createId(),
+        name: 'Projekt A',
+        children: [{ id: createId(), name: 'Sprint 1' }],
+      },
+    ];
+  }
+  return nodes.map((node) => ({
+    id: typeof node.id === 'string' ? node.id : createId(),
+    name: node.name ?? 'Ordner',
+    children: node.children ? ensureFolderTree(node.children) : undefined,
+  }));
+}
+
+function ensureTaskList(list?: TaskItem[] | null): TaskItem[] {
+  if (!Array.isArray(list) || list.length === 0) {
+    return [
+      { id: createId(), title: 'Design finalisieren', done: false },
+      { id: createId(), title: 'Review vorbereiten', done: true },
+    ];
+  }
+  return list.map((item) => ({
+    id: typeof item.id === 'string' ? item.id : createId(),
+    title: item.title ?? 'Aufgabe',
+    done: Boolean(item.done),
+  }));
+}
+
+function ensureAudioNotes(notes?: AudioNote[] | null): AudioNote[] {
+  if (!Array.isArray(notes) || notes.length === 0) {
+    return [];
+  }
+  return notes.map((note) => ({
+    id: typeof note.id === 'string' ? note.id : createId(),
+    label: note.label ?? 'Notiz',
+    createdAt: note.createdAt ?? new Date().toISOString(),
+    url: note.url ?? '',
+  }));
+}
