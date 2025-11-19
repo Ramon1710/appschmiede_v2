@@ -138,6 +138,55 @@ const AI_MENU_ITEMS: AiTool[] = [
   },
 ];
 
+type AppTemplateDefinition = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  template: string;
+  gradient: string;
+};
+
+const APP_TEMPLATES: AppTemplateDefinition[] = [
+  {
+    id: 'tpl-login',
+    title: 'Login',
+    subtitle: 'Authentifizierung',
+    description: 'Formulare mit Passwort-Logik und Buttons.',
+    icon: '🔐',
+    template: 'login',
+    gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
+  },
+  {
+    id: 'tpl-register',
+    title: 'Registrierung',
+    subtitle: 'Onboarding',
+    description: 'Mehrere Eingabefelder und CTA-Buttons.',
+    icon: '📝',
+    template: 'register',
+    gradient: 'from-emerald-500/40 via-cyan-500/20 to-blue-500/40',
+  },
+  {
+    id: 'tpl-password',
+    title: 'Passwort Reset',
+    subtitle: 'Support',
+    description: 'Reset-Erklärung, Eingabefeld & Call-to-Action.',
+    icon: '🔑',
+    template: 'password-reset',
+    gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
+  },
+  {
+    id: 'tpl-chat',
+    title: 'Chat',
+    subtitle: 'Kommunikation',
+    description: 'Chatfenster plus Eingabefeld & Aktionen.',
+    icon: '💬',
+    template: 'chat',
+    gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
+  },
+];
+
 export default function EditorShell({ initialPageId }: Props) {
   const searchParams = useSearchParams();
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
@@ -510,6 +559,46 @@ export default function EditorShell({ initialPageId }: Props) {
               target: 'login',
               targetPage: 'Login',
             },
+          },
+        },
+      ]);
+    } else if (template === 'chat') {
+      background = 'linear-gradient(155deg,#0a1224,#141f3b)';
+      nodes = stack([
+        {
+          type: 'text',
+          node: {
+            props: { text: 'Teamchat' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+        },
+        {
+          type: 'text',
+          node: {
+            h: 72,
+            style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+            props: { text: 'Bleib mit deinem Projektteam verbunden, tausche Sprachnachrichten aus und teile Bilder.' },
+          },
+        },
+        {
+          type: 'container',
+          node: {
+            h: 320,
+            props: { component: 'chat' },
+          },
+        },
+        {
+          type: 'input',
+          node: {
+            h: 56,
+            props: { placeholder: 'Nachricht eingeben...' },
+          },
+        },
+        {
+          type: 'button',
+          node: {
+            w: 180,
+            props: { label: 'Senden', action: 'chat', target: '+491234567890' },
           },
         },
       ]);
@@ -976,6 +1065,42 @@ export default function EditorShell({ initialPageId }: Props) {
                 >
                   Eigenschaften
                 </button>
+              </div>
+            </div>
+
+            <div className="border-b border-[#111]/60 bg-[#05070e]/90 px-4 py-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">App-Vorlagen</p>
+                  <p className="text-xs text-neutral-400">Ein Klick ersetzt den aktuellen Bildschirm mit einer Vorlage.</p>
+                </div>
+                <Link
+                  href="/tools/templates"
+                  className="text-xs font-semibold text-emerald-300 transition hover:text-emerald-200"
+                >
+                  Mehr Vorlagen ansehen →
+                </Link>
+              </div>
+              <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+                {APP_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => applyTemplate(tpl.template)}
+                    className="group relative min-w-[14rem] max-w-sm rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-emerald-400/50 hover:bg-white/10"
+                  >
+                    <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${tpl.gradient} px-3 py-1 text-xs font-semibold text-white`}>
+                      <span>{tpl.icon}</span>
+                      <span>{tpl.subtitle}</span>
+                    </div>
+                    <div className="mt-3 text-lg font-semibold text-white">{tpl.title}</div>
+                    <p className="text-sm text-neutral-300">{tpl.description}</p>
+                    <span className="mt-3 inline-flex items-center text-xs font-semibold text-emerald-300">
+                      Vorlage anwenden
+                      <span className="ml-1 transition group-hover:translate-x-1">→</span>
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
 

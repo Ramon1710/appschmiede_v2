@@ -25,6 +25,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         { type: 'container', label: 'Login-Fenster', icon: '🔐', defaultProps: { template: 'login' } },
         { type: 'container', label: 'Registrierungs-Fenster', icon: '📝', defaultProps: { template: 'register' } },
         { type: 'container', label: 'Passwort-Vergessen-Fenster', icon: '🔑', defaultProps: { template: 'password-reset' } },
+        { type: 'container', label: 'Chat-App', icon: '💬', defaultProps: { template: 'chat' } },
       ],
     },
     {
