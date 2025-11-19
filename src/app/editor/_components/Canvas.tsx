@@ -232,8 +232,10 @@ const TimeTrackingWidget = ({
                   <span className="font-mono text-[11px] text-purple-100">{formatDuration(entry.id === activeEntry?.id ? elapsed : entry.seconds ?? 0)}</span>
                 </div>
                 <div className="text-[10px] text-neutral-500">
-                  {entry.startedAt ? new Date(entry.startedAt).toLocaleString() : 'Gestartet'}
-                  {entry.endedAt ? ` – beendet ${new Date(entry.endedAt).toLocaleString()}` : ' – läuft'}
+                  {entry.startedAt ? new Date(entry.startedAt).toLocaleString?.() ?? new Date(entry.startedAt).toString() : 'Gestartet'}
+                  {entry.endedAt
+                    ? ` – beendet ${new Date(entry.endedAt).toLocaleString?.() ?? new Date(entry.endedAt).toString()}`
+                    : ' – läuft'}
                 </div>
               </div>
             ))
