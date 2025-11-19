@@ -138,55 +138,6 @@ const AI_MENU_ITEMS: AiTool[] = [
   },
 ];
 
-type AppTemplateDefinition = {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  icon: string;
-  template: string;
-  gradient: string;
-};
-
-const APP_TEMPLATES: AppTemplateDefinition[] = [
-  {
-    id: 'tpl-login',
-    title: 'Login',
-    subtitle: 'Authentifizierung',
-    description: 'Formulare mit Passwort-Logik und Buttons.',
-    icon: '🔐',
-    template: 'login',
-    gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
-  },
-  {
-    id: 'tpl-register',
-    title: 'Registrierung',
-    subtitle: 'Onboarding',
-    description: 'Mehrere Eingabefelder und CTA-Buttons.',
-    icon: '📝',
-    template: 'register',
-    gradient: 'from-emerald-500/40 via-cyan-500/20 to-blue-500/40',
-  },
-  {
-    id: 'tpl-password',
-    title: 'Passwort Reset',
-    subtitle: 'Support',
-    description: 'Reset-Erklärung, Eingabefeld & Call-to-Action.',
-    icon: '🔑',
-    template: 'password-reset',
-    gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
-  },
-  {
-    id: 'tpl-chat',
-    title: 'Chat',
-    subtitle: 'Kommunikation',
-    description: 'Chatfenster plus Eingabefeld & Aktionen.',
-    icon: '💬',
-    template: 'chat',
-    gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
-  },
-];
-
 export default function EditorShell({ initialPageId }: Props) {
   const searchParams = useSearchParams();
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
@@ -234,7 +185,7 @@ export default function EditorShell({ initialPageId }: Props) {
         }
       })();
     };
-  }, [_projectId, currentPageId]);
+  }, [_projectId, currentPageId, applyTreeUpdate]);
 
   const [pages, setPages] = useState<PageTree[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
@@ -244,6 +195,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiReplace, setAiReplace] = useState(true);
   const [aiMode, setAiMode] = useState<'app' | 'page'>('app');
   const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
+  const [aiMenuOpen, setAiMenuOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
@@ -264,6 +216,15 @@ export default function EditorShell({ initialPageId }: Props) {
     },
     []
   );
+
+  const openTemplatesWindow = useCallback(() => {
+    const url = '/tools/templates';
+    if (typeof window === 'undefined') return;
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      window.location.href = url;
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -958,56 +919,67 @@ export default function EditorShell({ initialPageId }: Props) {
               </div>
             </div>
             <div className="border-b border-[#111]/60 p-4">
-              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">KI Menü</div>
-              <div className="mt-3 space-y-2">
-                {AI_MENU_ITEMS.map((item) => {
-                  const isActive = item.id === selectedAiTool;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedAiTool(item.id)}
-                      className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-                        isActive
-                          ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
-                          : 'border-white/10 bg-white/5 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-lg" aria-hidden="true">{item.icon}</span>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
-                            <span>{item.label}</span>
-                            {item.status === 'beta' && (
-                              <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
-                            )}
-                            {item.status === 'soon' && (
-                              <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
-                            )}
+              <button
+                type="button"
+                onClick={() => setAiMenuOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400 transition hover:bg-white/10"
+              >
+                <span>KI Menü</span>
+                <span className="text-base text-neutral-300">{aiMenuOpen ? 'v' : '>'}</span>
+              </button>
+              {aiMenuOpen && (
+                <>
+                  <div className="mt-3 space-y-2">
+                    {AI_MENU_ITEMS.map((item) => {
+                      const isActive = item.id === selectedAiTool;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelectedAiTool(item.id)}
+                          className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                            isActive
+                              ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
+                              : 'border-white/10 bg-white/5 hover:bg-white/10'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="text-lg" aria-hidden="true">{item.icon}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
+                                <span>{item.label}</span>
+                                {item.status === 'beta' && (
+                                  <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
+                                )}
+                                {item.status === 'soon' && (
+                                  <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-neutral-400">{item.description}</p>
+                            </div>
                           </div>
-                          <p className="text-xs text-neutral-400">{item.description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              {selectedAiToolData && (
-                <div className="mt-3 rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
-                  <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
-                  <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
-                  {selectedAiToolData.action === 'open-generator' ? (
-                    <button
-                      type="button"
-                      onClick={() => handleAiMenuAction(selectedAiToolData.id)}
-                      className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
-                    >
-                      KI-Seitengenerator öffnen
-                    </button>
-                  ) : (
-                    <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedAiToolData && (
+                    <div className="mt-3 rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
+                      <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
+                      <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
+                      {selectedAiToolData.action === 'open-generator' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleAiMenuAction(selectedAiToolData.id)}
+                          className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
+                        >
+                          KI-Seitengenerator öffnen
+                        </button>
+                      ) : (
+                        <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
+                      )}
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </div>
             <div className="flex-1 overflow-y-auto">
@@ -1138,39 +1110,24 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
 
             <div className="border-b border-[#111]/60 bg-[#05070e]/90 px-4 py-4">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">App-Vorlagen</p>
-                  <p className="text-xs text-neutral-400">Ein Klick ersetzt den aktuellen Bildschirm mit einer Vorlage.</p>
+                  <p className="text-xs text-neutral-400">
+                    Die Vorlagen öffnen sich jetzt in einem eigenen Fenster. Nach der Auswahl startet automatisch der Editor mit dem neuen Projekt.
+                  </p>
                 </div>
-                <Link
-                  href="/tools/templates"
-                  className="text-xs font-semibold text-emerald-300 transition hover:text-emerald-200"
+                <button
+                  type="button"
+                  onClick={openTemplatesWindow}
+                  className="inline-flex items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
                 >
-                  Mehr Vorlagen ansehen →
-                </Link>
+                  Vorlagen-Fenster öffnen
+                </button>
               </div>
-              <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-                {APP_TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    onClick={() => applyTemplate(tpl.template)}
-                    className="group relative min-w-[14rem] max-w-sm rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-emerald-400/50 hover:bg-white/10"
-                  >
-                    <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${tpl.gradient} px-3 py-1 text-xs font-semibold text-white`}>
-                      <span>{tpl.icon}</span>
-                      <span>{tpl.subtitle}</span>
-                    </div>
-                    <div className="mt-3 text-lg font-semibold text-white">{tpl.title}</div>
-                    <p className="text-sm text-neutral-300">{tpl.description}</p>
-                    <span className="mt-3 inline-flex items-center text-xs font-semibold text-emerald-300">
-                      Vorlage anwenden
-                      <span className="ml-1 transition group-hover:translate-x-1">→</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <p className="mt-3 text-[11px] text-neutral-500">
+                Tipp: Du findest die Bibliothek auch jederzeit unter <Link className="underline decoration-dotted" href="/tools/templates">/tools/templates</Link>.
+              </p>
             </div>
 
             <div className="flex flex-1 min-h-0 flex-col overflow-hidden">

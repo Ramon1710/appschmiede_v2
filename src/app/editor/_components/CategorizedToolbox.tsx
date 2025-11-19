@@ -19,16 +19,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
 
   const categories: Category[] = [
     {
-      name: 'Seiten-Vorlagen',
-      icon: '📄',
-      items: [
-        { type: 'container', label: 'Login-Fenster', icon: '🔐', defaultProps: { template: 'login' } },
-        { type: 'container', label: 'Registrierungs-Fenster', icon: '📝', defaultProps: { template: 'register' } },
-        { type: 'container', label: 'Passwort-Vergessen-Fenster', icon: '🔑', defaultProps: { template: 'password-reset' } },
-        { type: 'container', label: 'Chat-App', icon: '💬', defaultProps: { template: 'chat' } },
-      ],
-    },
-    {
       name: 'Allgemeine Buttons',
       icon: '🎨',
       items: [
