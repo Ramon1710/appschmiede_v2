@@ -306,6 +306,8 @@ export default function EditorShell({ initialPageId }: Props) {
     [selectedAiTool]
   );
 
+  const settingsHref = useMemo(() => (_projectId ? `/editor/settings?projectId=${_projectId}` : null), [_projectId]);
+
   const pageBackground = useMemo(() => {
     const raw = tree.tree.props?.bg;
     return typeof raw === 'string' && raw.trim() ? raw : DEFAULT_PAGE_BACKGROUND;
@@ -845,7 +847,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 <span className="text-lg">←</span>
                 <span>Zurück zum Dashboard</span>
               </Link>
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   className="rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20 disabled:opacity-40"
                   onClick={onExport}
@@ -862,6 +864,22 @@ export default function EditorShell({ initialPageId }: Props) {
                 >
                   KI Generator
                 </button>
+                {settingsHref ? (
+                  <Link
+                    href={settingsHref}
+                    className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                  >
+                    ⚙️ Projekt-Einstellungen
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/50"
+                  >
+                    ⚙️ Projekt-Einstellungen
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <select
@@ -988,6 +1006,22 @@ export default function EditorShell({ initialPageId }: Props) {
                 >
                   KI
                 </button>
+                {settingsHref ? (
+                  <Link
+                    href={settingsHref}
+                    className="inline-flex items-center justify-center rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
+                  >
+                    ⚙️ Einstellungen
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs text-neutral-400"
+                  >
+                    ⚙️ Einstellungen
+                  </button>
+                )}
               </div>
               <div className="mt-3">
                 <select
