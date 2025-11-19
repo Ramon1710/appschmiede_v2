@@ -24,7 +24,7 @@ export default function Header() {
   }, [open]);
 
   return (
-    <header className="w-full flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0b0b0f]/95 backdrop-blur-md shadow-lg">
+    <header className="relative z-40 w-full flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0b0b0f]/95 backdrop-blur-md shadow-lg">
       <nav className="flex gap-6 items-center">
         <Link href="/" className="relative flex items-center gap-4 group">
           <div className="relative">
@@ -56,7 +56,7 @@ export default function Header() {
               <span className="hidden sm:inline text-neutral-200">{user.displayName ?? user.email}</span>
             </button>
             {open && (
-              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#10101a] p-3 shadow-2xl">
+              <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#10101a] p-3 shadow-2xl z-50">
                 <div className="px-2 pb-2 text-xs uppercase tracking-widest text-neutral-500">Konto</div>
                 <Link
                   href="/profile"

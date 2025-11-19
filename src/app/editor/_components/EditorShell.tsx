@@ -242,6 +242,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiReplace, setAiReplace] = useState(true);
+  const [aiMode, setAiMode] = useState<'app' | 'page'>('app');
   const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
 
@@ -740,48 +741,82 @@ export default function EditorShell({ initialPageId }: Props) {
       setAiError('Bitte öffne zuerst ein Projekt oder speichere dein aktuelles Projekt, bevor du die KI nutzt.');
       return;
     }
+    if (aiMode === 'page' && !currentPageId) {
+      setAiError('Bitte wähle eine Seite aus, damit die KI sie anpassen kann.');
+      return;
+    }
     setAiBusy(true);
     setAiError(null);
     try {
-      const response = await fetch('/api/ai/generate-pages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt }),
-      });
-      if (!response.ok) {
-        throw new Error('Die KI konnte keine Seiten erzeugen.');
-      }
-      const data = (await response.json()) as { pages?: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>> };
-      if (!data.pages || data.pages.length === 0) {
-        throw new Error('Keine Seiten-Vorschläge gefunden.');
-      }
-
-      const generated = data.pages;
-      suppressAutoCreate.current = aiReplace;
-
-      if (aiReplace) {
-        const idsToRemove = pages.map((p) => p.id).filter((id): id is string => Boolean(id));
-        for (const id of idsToRemove) {
-          await deletePage(_projectId, id);
+      if (aiMode === 'app') {
+        const response = await fetch('/api/ai/generate-pages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: aiPrompt }),
+        });
+        if (!response.ok) {
+          throw new Error('Die KI konnte keine Seiten erzeugen.');
         }
-        setCurrentPageId(null);
-        applyTreeUpdate(() => emptyTree, { markDirty: false });
+        const data = (await response.json()) as { pages?: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>> };
+        if (!data.pages || data.pages.length === 0) {
+          throw new Error('Keine Seiten-Vorschläge gefunden.');
+        }
+
+        const generated = data.pages;
+        suppressAutoCreate.current = aiReplace;
+
+        if (aiReplace) {
+          const idsToRemove = pages.map((p) => p.id).filter((id): id is string => Boolean(id));
+          for (const id of idsToRemove) {
+            await deletePage(_projectId, id);
+          }
+          setCurrentPageId(null);
+          applyTreeUpdate(() => emptyTree, { markDirty: false });
+          setSelectedId(null);
+          isDirty.current = false;
+        }
+
+        const createdIds: string[] = [];
+        for (const pagePayload of generated) {
+          const newId = await createPageWithContent(_projectId, pagePayload);
+          createdIds.push(newId);
+        }
+
+        if (createdIds.length > 0) {
+          setCurrentPageId(createdIds[0]);
+        }
+
+        setAiPrompt('');
+        setAiOpen(false);
+      } else {
+        const response = await fetch('/api/ai/generate-page', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: aiPrompt, pageName: tree.name ?? undefined }),
+        });
+        if (!response.ok) {
+          throw new Error('Die KI konnte die Seite nicht aktualisieren.');
+        }
+        const data = (await response.json()) as { page?: PageTree };
+        if (!data.page || !data.page.tree) {
+          throw new Error('Keine Seitenergebnisse erhalten.');
+        }
+
+        const updatedTree = applyTreeUpdate((prev) => ({
+          ...prev,
+          name: data.page?.name ?? prev.name,
+          tree: data.page?.tree ?? prev.tree,
+        }));
         setSelectedId(null);
-        isDirty.current = false;
-      }
 
-      const createdIds: string[] = [];
-      for (const pagePayload of generated) {
-        const newId = await createPageWithContent(_projectId, pagePayload);
-        createdIds.push(newId);
-      }
+        if (_projectId && currentPageId) {
+          await savePage(_projectId, currentPageId, updatedTree);
+          isDirty.current = false;
+        }
 
-      if (createdIds.length > 0) {
-        setCurrentPageId(createdIds[0]);
+        setAiPrompt('');
+        setAiOpen(false);
       }
-
-      setAiPrompt('');
-      setAiOpen(false);
     } catch (error) {
       console.error('AI generation failed', error);
       setAiError(error instanceof Error ? error.message : 'Unbekannter Fehler bei der KI-Erstellung.');
@@ -789,7 +824,7 @@ export default function EditorShell({ initialPageId }: Props) {
       suppressAutoCreate.current = false;
       setAiBusy(false);
     }
-  }, [_projectId, aiPrompt, aiReplace, pages, applyTreeUpdate]);
+  }, [_projectId, currentPageId, aiPrompt, aiMode, aiReplace, pages, applyTreeUpdate, tree.name]);
 
   const onExport = useCallback(() => {
     if (!(_projectId && pages.length)) {
@@ -1086,7 +1121,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   }`}
                   onClick={() => setMobilePanel('canvas')}
                 >
-                  Canvas
+                  Website Vorschau
                 </button>
                 <button
                   type="button"
@@ -1215,9 +1250,40 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="space-y-2 pb-4">
               <h2 className="text-xl font-semibold text-neutral-100">KI-Seitengenerator</h2>
               <p className="text-sm text-neutral-400">
-                Beschreibe, welche App du brauchst, z. B. „Erstelle mir eine Chat-App mit Registrierung und Übersicht, wer online ist“.
+                Beschreibe, was angepasst werden soll – egal ob komplette App oder nur die aktuelle Seite.
               </p>
             </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                { id: 'app', title: 'Gesamte App', description: 'Erstellt neue Seiten' },
+                { id: 'page', title: 'Aktuelle Seite', description: 'passt den Screen an' },
+              ].map((mode) => {
+                const active = aiMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => {
+                      setAiMode(mode.id as 'app' | 'page');
+                      setAiError(null);
+                    }}
+                    className={`rounded-2xl border px-4 py-3 text-left transition ${
+                      active
+                        ? 'border-emerald-400/60 bg-emerald-500/15 text-white'
+                        : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="text-sm font-semibold">{mode.title}</div>
+                    <p className="text-xs text-neutral-400">{mode.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-neutral-400">
+              {aiMode === 'app'
+                ? 'Erstellt mehrere Seiten und kann dein Projekt ersetzen oder ergänzen.'
+                : 'Bleibt in der aktuellen Seite und ersetzt deren Inhalte durch einen neuen Vorschlag.'}
+            </p>
             <textarea
               value={aiPrompt}
               onChange={(event) => {
@@ -1227,15 +1293,17 @@ export default function EditorShell({ initialPageId }: Props) {
               placeholder="Was soll erstellt werden?"
               className="h-32 w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none"
             />
-            <label className="mt-4 flex items-center gap-2 text-sm text-neutral-300">
-              <input
-                type="checkbox"
-                checked={aiReplace}
-                onChange={(event) => setAiReplace(event.target.checked)}
-                className="h-4 w-4 rounded border-white/20 bg-neutral-900"
-              />
-              Bestehende Seiten ersetzen
-            </label>
+            {aiMode === 'app' && (
+              <label className="mt-4 flex items-center gap-2 text-sm text-neutral-300">
+                <input
+                  type="checkbox"
+                  checked={aiReplace}
+                  onChange={(event) => setAiReplace(event.target.checked)}
+                  className="h-4 w-4 rounded border-white/20 bg-neutral-900"
+                />
+                Bestehende Seiten ersetzen
+              </label>
+            )}
             {aiError && (
               <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
                 {aiError}
@@ -1256,7 +1324,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 onClick={runAiGenerator}
                 disabled={aiBusy}
               >
-                {aiBusy ? 'Erstelle…' : 'Seiten erzeugen'}
+                {aiBusy ? 'Erstelle…' : aiMode === 'app' ? 'App erzeugen' : 'Seite aktualisieren'}
               </button>
             </div>
           </div>
