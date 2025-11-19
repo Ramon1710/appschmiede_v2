@@ -1,7 +1,7 @@
 // path: src/app/editor/_components/PropertiesPanel.tsx
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import type { Node as EditorNode, NodeProps, NodeStyle } from '@/lib/editorTypes';
 
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -25,6 +25,8 @@ export default function PropertiesPanel({
   onResetBackground,
 }: PropertiesPanelProps) {
   const imageFileInput = useRef<HTMLInputElement | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const setFrame = (k: 'x' | 'y' | 'w' | 'h', v: number) =>
     onUpdate({ [k]: Number.isFinite(v) ? v : 0 } as Partial<EditorNode>);
@@ -47,11 +49,31 @@ export default function PropertiesPanel({
     setProps({ bg: gradient });
   };
 
-  const promptImage = () => {
+  const promptImage = async () => {
     const description = window.prompt('Welches Motiv soll das Bild zeigen? Beispiel: "modernes Team im Chat"');
     if (!description) return;
-    const url = `https://source.unsplash.com/featured/800x600/?${encodeURIComponent(description)}`;
-    setProps({ src: url });
+    setImageLoading(true);
+    setImageError(null);
+    try {
+      const response = await fetch('/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: description }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { dataUrl?: string; error?: string };
+      if (!response.ok) {
+        throw new Error(typeof data?.error === 'string' ? data.error : 'Der Bildgenerator antwortet nicht.');
+      }
+      if (!data.dataUrl) {
+        throw new Error('Der Bildgenerator lieferte keine Daten.');
+      }
+      setProps({ src: data.dataUrl, originalFileName: `ai-image-${Date.now()}.png`, aiPrompt: description });
+    } catch (error) {
+      console.error('KI Bildgenerator fehlgeschlagen', error);
+      setImageError(error instanceof Error ? error.message : 'Unbekannter Fehler beim KI Bildgenerator.');
+    } finally {
+      setImageLoading(false);
+    }
   };
 
   const askForPageGradient = () => {
@@ -320,10 +342,20 @@ export default function PropertiesPanel({
                 >Eigenes Bild auswählen</button>
                 <button
                   type="button"
-                  onClick={promptImage}
-                  className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
-                >KI Bild generieren</button>
+                  onClick={() => void promptImage()}
+                  disabled={imageLoading}
+                  className={`flex-1 rounded border px-3 py-1.5 text-xs font-medium transition ${
+                    imageLoading
+                      ? 'cursor-not-allowed border-emerald-400/50 bg-emerald-500/10 text-emerald-200'
+                      : 'border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10'
+                  }`}
+                >{imageLoading ? 'Generiere…' : 'KI Bild generieren'}</button>
               </div>
+              {imageError && (
+                <div className="rounded border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+                  {imageError}
+                </div>
+              )}
               <input
                 ref={imageFileInput}
                 type="file"
