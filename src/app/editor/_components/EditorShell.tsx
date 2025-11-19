@@ -267,7 +267,7 @@ export default function EditorShell({ initialPageId }: Props) {
   useEffect(() => {
     if (!user?.uid) {
       setProjects([]);
-      return;
+          <button
     }
     const off = subscribeProjects(user.uid, (next) => setProjects(next));
     return () => off();
@@ -281,9 +281,9 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [derivedProjectId, manualProjectId, projects]);
 
-  useEffect(() => {
+            className={`group relative min-w-[13rem] rounded-2xl border px-4 py-3 text-left transition disabled:cursor-not-allowed disabled:opacity-40 ${
     if (!_projectId || !projects.length) return;
-    if (projects.some((p) => p.id === _projectId)) return;
+                ? 'border-white/5 bg-white/5 text-neutral-500'
     const fallbackId = projects[0]?.id ?? null;
     setManualProjectId(fallbackId);
   }, [_projectId, projects]);
@@ -300,6 +300,14 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiMenuOpen, setAiMenuOpen] = useState(true);
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
+  const [templateSelectValue, setTemplateSelectValue] = useState('');
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (_projectId && currentPageId) {
+      setTemplateNotice(null);
+    }
+  }, [_projectId, currentPageId]);
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
 
@@ -326,6 +334,8 @@ export default function EditorShell({ initialPageId }: Props) {
       setCurrentPageId(null);
       setPages([]);
       setSelectedId(null);
+      setTemplateSelectValue('');
+      setTemplateNotice(null);
       applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
@@ -339,7 +349,7 @@ export default function EditorShell({ initialPageId }: Props) {
         window.history.replaceState(null, '', url.toString());
       }
     },
-    [applyTreeUpdate, setCurrentPageId, setManualProjectId, setPages, setSelectedId]
+    [applyTreeUpdate, setCurrentPageId, setManualProjectId, setPages, setSelectedId, setTemplateNotice, setTemplateSelectValue]
   );
 
   const openTemplatesWindow = useCallback(() => {
@@ -451,6 +461,16 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const applyTemplate = useCallback((template: string) => {
+    if (!_projectId) {
+      setTemplateNotice('Bitte wähle zuerst ein Projekt oder lege eines im Dashboard an.');
+      return false;
+    }
+    if (!currentPageId) {
+      setTemplateNotice('Seiten werden noch geladen. Bitte einen Moment warten.');
+      return false;
+    }
+    setTemplateNotice(null);
+
     const defaultWidths: Record<NodeType, number> = {
       text: 296,
       button: 240,
@@ -711,6 +731,24 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
 
+    if (!nextTree) return false;
+
+    setPages((prev) => {
+      const existing = prev.find((page) => page.id === currentPageId) ?? null;
+      const updatedPage: PageTree = existing
+        ? { ...existing, tree: nextTree.tree, name: nextTree.name }
+        : {
+            id: currentPageId,
+            name: nextTree.name,
+            tree: nextTree.tree,
+            folder: nextTree.folder ?? null,
+          };
+      if (existing) {
+        return prev.map((page) => (page.id === currentPageId ? updatedPage : page));
+      }
+      return [...prev, updatedPage];
+    });
+
     if (_projectId && currentPageId && nextTree) {
       const payload = nextTree;
       latestTree.current = payload;
@@ -721,12 +759,13 @@ export default function EditorShell({ initialPageId }: Props) {
         } catch (err) {
           console.error('Template save failed', err);
           isDirty.current = true;
+          setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
         }
       })();
     }
     setSelectedId(null);
     return true;
-  }, [_projectId, currentPageId]);
+  }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice]);
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
@@ -956,18 +995,81 @@ export default function EditorShell({ initialPageId }: Props) {
     [setAiError, setAiOpen]
   );
 
+  const templateControlsDisabled = !_projectId || !currentPageId;
+
   const templateContent = (
     <>
       <p className="text-xs text-neutral-400">
         Ersetzt die aktuell geöffnete Seite mit einer kuratierten Vorlage.
       </p>
-      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+      <div className="mt-3 space-y-2">
+        <label className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Dropdown Auswahl</label>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <select
+            className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none disabled:opacity-40"
+            value={templateSelectValue}
+            disabled={templateControlsDisabled}
+            onChange={(event) => {
+              setTemplateSelectValue(event.target.value);
+              if (event.target.value) {
+                setTemplateNotice(null);
+              }
+            }}
+          >
+            <option value="">Vorlage wählen…</option>
+            {APP_TEMPLATES.map((tpl) => (
+              <option key={tpl.id} value={tpl.template}>{tpl.title}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={templateControlsDisabled}
+            onClick={() => {
+              if (!templateSelectValue) {
+                setTemplateNotice('Bitte wähle eine Vorlage aus.');
+                return;
+              }
+              const applied = applyTemplate(templateSelectValue);
+              if (applied) {
+                setTemplateSelectValue('');
+                setTemplateNotice(null);
+              }
+            }}
+            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+              templateControlsDisabled
+                ? 'cursor-not-allowed border-white/10 bg-white/5 text-neutral-500'
+                : 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25'
+            }`}
+          >
+            Dropdown anwenden
+          </button>
+        </div>
+        {templateNotice && (
+          <p className="text-xs text-rose-300">{templateNotice}</p>
+        )}
+      </div>
+      <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
         {APP_TEMPLATES.map((tpl) => (
           <button
             key={tpl.id}
             type="button"
-            onClick={() => applyTemplate(tpl.template)}
-            className="group relative min-w-[13rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-emerald-400/50 hover:bg-white/10"
+            disabled={templateControlsDisabled}
+            onClick={() => {
+              if (templateControlsDisabled) {
+                setTemplateNotice('Bitte öffne oder lade ein Projekt, bevor du Vorlagen nutzt.');
+                return;
+              }
+              const applied = applyTemplate(tpl.template);
+              if (applied) {
+                setTemplateSelectValue('');
+                setTemplateNotice(null);
+              }
+            }}
+            className={`group relative min-w-[13rem] rounded-2xl border px-4 py-3 text-left transition ${
+              templateControlsDisabled
+                ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500'
+                : 'border-white/10 bg-white/5 hover:border-emerald-400/50 hover:bg-white/10'
+            }`}
           >
             <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${tpl.gradient} px-3 py-1 text-[11px] font-semibold text-white`}>
               <span>{tpl.icon}</span>

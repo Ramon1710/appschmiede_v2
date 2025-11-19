@@ -1,11 +1,11 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import useAuth from '@/hooks/useAuth';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { updateEmail, updateProfile } from 'firebase/auth';
+import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 
 interface UserProfileDoc {
   displayName?: string | null;
@@ -27,6 +27,12 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+
+  const canPasswordReauth = useMemo(
+    () => Boolean(user?.providerData?.some((provider) => provider.providerId === 'password')),
+    [user?.providerData]
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -83,21 +89,57 @@ export default function ProfilePage() {
 
       let nextEmail = email || null;
       if (email && user.email !== email) {
-        try {
-          await updateEmail(user, email);
-        } catch (error) {
-          console.warn('updateEmail failed', error);
-          const firebaseCode = (error as { code?: string }).code;
-          if (firebaseCode === 'auth/requires-recent-login') {
-            emailErrorMessage = 'E-Mail konnte nicht geändert werden. Bitte melde dich kurz ab und wieder an.';
-          } else if (firebaseCode === 'auth/email-already-in-use') {
-            emailErrorMessage = 'Diese E-Mail-Adresse wird bereits verwendet.';
+        let skipEmailUpdate = false;
+        if (canPasswordReauth && user.email) {
+          if (!currentPassword) {
+            emailErrorMessage = 'Bitte gib dein aktuelles Passwort ein, um deine E-Mail-Adresse zu ändern.';
+            skipEmailUpdate = true;
           } else {
-            emailErrorMessage = 'E-Mail-Adresse konnte nicht aktualisiert werden.';
+            try {
+              const credential = EmailAuthProvider.credential(user.email, currentPassword);
+              await reauthenticateWithCredential(user, credential);
+            } catch (error) {
+              console.warn('reauthenticateWithCredential failed', error);
+              const firebaseCode = (error as { code?: string }).code;
+              if (firebaseCode === 'auth/wrong-password') {
+                emailErrorMessage = 'Das eingegebene Passwort war nicht korrekt.';
+              } else {
+                emailErrorMessage = 'Authentifizierung fehlgeschlagen. Bitte melde dich kurz ab und wieder an.';
+              }
+              skipEmailUpdate = true;
+            }
           }
+        } else {
+          emailErrorMessage = 'Für dieses Login-Verfahren musst du dich neu anmelden, um die E-Mail zu ändern.';
+          skipEmailUpdate = true;
+        }
+
+        if (!skipEmailUpdate) {
+          try {
+            await updateEmail(user, email);
+          } catch (error) {
+            console.warn('updateEmail failed', error);
+            const firebaseCode = (error as { code?: string }).code;
+            if (firebaseCode === 'auth/requires-recent-login') {
+              emailErrorMessage = 'E-Mail konnte nicht geändert werden. Bitte melde dich kurz ab und wieder an.';
+            } else if (firebaseCode === 'auth/email-already-in-use') {
+              emailErrorMessage = 'Diese E-Mail-Adresse wird bereits verwendet.';
+            } else if (firebaseCode === 'auth/invalid-email') {
+              emailErrorMessage = 'Bitte gib eine gültige E-Mail-Adresse ein.';
+            } else {
+              emailErrorMessage = 'E-Mail-Adresse konnte nicht aktualisiert werden.';
+            }
+            skipEmailUpdate = true;
+          }
+        }
+
+        if (skipEmailUpdate) {
           nextEmail = user.email ?? null;
           setEmail(user.email ?? '');
         }
+        setCurrentPassword('');
+      } else {
+        setCurrentPassword('');
       }
 
       const ref = doc(db, 'users', user.uid);
@@ -213,6 +255,19 @@ export default function ProfilePage() {
                     placeholder="z. B. alex.meyer@example.com"
                   />
                 </div>
+                {canPasswordReauth && (
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Aktuelles Passwort (nur bei E-Mail-Änderung)</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(event) => setCurrentPassword(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-neutral-800 px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none"
+                      placeholder="Passwort eingeben"
+                    />
+                    <p className="mt-1 text-xs text-neutral-500">Dieses Feld brauchst du nur, wenn du deine E-Mail-Adresse anpassen möchtest.</p>
+                  </div>
+                )}
 
                 {status && (
                   <div className="rounded-lg border border-white/10 bg-neutral-800/80 px-3 py-2 text-sm text-neutral-200">
