@@ -9,6 +9,9 @@ import CategorizedToolbox from './CategorizedToolbox';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, createPageWithContent } from '@/lib/db-editor';
+import useAuth from '@/hooks/useAuth';
+import type { Project } from '@/lib/db-projects';
+import { subscribeProjects } from '@/lib/db-projects';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -198,6 +201,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const isDirty = useRef(false);
   const latestTree = useRef<PageTree>(sanitizePage(emptyTree));
   const suppressAutoCreate = useRef(false);
+  const { user } = useAuth();
 
   // Unterstütze sowohl ?projectId= als auch ?id=
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
@@ -212,7 +216,9 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const queryProjectId = searchParams.get('projectId') ?? searchParams.get('id');
   const paramsProjectId = typeof routeParams?.projectId === 'string' ? routeParams.projectId : null;
-  const _projectId = queryProjectId ?? paramsProjectId ?? storedProjectId ?? null;
+  const [manualProjectId, setManualProjectId] = useState<string | null>(null);
+  const derivedProjectId = queryProjectId ?? paramsProjectId ?? storedProjectId ?? null;
+  const _projectId = manualProjectId ?? derivedProjectId ?? null;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -227,6 +233,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const paramsPageId = typeof routeParams?.pageId === 'string' ? routeParams.pageId : null;
 
   const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
+  const [projects, setProjects] = useState<Project[]>([]);
   useEffect(() => {
     latestTree.current = tree;
   }, [tree]);
@@ -256,6 +263,30 @@ export default function EditorShell({ initialPageId }: Props) {
       })();
     };
   }, [_projectId, currentPageId]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setProjects([]);
+      return;
+    }
+    const off = subscribeProjects(user.uid, (next) => setProjects(next));
+    return () => off();
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (derivedProjectId || manualProjectId || !projects.length) return;
+    const fallbackId = projects[0]?.id;
+    if (fallbackId) {
+      setManualProjectId(fallbackId);
+    }
+  }, [derivedProjectId, manualProjectId, projects]);
+
+  useEffect(() => {
+    if (!_projectId || !projects.length) return;
+    if (projects.some((p) => p.id === _projectId)) return;
+    const fallbackId = projects[0]?.id ?? null;
+    setManualProjectId(fallbackId);
+  }, [_projectId, projects]);
 
   const [pages, setPages] = useState<PageTree[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
@@ -287,6 +318,28 @@ export default function EditorShell({ initialPageId }: Props) {
       return nextState ?? latestTree.current;
     },
     []
+  );
+
+  const setProjectId = useCallback(
+    (nextId: string | null) => {
+      setManualProjectId(nextId);
+      setCurrentPageId(null);
+      setPages([]);
+      setSelectedId(null);
+      applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (nextId) {
+          url.searchParams.set('id', nextId);
+        } else {
+          url.searchParams.delete('id');
+        }
+        url.searchParams.delete('p');
+        url.searchParams.delete('pageId');
+        window.history.replaceState(null, '', url.toString());
+      }
+    },
+    [applyTreeUpdate, setCurrentPageId, setManualProjectId, setPages, setSelectedId]
   );
 
   const openTemplatesWindow = useCallback(() => {
@@ -339,6 +392,8 @@ export default function EditorShell({ initialPageId }: Props) {
     () => AI_MENU_ITEMS.find((item) => item.id === selectedAiTool) ?? AI_MENU_ITEMS[0],
     [selectedAiTool]
   );
+
+  const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
 
   const settingsHref = useMemo(() => (_projectId ? `/editor/settings?projectId=${_projectId}` : null), [_projectId]);
 
