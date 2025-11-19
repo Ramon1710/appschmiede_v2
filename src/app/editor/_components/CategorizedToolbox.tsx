@@ -63,7 +63,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       icon: '✨',
       items: [
         { type: 'container', label: 'QR-Code', icon: '📱', defaultProps: { component: 'qr-code' } },
-        { type: 'container', label: 'KI-Chat', icon: '🤖', defaultProps: { component: 'ai-chat' } },
         { type: 'button', label: 'Dark/Light Mode', icon: '🌓', defaultProps: { action: 'toggle-theme' } },
         { type: 'input', label: 'Checkbox', icon: '☑️', defaultProps: { inputType: 'checkbox', label: 'Zustimmen' } },
         { type: 'input', label: 'Datum', icon: '📅', defaultProps: { inputType: 'date' } },

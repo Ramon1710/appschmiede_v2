@@ -10,6 +10,67 @@ import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, createPageWithContent } from '@/lib/db-editor';
 
+type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
+  props?: Record<string, unknown>;
+  style?: Record<string, unknown>;
+  children?: EditorNode[];
+};
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (!value || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+};
+
+const sanitizeValue = (value: unknown): unknown => {
+  if (value === undefined) return undefined;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => sanitizeValue(item))
+      .filter((item) => item !== undefined);
+  }
+  if (isPlainObject(value)) {
+    return sanitizeRecord(value as Record<string, unknown>);
+  }
+  return value;
+};
+
+const sanitizeRecord = (input?: Record<string, unknown> | null): Record<string, unknown> | undefined => {
+  if (!input) return undefined;
+  const entries: Array<[string, unknown]> = [];
+  for (const [key, rawValue] of Object.entries(input)) {
+    const cleaned = sanitizeValue(rawValue);
+    if (cleaned !== undefined) {
+      entries.push([key, cleaned]);
+    }
+  }
+  if (!entries.length) return undefined;
+  return Object.fromEntries(entries);
+};
+
+const sanitizeNode = (node: EditorNode): EditorNode => {
+  const mutable: MutableNode = {
+    id: node.id,
+    type: node.type,
+  };
+  if (node.x !== undefined) mutable.x = node.x;
+  if (node.y !== undefined) mutable.y = node.y;
+  if (node.w !== undefined) mutable.w = node.w;
+  if (node.h !== undefined) mutable.h = node.h;
+  const props = sanitizeRecord(node.props as Record<string, unknown> | undefined);
+  if (props) mutable.props = props;
+  const style = sanitizeRecord(node.style as Record<string, unknown> | undefined);
+  if (style) mutable.style = style;
+  const children = (node.children ?? []).map(sanitizeNode);
+  mutable.children = children;
+  return mutable as EditorNode;
+};
+
+const sanitizePage = (page: PageTree): PageTree => ({
+  ...page,
+  tree: sanitizeNode(page.tree),
+});
+
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
 
 const emptyTree: PageTree = {
@@ -27,14 +88,64 @@ type Props = {
   initialPageId?: string | null;
 };
 
+type AiToolId = 'chat' | 'speaker' | 'calc' | 'image' | 'video';
+
+type AiTool = {
+  id: AiToolId;
+  label: string;
+  icon: string;
+  description: string;
+  status?: 'beta' | 'soon';
+  action?: 'open-generator';
+};
+
+const AI_MENU_ITEMS: AiTool[] = [
+  {
+    id: 'chat',
+    label: 'KI Chat',
+    icon: '💬',
+    description: 'Ideen austauschen und Inhalte generieren lassen.',
+    status: 'soon',
+  },
+  {
+    id: 'speaker',
+    label: 'KI Sprecher',
+    icon: '🎤',
+    description: 'Text-to-Speech Stimmen für Prototypen vorbereiten.',
+    status: 'soon',
+  },
+  {
+    id: 'calc',
+    label: 'KI Berechnung',
+    icon: '🧮',
+    description: 'Smarte Formeln und Automatisierungen testen.',
+    status: 'soon',
+  },
+  {
+    id: 'image',
+    label: 'KI Bildgenerator',
+    icon: '🖼️',
+    description: 'Neue Seitenideen aus Beschreibungen erstellen.',
+    status: 'beta',
+    action: 'open-generator',
+  },
+  {
+    id: 'video',
+    label: 'KI Videogenerator',
+    icon: '🎬',
+    description: 'Onboarding-Videos automatisch skizzieren.',
+    status: 'soon',
+  },
+];
+
 export default function EditorShell({ initialPageId }: Props) {
   const searchParams = useSearchParams();
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
-  const [tree, setTree] = useState<PageTree>(emptyTree);
+  const [tree, setTree] = useState<PageTree>(() => sanitizePage(emptyTree));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
-  const latestTree = useRef<PageTree>(emptyTree);
+  const latestTree = useRef<PageTree>(sanitizePage(emptyTree));
   const suppressAutoCreate = useRef(false);
 
   // Unterstütze sowohl ?projectId= als auch ?id=
@@ -46,35 +157,35 @@ export default function EditorShell({ initialPageId }: Props) {
   const paramsPageId = typeof routeParams?.pageId === 'string' ? routeParams.pageId : null;
 
   const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
-    useEffect(() => {
-      latestTree.current = tree;
-    }, [tree]);
+  useEffect(() => {
+    latestTree.current = tree;
+  }, [tree]);
 
-    useEffect(() => {
-      const nextResolved = initialPageId ?? paramsPageId ?? queryPageId ?? null;
-      if (!nextResolved) return;
-      setCurrentPageId((prev) => (prev === nextResolved ? prev : nextResolved));
-    }, [initialPageId, paramsPageId, queryPageId]);
+  useEffect(() => {
+    const nextResolved = initialPageId ?? paramsPageId ?? queryPageId ?? null;
+    if (!nextResolved) return;
+    setCurrentPageId((prev) => (prev === nextResolved ? prev : nextResolved));
+  }, [initialPageId, paramsPageId, queryPageId]);
 
-    useEffect(() => {
-      return () => {
-        if (saveTimeout.current) {
-          clearTimeout(saveTimeout.current);
-          saveTimeout.current = null;
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+        saveTimeout.current = null;
+      }
+      if (!(_projectId && currentPageId)) return;
+      if (!isDirty.current) return;
+      const snapshot = latestTree.current;
+      (async () => {
+        try {
+          await savePage(_projectId, currentPageId, snapshot);
+          isDirty.current = false;
+        } catch (err) {
+          console.error('Flush before leave failed', err);
         }
-        if (!(_projectId && currentPageId)) return;
-        if (!isDirty.current) return;
-        const snapshot = latestTree.current;
-        (async () => {
-          try {
-            await savePage(_projectId, currentPageId, snapshot);
-            isDirty.current = false;
-          } catch (err) {
-            console.error('Flush before leave failed', err);
-          }
-        })();
-      };
-    }, [_projectId, currentPageId]);
+      })();
+    };
+  }, [_projectId, currentPageId, applyTreeUpdate]);
 
   const [pages, setPages] = useState<PageTree[]>([]);
   const [aiOpen, setAiOpen] = useState(false);
@@ -82,9 +193,27 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiReplace, setAiReplace] = useState(true);
+  const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
+
+  const applyTreeUpdate = useCallback(
+    (updater: (prev: PageTree) => PageTree, options?: { markDirty?: boolean }): PageTree => {
+      let nextState: PageTree | undefined;
+      setTree((prev) => {
+        const updated = sanitizePage(updater(prev));
+        nextState = updated;
+        latestTree.current = updated;
+        return updated;
+      });
+      if (options?.markDirty !== false) {
+        isDirty.current = true;
+      }
+      return nextState ?? latestTree.current;
+    },
+    []
+  );
 
   useEffect(() => {
     return () => {
@@ -96,7 +225,7 @@ export default function EditorShell({ initialPageId }: Props) {
   }, []);
 
   const onRemove = useCallback((id: string) => {
-    setTree((prev) => ({
+    applyTreeUpdate((prev) => ({
       ...prev,
       tree: {
         ...prev.tree,
@@ -104,11 +233,10 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
     setSelectedId((current) => (current === id ? null : current));
-    isDirty.current = true;
-  }, []);
+  }, [applyTreeUpdate]);
 
   const onMove = useCallback((id: string, dx: number, dy: number) => {
-    setTree((prev) => ({
+    applyTreeUpdate((prev) => ({
       ...prev,
       tree: {
         ...prev.tree,
@@ -117,12 +245,16 @@ export default function EditorShell({ initialPageId }: Props) {
         ),
       },
     }));
-    isDirty.current = true;
-  }, []);
+  }, [applyTreeUpdate]);
 
   const selectedNode = useMemo(
     () => (tree.tree.children ?? []).find((n) => n.id === selectedId) ?? null,
     [tree, selectedId]
+  );
+
+  const selectedAiToolData = useMemo(
+    () => AI_MENU_ITEMS.find((item) => item.id === selectedAiTool) ?? AI_MENU_ITEMS[0],
+    [selectedAiTool]
   );
 
   const pageBackground = useMemo(() => {
@@ -132,15 +264,14 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const setPageBackground = useCallback((value: string) => {
     const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND;
-    setTree((prev) => ({
+    applyTreeUpdate((prev) => ({
       ...prev,
       tree: {
         ...prev.tree,
         props: { ...(prev.tree.props ?? {}), bg: next },
       },
     }));
-    isDirty.current = true;
-  }, []);
+  }, [applyTreeUpdate]);
 
   const generatePageBackground = useCallback((description: string) => {
     const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
@@ -158,24 +289,25 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const updateNode = useCallback(
     (id: string, patch: Partial<EditorNode>) => {
-      setTree((prev) => ({
+      applyTreeUpdate((prev) => ({
         ...prev,
         tree: {
           ...prev.tree,
           children: (prev.tree.children ?? []).map((n) => {
             if (n.id !== id) return n;
+            const nextProps = patch.props ? { ...(n.props ?? {}), ...patch.props } : n.props;
+            const nextStyle = patch.style ? { ...(n.style ?? {}), ...patch.style } : n.style;
             return {
               ...n,
               ...patch,
-              props: patch.props ? { ...(n.props ?? {}), ...patch.props } : n.props,
-              style: patch.style ? { ...(n.style ?? {}), ...patch.style } : n.style,
+              props: nextProps,
+              style: nextStyle,
             };
           }),
         },
       }));
-      isDirty.current = true;
     },
-    []
+    [applyTreeUpdate]
   );
 
   const applyTemplate = useCallback((template: string) => {
@@ -387,23 +519,17 @@ export default function EditorShell({ initialPageId }: Props) {
       return false;
     }
 
-    isDirty.current = true;
-
-    let nextTree: PageTree | null = null;
-    setTree((prev) => {
-      nextTree = {
-        ...prev,
-        tree: {
-          ...prev.tree,
-          props: {
-            ...(prev.tree.props ?? {}),
-            bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
-          },
-          children: nodes,
+    const nextTree = applyTreeUpdate((prev) => ({
+      ...prev,
+      tree: {
+        ...prev.tree,
+        props: {
+          ...(prev.tree.props ?? {}),
+          bg: background ?? prev.tree.props?.bg ?? DEFAULT_PAGE_BACKGROUND,
         },
-      };
-      return nextTree;
-    });
+        children: nodes,
+      },
+    }));
 
     if (_projectId && currentPageId && nextTree) {
       const payload = nextTree;
@@ -445,7 +571,7 @@ export default function EditorShell({ initialPageId }: Props) {
       props: nodeProps,
     };
 
-    setTree((prev) => ({
+    applyTreeUpdate((prev) => ({
       ...prev,
       tree: {
         ...prev.tree,
@@ -453,8 +579,7 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
     setSelectedId(newNode.id);
-    isDirty.current = true;
-  }, [applyTemplate]);
+  }, [applyTemplate, applyTreeUpdate]);
 
   useEffect(() => {
     if (!(_projectId && currentPageId)) return;
@@ -479,8 +604,11 @@ export default function EditorShell({ initialPageId }: Props) {
       setPages(pgs);
       if (!currentPageId) {
         if (pgs.length > 0) {
-          setCurrentPageId(pgs[0]?.id ?? null);
-          setTree(pgs[0]);
+          const first = pgs[0];
+          setCurrentPageId(first?.id ?? null);
+          if (first) {
+            applyTreeUpdate(() => first, { markDirty: false });
+          }
         } else if (!suppressAutoCreate.current) {
           (async () => {
             const id = await createPage(_projectId, 'Seite 1');
@@ -490,12 +618,12 @@ export default function EditorShell({ initialPageId }: Props) {
       } else {
         const sel = pgs.find((p) => p.id === currentPageId);
         if (sel && !isDirty.current) {
-          setTree(sel);
+          applyTreeUpdate(() => sel, { markDirty: false });
         }
       }
     });
     return () => off();
-  }, [_projectId, currentPageId]);
+  }, [_projectId, currentPageId, applyTreeUpdate]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -546,8 +674,9 @@ export default function EditorShell({ initialPageId }: Props) {
           await deletePage(_projectId, id);
         }
         setCurrentPageId(null);
-        setTree(emptyTree);
+        applyTreeUpdate(() => emptyTree, { markDirty: false });
         setSelectedId(null);
+        isDirty.current = false;
       }
 
       const createdIds: string[] = [];
@@ -569,7 +698,7 @@ export default function EditorShell({ initialPageId }: Props) {
       suppressAutoCreate.current = false;
       setAiBusy(false);
     }
-  }, [_projectId, aiPrompt, aiReplace, pages]);
+  }, [_projectId, aiPrompt, aiReplace, pages, applyTreeUpdate]);
 
   const onExport = useCallback(() => {
     if (!(_projectId && pages.length)) {
@@ -600,8 +729,18 @@ export default function EditorShell({ initialPageId }: Props) {
   const handlePageSelection = useCallback((id: string | null) => {
     setCurrentPageId(id);
     const sel = pages.find((p) => p.id === id);
-    if (sel) setTree(sel);
-  }, [pages]);
+    if (sel) applyTreeUpdate(() => sel, { markDirty: false });
+  }, [pages, applyTreeUpdate]);
+
+  const handleAiMenuAction = useCallback(
+    (toolId: AiToolId) => {
+      if (toolId === 'image') {
+        setAiError(null);
+        setAiOpen(true);
+      }
+    },
+    [setAiError, setAiOpen]
+  );
 
   return (
     <div className="flex h-screen flex-col bg-[#05070e]">
@@ -675,6 +814,59 @@ export default function EditorShell({ initialPageId }: Props) {
                   + Seite
                 </button>
               </div>
+            </div>
+            <div className="border-b border-[#111]/60 p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-neutral-500">KI Menü</div>
+              <div className="mt-3 space-y-2">
+                {AI_MENU_ITEMS.map((item) => {
+                  const isActive = item.id === selectedAiTool;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedAiTool(item.id)}
+                      className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                        isActive
+                          ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
+                          : 'border-white/10 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg" aria-hidden="true">{item.icon}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
+                            <span>{item.label}</span>
+                            {item.status === 'beta' && (
+                              <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
+                            )}
+                            {item.status === 'soon' && (
+                              <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-neutral-400">{item.description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedAiToolData && (
+                <div className="mt-3 rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
+                  <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
+                  <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
+                  {selectedAiToolData.action === 'open-generator' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleAiMenuAction(selectedAiToolData.id)}
+                      className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
+                    >
+                      KI-Seitengenerator öffnen
+                    </button>
+                  ) : (
+                    <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto">
               <CategorizedToolbox onAdd={addNode} />
