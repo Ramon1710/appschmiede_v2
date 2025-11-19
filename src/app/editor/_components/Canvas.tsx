@@ -1272,23 +1272,31 @@ function formatDuration(seconds: number) {
 }
 
 function ensureNavItems(props?: NodeProps): NavbarItem[] {
-  const items = Array.isArray(props?.navItems) ? props!.navItems! : [];
-  return items.every((item) => typeof item?.id === 'string')
-    ? items
-    : [
-        {
-          id: createId(),
-          label: 'Dashboard',
-          action: 'navigate',
-          target: '#dashboard',
-        },
-        {
-          id: createId(),
-          label: 'Kontakt',
-          action: 'navigate',
-          target: '#contact',
-        },
-      ];
+  if (Array.isArray(props?.navItems) && props.navItems.length > 0) {
+    return props.navItems.map((item) => ({
+      id: typeof item.id === 'string' ? item.id : createId(),
+      label: item.label ?? 'Link',
+      action: item.action ?? 'navigate',
+      target: item.target,
+      targetPage: item.targetPage,
+      url: item.url,
+      icon: item.icon,
+    }));
+  }
+  return [
+    {
+      id: createId(),
+      label: 'Dashboard',
+      action: 'navigate',
+      target: '#dashboard',
+    },
+    {
+      id: createId(),
+      label: 'Kontakt',
+      action: 'navigate',
+      target: '#contact',
+    },
+  ];
 }
 
 function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
@@ -1313,19 +1321,23 @@ function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
 }
 
 function ensureFolderTree(nodes?: FolderNode[] | null): FolderNode[] {
-  if (!Array.isArray(nodes) || nodes.length === 0) {
-    return [
-      {
-        id: createId(),
-        name: 'Projekt A',
-        children: [{ id: createId(), name: 'Sprint 1' }],
-      },
-    ];
-  }
+  const normalized = mapFolderNodes(nodes);
+  if (normalized.length > 0) return normalized;
+  return [
+    {
+      id: createId(),
+      name: 'Projekt A',
+      children: [{ id: createId(), name: 'Sprint 1' }],
+    },
+  ];
+}
+
+function mapFolderNodes(nodes?: FolderNode[] | null): FolderNode[] {
+  if (!Array.isArray(nodes)) return [];
   return nodes.map((node) => ({
     id: typeof node.id === 'string' ? node.id : createId(),
     name: node.name ?? 'Ordner',
-    children: node.children ? ensureFolderTree(node.children) : undefined,
+    children: mapFolderNodes(node.children),
   }));
 }
 
