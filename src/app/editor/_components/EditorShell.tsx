@@ -138,6 +138,57 @@ const AI_MENU_ITEMS: AiTool[] = [
   },
 ];
 
+type AppTemplateDefinition = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  icon: string;
+  template: string;
+  gradient: string;
+};
+
+const APP_TEMPLATES: AppTemplateDefinition[] = [
+  {
+    id: 'tpl-login',
+    title: 'Login',
+    subtitle: 'Authentifizierung',
+    description: 'Formulare mit Passwort-Logik und Buttons.',
+    icon: '🔐',
+    template: 'login',
+    gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
+  },
+  {
+    id: 'tpl-register',
+    title: 'Registrierung',
+    subtitle: 'Onboarding',
+    description: 'Mehrere Eingabefelder und CTA-Buttons.',
+    icon: '📝',
+    template: 'register',
+    gradient: 'from-emerald-500/40 via-cyan-500/20 to-blue-500/40',
+  },
+  {
+    id: 'tpl-password',
+    title: 'Passwort Reset',
+    subtitle: 'Support',
+    description: 'Reset-Erklärung, Eingabefeld & Call-to-Action.',
+    icon: '🔑',
+    template: 'password-reset',
+    gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
+  },
+  {
+    id: 'tpl-chat',
+    title: 'Chat',
+    subtitle: 'Kommunikation',
+    description: 'Chatfenster plus Eingabefeld & Aktionen.',
+    icon: '💬',
+    template: 'chat',
+    gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
+  },
+];
+
+const LAST_PROJECT_KEY = 'appschmiede:last-project';
+
 export default function EditorShell({ initialPageId }: Props) {
   const searchParams = useSearchParams();
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
@@ -149,9 +200,28 @@ export default function EditorShell({ initialPageId }: Props) {
   const suppressAutoCreate = useRef(false);
 
   // Unterstütze sowohl ?projectId= als auch ?id=
+  const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = window.localStorage.getItem(LAST_PROJECT_KEY);
+    if (saved) {
+      setStoredProjectId(saved);
+    }
+  }, []);
+
   const queryProjectId = searchParams.get('projectId') ?? searchParams.get('id');
   const paramsProjectId = typeof routeParams?.projectId === 'string' ? routeParams.projectId : null;
-  const _projectId = queryProjectId ?? paramsProjectId ?? null;
+  const _projectId = queryProjectId ?? paramsProjectId ?? storedProjectId ?? null;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!_projectId) return;
+    window.localStorage.setItem(LAST_PROJECT_KEY, _projectId);
+    if (storedProjectId !== _projectId) {
+      setStoredProjectId(_projectId);
+    }
+  }, [_projectId, storedProjectId]);
 
   const queryPageId = searchParams.get('pageId') ?? searchParams.get('p');
   const paramsPageId = typeof routeParams?.pageId === 'string' ? routeParams.pageId : null;
@@ -195,7 +265,9 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiReplace, setAiReplace] = useState(true);
   const [aiMode, setAiMode] = useState<'app' | 'page'>('app');
   const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
+  const [templatesOpen, setTemplatesOpen] = useState(true);
   const [aiMenuOpen, setAiMenuOpen] = useState(true);
+  const [toolboxOpen, setToolboxOpen] = useState(true);
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
@@ -829,161 +901,265 @@ export default function EditorShell({ initialPageId }: Props) {
     [setAiError, setAiOpen]
   );
 
+  const templateContent = (
+    <>
+      <p className="text-xs text-neutral-400">
+        Ersetzt die aktuell geöffnete Seite mit einer kuratierten Vorlage.
+      </p>
+      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+        {APP_TEMPLATES.map((tpl) => (
+          <button
+            key={tpl.id}
+            type="button"
+            onClick={() => applyTemplate(tpl.template)}
+            className="group relative min-w-[13rem] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:border-emerald-400/50 hover:bg-white/10"
+          >
+            <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${tpl.gradient} px-3 py-1 text-[11px] font-semibold text-white`}>
+              <span>{tpl.icon}</span>
+              <span>{tpl.subtitle}</span>
+            </div>
+            <div className="mt-3 text-lg font-semibold text-white">{tpl.title}</div>
+            <p className="text-sm text-neutral-300">{tpl.description}</p>
+            <span className="mt-2 inline-flex items-center text-[11px] font-semibold text-emerald-300">
+              Vorlage anwenden
+              <span className="ml-1 transition group-hover:translate-x-1">→</span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={openTemplatesWindow}
+        className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
+      >
+        Mehr Vorlagen im eigenen Fenster öffnen
+      </button>
+    </>
+  );
+
+  const aiMenuContent = (
+    <>
+      <div className="space-y-2">
+        {AI_MENU_ITEMS.map((item) => {
+          const isActive = item.id === selectedAiTool;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setSelectedAiTool(item.id)}
+              className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                isActive
+                  ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
+                  : 'border-white/10 bg-white/5 hover:bg-white/10'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-lg" aria-hidden="true">{item.icon}</span>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
+                    <span>{item.label}</span>
+                    {item.status === 'beta' && (
+                      <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
+                    )}
+                    {item.status === 'soon' && (
+                      <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-neutral-400">{item.description}</p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {selectedAiToolData && (
+        <div className="rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
+          <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
+          <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
+          {selectedAiToolData.action === 'open-generator' ? (
+            <button
+              type="button"
+              onClick={() => handleAiMenuAction(selectedAiToolData.id)}
+              className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
+            >
+              KI-Seitengenerator öffnen
+            </button>
+          ) : (
+            <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  const toolboxContent = (
+    <div className="max-h-[440px] overflow-y-auto pr-1">
+      <CategorizedToolbox onAdd={addNode} />
+    </div>
+  );
+
   return (
     <div className="flex h-screen flex-col bg-[#05070e]">
       <Header />
       <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-          <aside className="hidden w-[19rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex">
-            <div className="space-y-3 border-b border-[#222] p-4">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
-              >
-                <span className="text-lg">←</span>
-                <span>Zurück zum Dashboard</span>
-              </Link>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  className="rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20 disabled:opacity-40"
-                  onClick={onExport}
-                  disabled={!pages.length}
-                >
-                  Exportieren
-                </button>
-                <button
-                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
-                  onClick={() => {
-                    setAiError(null);
-                    setAiOpen(true);
-                  }}
-                >
-                  KI Generator
-                </button>
-                {settingsHref ? (
+          <aside className="hidden w-[24rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex">
+            <div className="flex h-full flex-col">
+              <div className="border-b border-[#111]/60 bg-[#0b0b0f]/95 px-4 py-4">
+                <div className="flex items-center justify-between">
                   <Link
-                    href={settingsHref}
-                    className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-200 transition hover:bg-white/10"
                   >
-                    ⚙️ Projekt-Einstellungen
+                    <span className="text-lg" aria-hidden="true">←</span>
+                    <span>Dashboard</span>
                   </Link>
-                ) : (
+                  <span className="text-xs uppercase tracking-[0.35em] text-neutral-500">Editor</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
                   <button
-                    type="button"
-                    disabled
-                    className="rounded border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/50"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs transition hover:bg-white/10 disabled:opacity-40"
+                    onClick={onExport}
+                    disabled={!pages.length}
                   >
-                    ⚙️ Projekt-Einstellungen
+                    Export
                   </button>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  className="flex-1 rounded border border-[#333] bg-neutral-900 px-2 py-1 text-sm"
-                  value={currentPageId ?? ''}
-                  onChange={(event) => handlePageSelection(event.target.value || null)}
-                >
-                  {pages.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <button
-                  className="rounded border border-rose-500/40 bg-rose-500/20 px-2 py-1 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
-                  disabled={!_projectId || !currentPageId || pages.length <= 1}
-                  onClick={async () => {
-                    if (!(_projectId && currentPageId) || pages.length <= 1) return;
-                    const confirmed = window.confirm('Seite wirklich löschen?');
-                    if (!confirmed) return;
-                    try {
-                      await deletePage(_projectId, currentPageId);
-                      setSelectedId(null);
-                      setCurrentPageId(null);
-                    } catch (err) {
-                      console.error('Seite konnte nicht gelöscht werden', err);
-                    }
-                  }}
-                >
-                  - Seite
-                </button>
-                <button
-                  className="rounded bg-white/10 px-2 py-1 text-xs transition hover:bg-white/20"
-                  onClick={async () => {
-                    if (!_projectId) return;
-                    const idx = pages.length + 1;
-                    const id = await createPage(_projectId, `Seite ${idx}`);
-                    handlePageSelection(id ?? null);
-                  }}
-                >
-                  + Seite
-                </button>
-              </div>
-            </div>
-            <div className="border-b border-[#111]/60 p-4">
-              <button
-                type="button"
-                onClick={() => setAiMenuOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-lg border border-white/5 bg-white/5 px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.2em] text-neutral-400 transition hover:bg-white/10"
-              >
-                <span>KI Menü</span>
-                <span className="text-base text-neutral-300">{aiMenuOpen ? 'v' : '>'}</span>
-              </button>
-              {aiMenuOpen && (
-                <>
-                  <div className="mt-3 space-y-2">
-                    {AI_MENU_ITEMS.map((item) => {
-                      const isActive = item.id === selectedAiTool;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setSelectedAiTool(item.id)}
-                          className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-                            isActive
-                              ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
-                              : 'border-white/10 bg-white/5 hover:bg-white/10'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <span className="text-lg" aria-hidden="true">{item.icon}</span>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
-                                <span>{item.label}</span>
-                                {item.status === 'beta' && (
-                                  <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
-                                )}
-                                {item.status === 'soon' && (
-                                  <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
-                                )}
-                              </div>
-                              <p className="text-xs text-neutral-400">{item.description}</p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <button
+                    className="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
+                    onClick={() => {
+                      setAiError(null);
+                      setAiOpen(true);
+                    }}
+                  >
+                    KI
+                  </button>
+                  {settingsHref ? (
+                    <Link
+                      href={settingsHref}
+                      className="inline-flex flex-1 items-center justify-center rounded border border-white/10 bg-white/5 px-3 py-2 text-xs transition hover:bg-white/10"
+                    >
+                      ⚙️ Einstellungen
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs text-neutral-400"
+                    >
+                      ⚙️ Einstellungen
+                    </button>
+                  )}
+                </div>
+                <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
+                  <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? 'Projekt wählen'}</div>
+                  <p className="text-xs text-neutral-400">{project?.description ?? 'Keine Beschreibung'}</p>
+                  <div className="mt-3">
+                    <select
+                      className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
+                      value={_projectId ?? ''}
+                      onChange={(event) => setProjectId(event.target.value || null)}
+                    >
+                      <option value="">Projekt auswählen</option>
+                      {projects.map((projectOption) => (
+                        <option key={projectOption.id ?? 'none'} value={projectOption.id ?? ''}>
+                          {projectOption.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  {selectedAiToolData && (
-                    <div className="mt-3 rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
-                      <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
-                      <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
-                      {selectedAiToolData.action === 'open-generator' ? (
-                        <button
-                          type="button"
-                          onClick={() => handleAiMenuAction(selectedAiToolData.id)}
-                          className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
-                        >
-                          KI-Seitengenerator öffnen
-                        </button>
-                      ) : (
-                        <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
-                      )}
+                  {pages.length > 0 && (
+                    <div className="mt-2">
+                      <select
+                        className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
+                        value={currentPageId ?? ''}
+                        onChange={(event) => handlePageSelection(event.target.value || null)}
+                      >
+                        {pages.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
                     </div>
                   )}
-                </>
-              )}
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <CategorizedToolbox onAdd={addNode} />
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      className="flex-1 rounded border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
+                      disabled={!_projectId || !currentPageId || pages.length <= 1}
+                      onClick={async () => {
+                        if (!(_projectId && currentPageId) || pages.length <= 1) return;
+                        const confirmed = window.confirm('Seite wirklich löschen?');
+                        if (!confirmed) return;
+                        try {
+                          await deletePage(_projectId, currentPageId);
+                          setSelectedId(null);
+                          setCurrentPageId(null);
+                        } catch (err) {
+                          console.error('Seite konnte nicht gelöscht werden', err);
+                        }
+                      }}
+                    >
+                      - Seite
+                    </button>
+                    <button
+                      className="flex-1 rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
+                      onClick={async () => {
+                        if (!_projectId) return;
+                        const idx = pages.length + 1;
+                        const id = await createPage(_projectId, `Seite ${idx}`);
+                        handlePageSelection(id ?? null);
+                      }}
+                    >
+                      + Seite
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-4">
+                <div className="space-y-4">
+                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <button
+                      type="button"
+                      onClick={() => setTemplatesOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between text-left"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">App-Vorlagen</p>
+                        <p className="text-sm font-semibold text-neutral-100">Schnellstart für Login, Chat & mehr</p>
+                      </div>
+                      <span className="text-xl text-neutral-400">{templatesOpen ? '−' : '+'}</span>
+                    </button>
+                    {templatesOpen && <div className="mt-4 space-y-3">{templateContent}</div>}
+                  </section>
+                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <button
+                      type="button"
+                      onClick={() => setAiMenuOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between text-left"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">KI Menü</p>
+                        <p className="text-sm font-semibold text-neutral-100">Generatoren & Automationen</p>
+                      </div>
+                      <span className="text-xl text-neutral-400">{aiMenuOpen ? '−' : '+'}</span>
+                    </button>
+                    {aiMenuOpen && <div className="mt-4 space-y-3">{aiMenuContent}</div>}
+                  </section>
+                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <button
+                      type="button"
+                      onClick={() => setToolboxOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between text-left"
+                    >
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Werkzeuge</p>
+                        <p className="text-sm font-semibold text-neutral-100">UI-Bausteine & Komponenten</p>
+                      </div>
+                      <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
+                    </button>
+                    {toolboxOpen && <div className="mt-4">{toolboxContent}</div>}
+                  </section>
+                </div>
+              </div>
             </div>
           </aside>
 
@@ -1112,9 +1288,9 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="border-b border-[#111]/60 bg-[#05070e]/90 px-4 py-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">App-Vorlagen</p>
+                  <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Vorlagen & Bibliothek</p>
                   <p className="text-xs text-neutral-400">
-                    Die Vorlagen öffnen sich jetzt in einem eigenen Fenster. Nach der Auswahl startet automatisch der Editor mit dem neuen Projekt.
+                    Öffne links die Sektion „App-Vorlagen“, um Login-, Chat- oder Support-Screens direkt in dein Projekt zu laden. Alternativ kannst du die große Bibliothek separat starten.
                   </p>
                 </div>
                 <button
@@ -1122,11 +1298,11 @@ export default function EditorShell({ initialPageId }: Props) {
                   onClick={openTemplatesWindow}
                   className="inline-flex items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
                 >
-                  Vorlagen-Fenster öffnen
+                  Bibliothek öffnen
                 </button>
               </div>
               <p className="mt-3 text-[11px] text-neutral-500">
-                Tipp: Du findest die Bibliothek auch jederzeit unter <Link className="underline decoration-dotted" href="/tools/templates">/tools/templates</Link>.
+                Tipp: Du findest die Sammlung auch jederzeit unter <Link className="underline decoration-dotted" href="/tools/templates">/tools/templates</Link>.
               </p>
             </div>
 
