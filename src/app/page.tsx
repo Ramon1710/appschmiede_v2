@@ -48,16 +48,18 @@ export default function HomePage() {
               key={index}
               className="flex h-56 flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-center text-xs text-neutral-200"
             >
-                <Link
-                  href="/login"
-                  className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
-                >
-                  Bereits registriert? Login
-                </Link>
-              </div>
+              <Link
+                href="/login"
+                className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
+              >
+                Bereits registriert? Login
+              </Link>
+              <p className="mt-3 text-[11px] text-white/70">Jetzt im Dashboard weiterbauen</p>
             </div>
-          </section>
+          ))}
+        </aside>
 
+        <div className="flex-1 space-y-6">
           <section className="grid gap-5 lg:grid-cols-3">
             {highlights.map((item) => (
               <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
