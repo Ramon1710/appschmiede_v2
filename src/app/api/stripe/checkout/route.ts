@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { Stripe } from 'stripe';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import { COIN_PACKAGES, PLAN_CONFIG, type CoinPackageKey } from '@/config/billing';
 import type { AppPlanId, AppUserProfile } from '@/types/user';
 import { db } from '@/lib/firebase';
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       } satisfies Stripe.Checkout.SessionCreateParams;
     }
 
-    const session = await stripe.checkout.sessions.create(params);
+    const session = await getStripe().checkout.sessions.create(params);
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error: any) {
     console.error('Stripe Checkout Fehler', error);

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import type { CoinPackageKey } from '@/config/billing';
 import { COIN_PACKAGES, getPlanConfig } from '@/config/billing';
 import type { AppPlanId } from '@/types/user';
@@ -9,7 +8,13 @@ import { activatePlan, claimStripeEvent, creditCoins, finalizeStripeEvent } from
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function handleCheckoutSession(session: Stripe.Checkout.Session) {
+type StripeMetadata = Record<string, string | null | undefined>;
+type StripeCheckoutSession = { metadata?: StripeMetadata };
+type StripeInvoicePayload = {
+  subscription?: string | { id: string } | null;
+};
+
+async function handleCheckoutSession(session: StripeCheckoutSession) {
   const metadata = session.metadata ?? {};
   const uid = metadata.uid;
   const kind = metadata.kind;
@@ -31,12 +36,13 @@ async function handleCheckoutSession(session: Stripe.Checkout.Session) {
   }
 }
 
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentSucceeded(invoice: StripeInvoicePayload) {
   if (!invoice.subscription) return;
   const subscriptionId =
     typeof invoice.subscription === 'string' ? invoice.subscription : invoice.subscription.id;
   if (!subscriptionId) return;
 
+  const stripe = getStripe() as any;
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const uid = subscription.metadata?.uid;
   const planId = subscription.metadata?.planId as AppPlanId | undefined;
@@ -55,7 +61,8 @@ export async function POST(request: Request) {
     }
 
     const rawBody = await request.text();
-    let event: Stripe.Event;
+    const stripe = getStripe() as any;
+    let event: any;
     try {
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (error) {
@@ -71,10 +78,10 @@ export async function POST(request: Request) {
     try {
       switch (event.type) {
         case 'checkout.session.completed':
-          await handleCheckoutSession(event.data.object as Stripe.Checkout.Session);
+          await handleCheckoutSession(event.data.object as StripeCheckoutSession);
           break;
         case 'invoice.payment_succeeded':
-          await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+          await handleInvoicePaymentSucceeded(event.data.object as StripeInvoicePayload);
           break;
         default:
           break;
