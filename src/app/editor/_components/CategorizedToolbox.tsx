@@ -26,6 +26,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         { type: 'button', label: 'Button', icon: '🔘' },
         { type: 'input', label: 'Eingabefeld', icon: '📥' },
         { type: 'image', label: 'Bild', icon: '🖼️' },
+        { type: 'container', label: 'KI-Chat', icon: '🤖', defaultProps: { component: 'ai-chat' } },
       ],
     },
     {

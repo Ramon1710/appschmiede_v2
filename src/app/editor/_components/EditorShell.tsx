@@ -8,7 +8,7 @@ import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
-import { savePage, subscribePages, createPage, deletePage, createPageWithContent } from '@/lib/db-editor';
+import { savePage, subscribePages, createPage, deletePage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
@@ -87,59 +87,19 @@ const emptyTree: PageTree = {
   },
 };
 
+const hashPage = (page?: PageTree | null): string => {
+  if (!page) return '';
+  return JSON.stringify({
+    id: page.id ?? '',
+    name: page.name ?? '',
+    folder: page.folder ?? null,
+    tree: page.tree ?? emptyTree.tree,
+  });
+};
+
 type Props = {
   initialPageId?: string | null;
 };
-
-type AiToolId = 'chat' | 'speaker' | 'calc' | 'image' | 'video';
-
-type AiTool = {
-  id: AiToolId;
-  label: string;
-  icon: string;
-  description: string;
-  status?: 'beta' | 'soon';
-  action?: 'open-generator';
-};
-
-const AI_MENU_ITEMS: AiTool[] = [
-  {
-    id: 'chat',
-    label: 'KI Chat',
-    icon: '💬',
-    description: 'Ideen austauschen und Inhalte generieren lassen.',
-    status: 'soon',
-  },
-  {
-    id: 'speaker',
-    label: 'KI Sprecher',
-    icon: '🎤',
-    description: 'Text-to-Speech Stimmen für Prototypen vorbereiten.',
-    status: 'soon',
-  },
-  {
-    id: 'calc',
-    label: 'KI Berechnung',
-    icon: '🧮',
-    description: 'Smarte Formeln und Automatisierungen testen.',
-    status: 'soon',
-  },
-  {
-    id: 'image',
-    label: 'KI Bildgenerator',
-    icon: '🖼️',
-    description: 'Neue Seitenideen aus Beschreibungen erstellen.',
-    status: 'beta',
-    action: 'open-generator',
-  },
-  {
-    id: 'video',
-    label: 'KI Videogenerator',
-    icon: '🎬',
-    description: 'Onboarding-Videos automatisch skizzieren.',
-    status: 'soon',
-  },
-];
 
 type AppTemplateDefinition = {
   id: string;
@@ -200,8 +160,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
   const latestTree = useRef<PageTree>(sanitizePage(emptyTree));
-  const suppressAutoCreate = useRef(false);
-  const { user } = useAuth();
+  const pendingSyncHash = useRef<string | null>(null);
+  const { user, loading } = useAuth();
 
   // Unterstütze sowohl ?projectId= als auch ?id=
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
@@ -256,6 +216,7 @@ export default function EditorShell({ initialPageId }: Props) {
       (async () => {
         try {
           await savePage(_projectId, currentPageId, snapshot);
+          pendingSyncHash.current = hashPage(snapshot);
           isDirty.current = false;
         } catch (err) {
           console.error('Flush before leave failed', err);
@@ -293,11 +254,9 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [aiReplace, setAiReplace] = useState(true);
-  const [aiMode, setAiMode] = useState<'app' | 'page'>('app');
-  const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
+  
   const [toolboxOpen, setToolboxOpen] = useState(true);
-  const [toolboxTab, setToolboxTab] = useState<'components' | 'templates' | 'ai'>('components');
+  const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
   const [templateSelectValue, setTemplateSelectValue] = useState('');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
@@ -336,6 +295,8 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateSelectValue('');
       setTemplateNotice(null);
       applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
+      pendingSyncHash.current = null;
+      isDirty.current = false;
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
         if (nextId) {
@@ -395,11 +356,6 @@ export default function EditorShell({ initialPageId }: Props) {
   const selectedNode = useMemo(
     () => (tree.tree.children ?? []).find((n) => n.id === selectedId) ?? null,
     [tree, selectedId]
-  );
-
-  const selectedAiToolData = useMemo(
-    () => AI_MENU_ITEMS.find((item) => item.id === selectedAiTool) ?? AI_MENU_ITEMS[0],
-    [selectedAiTool]
   );
 
   const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
@@ -754,6 +710,7 @@ export default function EditorShell({ initialPageId }: Props) {
       (async () => {
         try {
           await savePage(_projectId, currentPageId, payload);
+          pendingSyncHash.current = hashPage(payload);
           isDirty.current = false;
         } catch (err) {
           console.error('Template save failed', err);
@@ -805,6 +762,7 @@ export default function EditorShell({ initialPageId }: Props) {
     saveTimeout.current = setTimeout(async () => {
       try {
         await savePage(_projectId, currentPageId, tree);
+        pendingSyncHash.current = hashPage(tree);
         isDirty.current = false;
         console.log('✅ Autosave successful');
       } catch (err) {
@@ -826,8 +784,10 @@ export default function EditorShell({ initialPageId }: Props) {
           setCurrentPageId(first?.id ?? null);
           if (first) {
             applyTreeUpdate(() => first, { markDirty: false });
+            pendingSyncHash.current = null;
+            isDirty.current = false;
           }
-        } else if (!suppressAutoCreate.current) {
+        } else {
           (async () => {
             const id = await createPage(_projectId, 'Seite 1');
             setCurrentPageId(id);
@@ -835,7 +795,19 @@ export default function EditorShell({ initialPageId }: Props) {
         }
       } else {
         const sel = pgs.find((p) => p.id === currentPageId);
-        if (sel && !isDirty.current) {
+        if (!sel) return;
+        const expectedHash = pendingSyncHash.current;
+        const incomingHash = hashPage(sel);
+        if (expectedHash) {
+          if (incomingHash !== expectedHash) {
+            return;
+          }
+          pendingSyncHash.current = null;
+          isDirty.current = false;
+          applyTreeUpdate(() => sel, { markDirty: false });
+          return;
+        }
+        if (!isDirty.current) {
           applyTreeUpdate(() => sel, { markDirty: false });
         }
       }
@@ -867,90 +839,46 @@ export default function EditorShell({ initialPageId }: Props) {
       setAiError('Bitte öffne zuerst ein Projekt oder speichere dein aktuelles Projekt, bevor du die KI nutzt.');
       return;
     }
-    if (aiMode === 'page' && !currentPageId) {
+    if (!currentPageId) {
       setAiError('Bitte wähle eine Seite aus, damit die KI sie anpassen kann.');
       return;
     }
     setAiBusy(true);
     setAiError(null);
     try {
-      if (aiMode === 'app') {
-        const response = await fetch('/api/ai/generate-pages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: aiPrompt }),
-        });
-        if (!response.ok) {
-          throw new Error('Die KI konnte keine Seiten erzeugen.');
-        }
-        const data = (await response.json()) as { pages?: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>> };
-        if (!data.pages || data.pages.length === 0) {
-          throw new Error('Keine Seiten-Vorschläge gefunden.');
-        }
-
-        const generated = data.pages;
-        suppressAutoCreate.current = aiReplace;
-
-        if (aiReplace) {
-          const idsToRemove = pages.map((p) => p.id).filter((id): id is string => Boolean(id));
-          for (const id of idsToRemove) {
-            await deletePage(_projectId, id);
-          }
-          setCurrentPageId(null);
-          applyTreeUpdate(() => emptyTree, { markDirty: false });
-          setSelectedId(null);
-          isDirty.current = false;
-        }
-
-        const createdIds: string[] = [];
-        for (const pagePayload of generated) {
-          const newId = await createPageWithContent(_projectId, pagePayload);
-          createdIds.push(newId);
-        }
-
-        if (createdIds.length > 0) {
-          setCurrentPageId(createdIds[0]);
-        }
-
-        setAiPrompt('');
-        setAiOpen(false);
-      } else {
-        const response = await fetch('/api/ai/generate-page', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: aiPrompt, pageName: tree.name ?? undefined }),
-        });
-        if (!response.ok) {
-          throw new Error('Die KI konnte die Seite nicht aktualisieren.');
-        }
-        const data = (await response.json()) as { page?: PageTree };
-        if (!data.page || !data.page.tree) {
-          throw new Error('Keine Seitenergebnisse erhalten.');
-        }
-
-        const updatedTree = applyTreeUpdate((prev) => ({
-          ...prev,
-          name: data.page?.name ?? prev.name,
-          tree: data.page?.tree ?? prev.tree,
-        }));
-        setSelectedId(null);
-
-        if (_projectId && currentPageId) {
-          await savePage(_projectId, currentPageId, updatedTree);
-          isDirty.current = false;
-        }
-
-        setAiPrompt('');
-        setAiOpen(false);
+      const response = await fetch('/api/ai/generate-page', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt, pageName: tree.name ?? undefined }),
+      });
+      if (!response.ok) {
+        throw new Error('Die KI konnte die Seite nicht aktualisieren.');
       }
+      const data = (await response.json()) as { page?: PageTree };
+      if (!data.page || !data.page.tree) {
+        throw new Error('Keine Seitenergebnisse erhalten.');
+      }
+
+      const updatedTree = applyTreeUpdate((prev) => ({
+        ...prev,
+        name: data.page?.name ?? prev.name,
+        tree: data.page?.tree ?? prev.tree,
+      }));
+      setSelectedId(null);
+
+      await savePage(_projectId, currentPageId, updatedTree);
+      pendingSyncHash.current = hashPage(updatedTree);
+      isDirty.current = false;
+
+      setAiPrompt('');
+      setAiOpen(false);
     } catch (error) {
       console.error('AI generation failed', error);
       setAiError(error instanceof Error ? error.message : 'Unbekannter Fehler bei der KI-Erstellung.');
     } finally {
-      suppressAutoCreate.current = false;
       setAiBusy(false);
     }
-  }, [_projectId, currentPageId, aiPrompt, aiMode, aiReplace, pages, applyTreeUpdate, tree.name]);
+  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name]);
 
   const onExport = useCallback(() => {
     if (!(_projectId && pages.length)) {
@@ -981,18 +909,12 @@ export default function EditorShell({ initialPageId }: Props) {
   const handlePageSelection = useCallback((id: string | null) => {
     setCurrentPageId(id);
     const sel = pages.find((p) => p.id === id);
-    if (sel) applyTreeUpdate(() => sel, { markDirty: false });
+    if (sel) {
+      applyTreeUpdate(() => sel, { markDirty: false });
+      pendingSyncHash.current = null;
+      isDirty.current = false;
+    }
   }, [pages, applyTreeUpdate]);
-
-  const handleAiMenuAction = useCallback(
-    (toolId: AiToolId) => {
-      if (toolId === 'image') {
-        setAiError(null);
-        setAiOpen(true);
-      }
-    },
-    [setAiError, setAiOpen]
-  );
 
   const templateControlsDisabled = !_projectId || !currentPageId;
 
@@ -1093,66 +1015,53 @@ export default function EditorShell({ initialPageId }: Props) {
     </>
   );
 
-  const aiMenuContent = (
-    <>
-      <div className="space-y-2">
-        {AI_MENU_ITEMS.map((item) => {
-          const isActive = item.id === selectedAiTool;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setSelectedAiTool(item.id)}
-              className={`w-full rounded-xl border px-3 py-2 text-left transition ${
-                isActive
-                  ? 'border-emerald-400/60 bg-emerald-500/15 shadow-inner'
-                  : 'border-white/10 bg-white/5 hover:bg-white/10'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-lg" aria-hidden="true">{item.icon}</span>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-sm font-semibold text-neutral-100">
-                    <span>{item.label}</span>
-                    {item.status === 'beta' && (
-                      <span className="text-[10px] uppercase tracking-wide text-emerald-300">Beta</span>
-                    )}
-                    {item.status === 'soon' && (
-                      <span className="text-[10px] uppercase tracking-wide text-neutral-400">Bald</span>
-                    )}
-                  </div>
-                  <p className="text-xs text-neutral-400">{item.description}</p>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-      {selectedAiToolData && (
-        <div className="rounded-xl border border-emerald-400/40 bg-[#0b1512] p-3 shadow-lg">
-          <p className="text-sm font-semibold text-neutral-100">{selectedAiToolData.label}</p>
-          <p className="mt-1 text-xs text-neutral-400">{selectedAiToolData.description}</p>
-          {selectedAiToolData.action === 'open-generator' ? (
-            <button
-              type="button"
-              onClick={() => handleAiMenuAction(selectedAiToolData.id)}
-              className="mt-3 inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition hover:from-emerald-400 hover:to-cyan-400"
-            >
-              KI-Seitengenerator öffnen
-            </button>
-          ) : (
-            <p className="mt-3 text-[11px] uppercase tracking-wide text-neutral-500">In Vorbereitung</p>
-          )}
-        </div>
-      )}
-    </>
-  );
-
   const toolboxContent = (
     <div className="max-h-[440px] overflow-y-auto pr-1">
       <CategorizedToolbox onAdd={addNode} />
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#05070e] text-white">
+        <Header />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <p className="text-sm text-neutral-400">Lade Benutzerstatus…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#05070e] text-white">
+        <Header />
+        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+          <div className="space-y-4">
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Editor</p>
+            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Bitte anmelden</h1>
+            <p className="text-base text-neutral-200">
+              Der Editor steht nur angemeldeten Accounts zur Verfügung. Melde dich an, um deine Projekte zu laden oder neue Apps zu erstellen.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 text-sm">
+            <Link
+              href="/login"
+              className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:from-cyan-400 hover:to-blue-400"
+            >
+              Zum Login
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
+            >
+              Noch kein Konto? Registrieren
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col bg-[#05070e]">
@@ -1249,6 +1158,8 @@ export default function EditorShell({ initialPageId }: Props) {
                           await deletePage(_projectId, currentPageId);
                           setSelectedId(null);
                           setCurrentPageId(null);
+                          pendingSyncHash.current = null;
+                          isDirty.current = false;
                         } catch (err) {
                           console.error('Seite konnte nicht gelöscht werden', err);
                         }
@@ -1286,16 +1197,15 @@ export default function EditorShell({ initialPageId }: Props) {
                     </button>
                     {toolboxOpen && (
                       <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                        <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                           {[
                             { id: 'components', label: 'Bausteine' },
                             { id: 'templates', label: 'Vorlagen' },
-                            { id: 'ai', label: 'KI' },
                           ].map((tab) => (
                             <button
                               key={tab.id}
                               type="button"
-                              onClick={() => setToolboxTab(tab.id as 'components' | 'templates' | 'ai')}
+                              onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
                               className={`rounded-lg border px-3 py-2 transition ${
                                 toolboxTab === tab.id
                                   ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
@@ -1309,7 +1219,6 @@ export default function EditorShell({ initialPageId }: Props) {
                         <div>
                           {toolboxTab === 'components' && <div>{toolboxContent}</div>}
                           {toolboxTab === 'templates' && <div className="space-y-3">{templateContent}</div>}
-                          {toolboxTab === 'ai' && <div className="space-y-3">{aiMenuContent}</div>}
                         </div>
                       </div>
                     )}
@@ -1385,6 +1294,8 @@ export default function EditorShell({ initialPageId }: Props) {
                       await deletePage(_projectId, currentPageId);
                       setSelectedId(null);
                       setCurrentPageId(null);
+                      pendingSyncHash.current = null;
+                      isDirty.current = false;
                     } catch (err) {
                       console.error('Seite konnte nicht gelöscht werden', err);
                     }
@@ -1445,16 +1356,15 @@ export default function EditorShell({ initialPageId }: Props) {
               {mobilePanel === 'toolbox' && (
                 <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
                   <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
-                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                    <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: 'Bausteine' },
                         { id: 'templates', label: 'Vorlagen' },
-                        { id: 'ai', label: 'KI' },
                       ].map((tab) => (
                         <button
                           key={tab.id}
                           type="button"
-                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates' | 'ai')}
+                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
                           className={`rounded-lg border px-3 py-2 transition ${
                             toolboxTab === tab.id
                               ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
@@ -1468,7 +1378,6 @@ export default function EditorShell({ initialPageId }: Props) {
                     <div className="mt-4 space-y-3">
                       {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
                       {toolboxTab === 'templates' && templateContent}
-                      {toolboxTab === 'ai' && aiMenuContent}
                     </div>
                   </div>
                 </div>
@@ -1547,36 +1456,8 @@ export default function EditorShell({ initialPageId }: Props) {
                 Beschreibe, was angepasst werden soll – egal ob komplette App oder nur die aktuelle Seite.
               </p>
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {[
-                { id: 'app', title: 'Gesamte App', description: 'Erstellt neue Seiten' },
-                { id: 'page', title: 'Aktuelle Seite', description: 'passt den Screen an' },
-              ].map((mode) => {
-                const active = aiMode === mode.id;
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    onClick={() => {
-                      setAiMode(mode.id as 'app' | 'page');
-                      setAiError(null);
-                    }}
-                    className={`rounded-2xl border px-4 py-3 text-left transition ${
-                      active
-                        ? 'border-emerald-400/60 bg-emerald-500/15 text-white'
-                        : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="text-sm font-semibold">{mode.title}</div>
-                    <p className="text-xs text-neutral-400">{mode.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-xs text-neutral-400">
-              {aiMode === 'app'
-                ? 'Erstellt mehrere Seiten und kann dein Projekt ersetzen oder ergänzen.'
-                : 'Bleibt in der aktuellen Seite und ersetzt deren Inhalte durch einen neuen Vorschlag.'}
+            <p className="text-sm text-neutral-300">
+              Die KI aktualisiert ausschließlich die aktuell geöffnete Seite. Beschreibe kurz, was angepasst oder ergänzt werden soll – Layout, Texte, Abschnitte oder Call-to-Actions.
             </p>
             <textarea
               value={aiPrompt}
@@ -1587,17 +1468,6 @@ export default function EditorShell({ initialPageId }: Props) {
               placeholder="Was soll erstellt werden?"
               className="h-32 w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none"
             />
-            {aiMode === 'app' && (
-              <label className="mt-4 flex items-center gap-2 text-sm text-neutral-300">
-                <input
-                  type="checkbox"
-                  checked={aiReplace}
-                  onChange={(event) => setAiReplace(event.target.checked)}
-                  className="h-4 w-4 rounded border-white/20 bg-neutral-900"
-                />
-                Bestehende Seiten ersetzen
-              </label>
-            )}
             {aiError && (
               <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
                 {aiError}
@@ -1618,7 +1488,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 onClick={runAiGenerator}
                 disabled={aiBusy}
               >
-                {aiBusy ? 'Erstelle…' : aiMode === 'app' ? 'App erzeugen' : 'Seite aktualisieren'}
+                {aiBusy ? 'Erstelle…' : 'Seite aktualisieren'}
               </button>
             </div>
           </div>

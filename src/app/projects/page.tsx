@@ -36,6 +36,16 @@ export default function ProjectsIndexPage() {
     }
   };
 
+  const onRemove = async (projectId: string) => {
+    const confirmed = typeof window !== 'undefined' ? window.confirm('Wollen Sie das Projekt wirklich löschen?') : true;
+    if (!confirmed) return;
+    try {
+      await removeProject(projectId);
+    } catch (e: any) {
+      setError(e?.message || 'Projekt konnte nicht gelöscht werden.');
+    }
+  };
+
   if (!user)
     return (
       <>
@@ -92,7 +102,7 @@ export default function ProjectsIndexPage() {
                     <a href={`/editor?id=${p.id}`} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20">
                       Öffnen
                     </a>
-                    <button onClick={() => removeProject(p.id)} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500">
+                    <button onClick={() => onRemove(p.id)} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500">
                       Löschen
                     </button>
                   </div>

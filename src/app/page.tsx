@@ -23,7 +23,7 @@ const timeline = [
   {
     label: 'Schritt 1',
     title: 'Registrieren und Profil anlegen',
-    description: 'Kostenlos starten, Teammitglieder einladen und Rechte vergeben.',
+    description: 'Teammitglieder einladen und Rechte vergeben.',
   },
   {
     label: 'Schritt 2',
@@ -48,30 +48,6 @@ export default function HomePage() {
               key={index}
               className="flex h-56 flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-center text-xs text-neutral-200"
             >
-              <p className="font-semibold">Werbefläche {index}</p>
-              <p className="mt-1 text-[11px] text-neutral-400">Platz für Partner & Sponsoren</p>
-            </div>
-          ))}
-        </aside>
-
-        <div className="flex-1 space-y-10">
-          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-purple-900/30 via-indigo-900/20 to-cyan-900/20 p-8 shadow-2xl">
-            <div className="space-y-6">
-              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">AppSchmiede</p>
-              <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Baue Apps schneller: Vorlagen, KI & Editor in einer Oberfläche.
-              </h1>
-              <p className="max-w-3xl text-base text-neutral-200">
-                Die Startseite der AppSchmiede erklärt dir den kompletten Flow: Templates auswählen, mit der KI erweitern und sofort
-                bereitstellen. Perfekt für Gründer:innen, Agenturen und Teams, die Ideen ohne Umwege testen möchten.
-              </p>
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link
-                  href="/register"
-                  className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:from-cyan-400 hover:to-blue-400"
-                >
-                  Jetzt kostenlos starten
-                </Link>
                 <Link
                   href="/login"
                   className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
