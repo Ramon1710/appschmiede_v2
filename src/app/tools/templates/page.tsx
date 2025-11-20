@@ -539,46 +539,65 @@ export default function TemplatesPage() {
       </div>
     );
 
-  const createFromTemplate = async (tpl: Template) => {
-    if (!user) return;
-    setError(null);
-    setCreatingTemplateId(tpl.id);
-    try {
+    const createFromTemplate = async (tpl: Template) => {
+      if (!user) return;
+      setError(null);
+      setCreatingTemplateId(tpl.id);
 
-      const projectId = fallbackId();
+      let projectId: string | null = null;
 
-      await setDoc(doc(db, 'projects', projectId), {
-        name: tpl.projectName,
-        ownerId: user.uid,
-        ownerUid: user.uid,
-        members: [user.uid],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      try {
+        projectId = fallbackId();
 
-      for (const templatePage of tpl.pages) {
-        const pageId = fallbackId();
-        await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
-          name: templatePage.name,
-          folder: templatePage.folder ?? null,
-          tree: templatePage.tree,
+        await setDoc(doc(db, 'projects', projectId), {
+          name: tpl.projectName,
+          ownerId: user.uid,
+          ownerUid: user.uid,
+          members: [user.uid],
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+
+        for (const templatePage of tpl.pages) {
+          const pageId = fallbackId();
+          await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
+            name: templatePage.name,
+            folder: templatePage.folder ?? null,
+            tree: templatePage.tree,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
+      } catch (templateError) {
+        console.error('Template creation failed', templateError);
+        setError('Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+        setCreatingTemplateId(null);
+        return;
+      }
+
+      setCreatingTemplateId(null);
+
+      if (!projectId) {
+        return;
       }
 
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(LAST_PROJECT_STORAGE_KEY, projectId);
+        try {
+          window.localStorage.setItem(LAST_PROJECT_STORAGE_KEY, projectId);
+        } catch (storageError) {
+          console.warn('Konnte letztes Projekt nicht speichern', storageError);
+        }
+        try {
+          router.push(`/editor?projectId=${projectId}`);
+        } catch (navigationError) {
+          console.warn('Router-Navigation fehlgeschlagen, falle auf window.location zurück.', navigationError);
+          window.location.href = `/editor?projectId=${projectId}`;
+        }
+        return;
       }
 
       router.push(`/editor?projectId=${projectId}`);
-    } catch (templateError) {
-      console.error('Template creation failed', templateError);
-      setError('Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
-    } finally {
-      setCreatingTemplateId(null);
-    }
-  };
+    };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
