@@ -296,9 +296,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiReplace, setAiReplace] = useState(true);
   const [aiMode, setAiMode] = useState<'app' | 'page'>('app');
   const [selectedAiTool, setSelectedAiTool] = useState<AiToolId>('chat');
-  const [templatesOpen, setTemplatesOpen] = useState(true);
-  const [aiMenuOpen, setAiMenuOpen] = useState(true);
   const [toolboxOpen, setToolboxOpen] = useState(true);
+  const [toolboxTab, setToolboxTab] = useState<'components' | 'templates' | 'ai'>('components');
   const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
   const [templateSelectValue, setTemplateSelectValue] = useState('');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
@@ -1175,14 +1174,14 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <button
-                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs transition hover:bg-white/10 disabled:opacity-40"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold transition hover:bg-white/10 disabled:opacity-40"
                     onClick={onExport}
                     disabled={!pages.length}
                   >
                     Export
                   </button>
                   <button
-                    className="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
+                    className="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                     onClick={() => {
                       setAiError(null);
                       setAiOpen(true);
@@ -1193,7 +1192,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   {settingsHref ? (
                     <Link
                       href={settingsHref}
-                      className="inline-flex flex-1 items-center justify-center rounded border border-white/10 bg-white/5 px-3 py-2 text-xs transition hover:bg-white/10"
+                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-semibold transition hover:bg-white/10"
                     >
                       ⚙️ Einstellungen
                     </Link>
@@ -1201,7 +1200,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs text-neutral-400"
+                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
                     >
                       ⚙️ Einstellungen
                     </button>
@@ -1276,44 +1275,44 @@ export default function EditorShell({ initialPageId }: Props) {
                   <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
                     <button
                       type="button"
-                      onClick={() => setTemplatesOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between text-left"
-                    >
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">App-Vorlagen</p>
-                        <p className="text-sm font-semibold text-neutral-100">Schnellstart für Login, Chat & mehr</p>
-                      </div>
-                      <span className="text-xl text-neutral-400">{templatesOpen ? '−' : '+'}</span>
-                    </button>
-                    {templatesOpen && <div className="mt-4 space-y-3">{templateContent}</div>}
-                  </section>
-                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <button
-                      type="button"
-                      onClick={() => setAiMenuOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between text-left"
-                    >
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">KI Menü</p>
-                        <p className="text-sm font-semibold text-neutral-100">Generatoren & Automationen</p>
-                      </div>
-                      <span className="text-xl text-neutral-400">{aiMenuOpen ? '−' : '+'}</span>
-                    </button>
-                    {aiMenuOpen && <div className="mt-4 space-y-3">{aiMenuContent}</div>}
-                  </section>
-                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <button
-                      type="button"
                       onClick={() => setToolboxOpen((prev) => !prev)}
                       className="flex w-full items-center justify-between text-left"
                     >
                       <div>
                         <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Werkzeuge</p>
-                        <p className="text-sm font-semibold text-neutral-100">UI-Bausteine & Komponenten</p>
+                        <p className="text-sm font-semibold text-neutral-100">Vorlagen, KI & Bausteine</p>
                       </div>
                       <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
                     </button>
-                    {toolboxOpen && <div className="mt-4">{toolboxContent}</div>}
+                    {toolboxOpen && (
+                      <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                          {[
+                            { id: 'components', label: 'Bausteine' },
+                            { id: 'templates', label: 'Vorlagen' },
+                            { id: 'ai', label: 'KI' },
+                          ].map((tab) => (
+                            <button
+                              key={tab.id}
+                              type="button"
+                              onClick={() => setToolboxTab(tab.id as 'components' | 'templates' | 'ai')}
+                              className={`rounded-lg border px-3 py-2 transition ${
+                                toolboxTab === tab.id
+                                  ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                                  : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                              }`}
+                            >
+                              {tab.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div>
+                          {toolboxTab === 'components' && <div>{toolboxContent}</div>}
+                          {toolboxTab === 'templates' && <div className="space-y-3">{templateContent}</div>}
+                          {toolboxTab === 'ai' && <div className="space-y-3">{aiMenuContent}</div>}
+                        </div>
+                      </div>
+                    )}
                   </section>
                 </div>
               </div>
@@ -1331,14 +1330,14 @@ export default function EditorShell({ initialPageId }: Props) {
                   <span>Dashboard</span>
                 </Link>
                 <button
-                  className="rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20 disabled:opacity-40"
+                  className="rounded border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold transition hover:bg-white/20 disabled:opacity-40"
                   onClick={onExport}
                   disabled={!pages.length}
                 >
                   Export
                 </button>
                 <button
-                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs text-emerald-200 transition hover:bg-emerald-500/30"
+                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                   onClick={() => {
                     setAiError(null);
                     setAiOpen(true);
@@ -1349,7 +1348,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 {settingsHref ? (
                   <Link
                     href={settingsHref}
-                    className="inline-flex items-center justify-center rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
+                    className="inline-flex items-center justify-center rounded border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold transition hover:bg-white/20"
                   >
                     ⚙️ Einstellungen
                   </Link>
@@ -1357,7 +1356,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   <button
                     type="button"
                     disabled
-                    className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs text-neutral-400"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
                   >
                     ⚙️ Einstellungen
                   </button>
@@ -1442,31 +1441,36 @@ export default function EditorShell({ initialPageId }: Props) {
               </div>
             </div>
 
-            <div className="border-b border-[#111]/60 bg-[#05070e]/90 px-4 py-4">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-neutral-500">Vorlagen & Bibliothek</p>
-                  <p className="text-xs text-neutral-400">
-                    Öffne links die Sektion „App-Vorlagen“, um Login-, Chat- oder Support-Screens direkt in dein Projekt zu laden. Alternativ kannst du die große Bibliothek separat starten.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={openTemplatesWindow}
-                  className="inline-flex items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/25"
-                >
-                  Bibliothek öffnen
-                </button>
-              </div>
-              <p className="mt-3 text-[11px] text-neutral-500">
-                Tipp: Du findest die Sammlung auch jederzeit unter <Link className="underline decoration-dotted" href="/tools/templates">/tools/templates</Link>.
-              </p>
-            </div>
-
             <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
               {mobilePanel === 'toolbox' && (
                 <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
-                  <CategorizedToolbox onAdd={addNode} />
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+                      {[
+                        { id: 'components', label: 'Bausteine' },
+                        { id: 'templates', label: 'Vorlagen' },
+                        { id: 'ai', label: 'KI' },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates' | 'ai')}
+                          className={`rounded-lg border px-3 py-2 transition ${
+                            toolboxTab === tab.id
+                              ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                              : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
+                      {toolboxTab === 'templates' && templateContent}
+                      {toolboxTab === 'ai' && aiMenuContent}
+                    </div>
+                  </div>
                 </div>
               )}
               {mobilePanel === 'canvas' && (

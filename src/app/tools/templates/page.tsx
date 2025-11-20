@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -520,9 +521,13 @@ const createEventTemplate = (): Template => ({
 });
 
 const templates: Template[] = [createCompanySuiteTemplate(), createChatAppTemplate(), createEventTemplate()];
+const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+  const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -535,30 +540,44 @@ export default function TemplatesPage() {
     );
 
   const createFromTemplate = async (tpl: Template) => {
-    const projectId = fallbackId();
+    if (!user) return;
+    setError(null);
+    setCreatingTemplateId(tpl.id);
+    try {
 
-    await setDoc(doc(db, 'projects', projectId), {
-      name: tpl.projectName,
-      ownerId: user.uid,
-      ownerUid: user.uid,
-      members: [user.uid],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      const projectId = fallbackId();
 
-    for (const templatePage of tpl.pages) {
-      const pageId = fallbackId();
-      await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
-        name: templatePage.name,
-        folder: templatePage.folder ?? null,
-        tree: templatePage.tree,
+      await setDoc(doc(db, 'projects', projectId), {
+        name: tpl.projectName,
+        ownerId: user.uid,
+        ownerUid: user.uid,
+        members: [user.uid],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-    }
 
-    window.alert(`Projekt "${tpl.projectName}" erstellt. Du wirst zum Editor weitergeleitet.`);
-    window.location.href = `/editor?projectId=${projectId}`;
+      for (const templatePage of tpl.pages) {
+        const pageId = fallbackId();
+        await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
+          name: templatePage.name,
+          folder: templatePage.folder ?? null,
+          tree: templatePage.tree,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(LAST_PROJECT_STORAGE_KEY, projectId);
+      }
+
+      router.push(`/editor?projectId=${projectId}`);
+    } catch (templateError) {
+      console.error('Template creation failed', templateError);
+      setError('Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+    } finally {
+      setCreatingTemplateId(null);
+    }
   };
 
   return (
@@ -581,13 +600,23 @@ export default function TemplatesPage() {
                 <button
                   type="button"
                   onClick={() => createFromTemplate(tpl)}
-                  className="mt-4 w-full rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/20"
+                  disabled={creatingTemplateId === tpl.id}
+                  className={`mt-4 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                    creatingTemplateId === tpl.id
+                      ? 'bg-white/5 text-neutral-500 cursor-wait'
+                      : 'bg-white/10 text-neutral-100 hover:bg-white/20'
+                  }`}
                 >
-                  Projekt erstellen
+                  {creatingTemplateId === tpl.id ? 'Wird erstellt…' : 'Projekt erstellen'}
                 </button>
               </div>
             ))}
           </div>
+          {error && (
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {error}
+            </div>
+          )}
         </div>
       </main>
     </div>
