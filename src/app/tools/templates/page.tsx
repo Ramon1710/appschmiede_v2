@@ -557,8 +557,16 @@ export default function TemplatesPage() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
+      } catch (templateError) {
+        console.error('Template project creation failed', templateError);
+        setError('Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+        setCreatingTemplateId(null);
+        return;
+      }
 
-        for (const templatePage of tpl.pages) {
+      const pageResults = await Promise.allSettled(
+        tpl.pages.map(async (templatePage) => {
+          if (!projectId) return;
           const pageId = fallbackId();
           await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
             name: templatePage.name,
@@ -567,12 +575,15 @@ export default function TemplatesPage() {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           });
-        }
-      } catch (templateError) {
-        console.error('Template creation failed', templateError);
-        setError('Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
-        setCreatingTemplateId(null);
-        return;
+        })
+      );
+
+      const failedPages = pageResults.filter((result) => result.status === 'rejected');
+      if (failedPages.length) {
+        console.warn('Einige Seiten konnten nicht erstellt werden', failedPages);
+        setError(`Projekt erstellt, aber ${failedPages.length} Seite(n) konnten nicht gespeichert werden.`);
+      } else {
+        setError(null);
       }
 
       setCreatingTemplateId(null);

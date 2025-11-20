@@ -134,10 +134,11 @@ function createNavItems(entries: NavEntry[]) {
 }
 
 function buildAuthPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
   const pages: GeneratedPage[] = [];
-  const wantsRegister = /register|registrier|signup|anmeldung|konto/.test(prompt);
-  const wantsLogin = /login|anmelden|signin/.test(prompt) || wantsRegister;
-  const wantsPasswordReset = /passwort|password|reset/.test(prompt);
+  const wantsRegister = /register|registrier|signup|anmeldung|konto/.test(normalized);
+  const wantsLogin = /login|anmelden|signin/.test(normalized) || wantsRegister;
+  const wantsPasswordReset = /passwort|password|reset/.test(normalized);
 
   if (wantsLogin) {
     const nodes = stackNodes([
@@ -246,7 +247,7 @@ function buildAuthPages(prompt: string, palette: Palette): GeneratedPage[] {
 }
 
 function buildChatPages(prompt: string, palette: Palette): GeneratedPage[] {
-  if (!/chat|messag|support|nachrichten?/.test(prompt)) return [];
+  if (!/chat|messag|support|nachrichten?/.test(prompt.toLowerCase())) return [];
   const nodes = [
     makeNode('text', {
       y: 40,
@@ -272,7 +273,7 @@ function buildChatPages(prompt: string, palette: Palette): GeneratedPage[] {
 }
 
 function buildPresencePage(prompt: string, palette: Palette): GeneratedPage[] {
-  if (!/online|anwesenheit|status/.test(prompt)) return [];
+  if (!/online|anwesenheit|status/.test(prompt.toLowerCase())) return [];
   const chips = ['Melanie • aktiv', 'Jonas • in Meeting', 'Alex • abwesend', 'Priya • aktiv'];
   const nodes: Node[] = [
     makeNode('text', {
@@ -309,7 +310,8 @@ function buildPresencePage(prompt: string, palette: Palette): GeneratedPage[] {
 }
 
 function buildLocationPage(prompt: string, palette: Palette): GeneratedPage[] {
-  if (!/standort|karte|map|maps|gps|location/.test(prompt)) return [];
+  const normalized = prompt.toLowerCase();
+  if (!/standort|karte|map|maps|gps|location/.test(normalized)) return [];
 
   const statusChips = ['Design Team · Berlin', 'Support · München', 'Projektleitung · Hamburg'];
 
@@ -367,9 +369,10 @@ function buildLocationPage(prompt: string, palette: Palette): GeneratedPage[] {
 }
 
 function buildHomePage(prompt: string, palette: Palette): GeneratedPage {
-  const wantsChat = /chat/.test(prompt);
-  const wantsRegister = /register|registrier|signup/.test(prompt);
-  const wantsLogin = /login|signin|anmelden/.test(prompt);
+  const normalized = prompt.toLowerCase();
+  const wantsChat = /chat/.test(normalized);
+  const wantsRegister = /register|registrier|signup/.test(normalized);
+  const wantsLogin = /login|signin|anmelden/.test(normalized);
 
   const navbar = makeNode('container', {
     y: 32,
@@ -461,12 +464,13 @@ function buildDefaultPages(palette: Palette): GeneratedPage[] {
 }
 
 function buildCompanySuitePages(prompt: string, palette: Palette): GeneratedPage[] {
-  const mentionsCompany = /unternehmen|firma|team|belegschaft|business/.test(prompt);
-  const mentionsProjects = /projekt/.test(prompt);
-  const mentionsTime = /zeit|time|stunden|arbeitszeit|tracking/.test(prompt);
-  const mentionsTasks = /aufgabe|task|todo|verteilung/.test(prompt);
-  const mentionsNotifications = /benachrichtig|notification|hinweis/.test(prompt);
-  const mentionsChat = /chat|kommunikation|messag|talk/.test(prompt);
+  const normalized = prompt.toLowerCase();
+  const mentionsCompany = /unternehmen|firma|team|belegschaft|business/.test(normalized);
+  const mentionsProjects = /projekt/.test(normalized);
+  const mentionsTime = /zeit|time|stunden|arbeitszeit|tracking/.test(normalized);
+  const mentionsTasks = /aufgabe|task|todo|verteilung/.test(normalized);
+  const mentionsNotifications = /benachrichtig|notification|hinweis/.test(normalized);
+  const mentionsChat = /chat|kommunikation|messag|talk/.test(normalized);
 
   if (!(mentionsCompany || mentionsProjects || mentionsTime || mentionsTasks || mentionsChat)) {
     return [];
