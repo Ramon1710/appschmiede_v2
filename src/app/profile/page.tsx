@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import useAuth from '@/hooks/useAuth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
 
@@ -158,10 +158,8 @@ export default function ProfilePage() {
       };
 
       try {
-        if (profileDocExists) {
-          await updateDoc(ref, payload);
-        } else {
-          await setDoc(ref, payload, { merge: true });
+        await setDoc(ref, payload, { merge: true });
+        if (!profileDocExists) {
           setProfileDocExists(true);
         }
       } catch (fireError) {
