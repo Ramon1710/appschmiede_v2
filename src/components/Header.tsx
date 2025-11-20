@@ -37,6 +37,7 @@ export default function Header() {
           </div>
         </Link>
         <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Dashboard</Link>
+        <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Startseite</Link>
         <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
         <Link href="/editor" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Editor</Link>
         <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>

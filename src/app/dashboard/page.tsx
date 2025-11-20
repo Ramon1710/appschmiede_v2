@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
+import LegalModalTrigger from '@/components/LegalModalTrigger';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 
@@ -155,6 +156,7 @@ export default function DashboardPage() {
           </aside>
         </div>
       </main>
+      <LegalModalTrigger className="fixed bottom-4 left-4" />
     </>
   );
 }
