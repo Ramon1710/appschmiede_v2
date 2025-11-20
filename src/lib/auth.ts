@@ -1,4 +1,5 @@
 import { auth, db } from '@/lib/firebase';
+import { buildInitialUserDoc } from '@/lib/user-utils';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -7,7 +8,7 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 export async function registerWithEmail(
   email: string,
@@ -17,13 +18,10 @@ export async function registerWithEmail(
 ): Promise<User> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (displayName) await updateProfile(cred.user, { displayName });
-  await setDoc(doc(db, 'users', cred.user.uid), {
-    email,
-    displayName: displayName ?? null,
-    company: company ?? null,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  await setDoc(
+    doc(db, 'users', cred.user.uid),
+    buildInitialUserDoc(email, displayName ?? null, company ?? null)
+  );
   return cred.user;
 }
 
