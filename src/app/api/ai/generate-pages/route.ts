@@ -34,6 +34,10 @@ const palettes: Palette[] = [
     background: 'linear-gradient(135deg, #0B1120, #1B1F3B)',
     highlight: '#34D399',
   },
+  {
+    background: 'linear-gradient(150deg, #16040b, #330b1b, #5a0f2c, #a8164a)',
+    highlight: '#FF7AB8',
+  },
 ];
 
 const defaultWidths: Record<Node['type'], number> = {
@@ -57,9 +61,12 @@ function makeId() {
 }
 
 function pickPalette(prompt: string): Palette {
+  if (/sexy|romant|passion|verf(?:\w*)|glam|pink/i.test(prompt)) {
+    return palettes[palettes.length - 1];
+  }
   if (!prompt) return palettes[0];
   const score = [...prompt].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return palettes[score % palettes.length];
+  return palettes[score % (palettes.length - 1)];
 }
 
 function makeNode(type: Node['type'], overrides: Partial<Node>): Node {
@@ -301,6 +308,64 @@ function buildPresencePage(prompt: string, palette: Palette): GeneratedPage[] {
   return [page('Online', palette, nodes, 'Kommunikation')];
 }
 
+function buildLocationPage(prompt: string, palette: Palette): GeneratedPage[] {
+  if (!/standort|karte|map|maps|gps|location/.test(prompt)) return [];
+
+  const statusChips = ['Design Team · Berlin', 'Support · München', 'Projektleitung · Hamburg'];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: 'Standort & Online-Status' },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 64,
+      props: {
+        text: 'Live-Map mit allen Teams. Sichtbar ist, wer online ist und wo gerade gearbeitet wird.',
+      },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 168,
+      h: 220,
+      props: {
+        component: 'map',
+        mapLocation: 'Team-Standorte',
+        mapPins: statusChips.map((chip) => ({ id: makeId(), label: chip })),
+      },
+    }),
+    makeNode('container', {
+      y: 404,
+      h: 140,
+      props: {
+        component: 'folder-structure',
+        folderTree: statusChips.map((chip) => ({ id: makeId(), name: chip, children: [] })),
+      },
+    }),
+  ];
+
+  statusChips.forEach((label, index) => {
+    nodes.push(
+      makeNode('text', {
+        y: 560 + index * 44,
+        h: 36,
+        props: { text: `${label} • online` },
+        style: {
+          fontSize: 14,
+          fontWeight: 500,
+          background: 'rgba(255, 255, 255, 0.08)',
+          padding: '8px 12px',
+          borderRadius: '999px',
+        },
+      })
+    );
+  });
+
+  return [page('Standort', palette, nodes, 'Kommunikation')];
+}
+
 function buildHomePage(prompt: string, palette: Palette): GeneratedPage {
   const wantsChat = /chat/.test(prompt);
   const wantsRegister = /register|registrier|signup/.test(prompt);
@@ -537,6 +602,24 @@ function buildCompanySuitePages(prompt: string, palette: Palette): GeneratedPage
                 height: 200,
               }
             : null,
+          {
+            type: 'text',
+            props: {
+              text: 'Starte oder stoppe deine Zeit – jede Session landet automatisch im passenden Projektordner.',
+            },
+            style: { fontSize: 14, lineHeight: 1.4, color: '#fbcfe8' },
+            height: 60,
+          },
+          {
+            type: 'button',
+            props: { label: 'Start', action: 'time-tracking-start' },
+            width: 140,
+          },
+          {
+            type: 'button',
+            props: { label: 'Stop', action: 'time-tracking-stop' },
+            width: 140,
+          },
         ].filter(Boolean) as StackInput[],
         { startY: 124 }
       ),
@@ -638,6 +721,14 @@ function buildCompanySuitePages(prompt: string, palette: Palette): GeneratedPage
             style: { fontSize: 26, fontWeight: 600 },
           },
           {
+            type: 'text',
+            props: {
+              text: 'Ordnerstruktur mit direkter Verknüpfung zur Zeiterfassung – jede Stunde landet im passenden Ordner.',
+            },
+            style: { fontSize: 15, lineHeight: 1.4, color: '#f9a8d4' },
+            height: 72,
+          },
+          {
             type: 'container',
             props: {
               component: 'folder-structure',
@@ -701,6 +792,7 @@ function buildPages(prompt: string): GeneratedPage[] {
   buildCompanySuitePages(prompt, palette).forEach((p) => result.push(p));
   buildAuthPages(prompt, palette).forEach((p) => result.push(p));
   buildChatPages(prompt, palette).forEach((p) => result.push(p));
+  buildLocationPage(prompt, palette).forEach((p) => result.push(p));
   buildPresencePage(prompt, palette).forEach((p) => result.push(p));
 
   const seen = new Set<string>();
