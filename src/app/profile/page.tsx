@@ -4,8 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import useAuth from '@/hooks/useAuth';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
+import type { FirebaseError } from 'firebase/app';
 
 interface UserProfileDoc {
   displayName?: string | null;
@@ -28,6 +29,7 @@ export default function ProfilePage() {
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
+  const [profileDocExists, setProfileDocExists] = useState(false);
 
   const canPasswordReauth = useMemo(
     () => Boolean(user?.providerData?.some((provider) => provider.providerId === 'password')),
@@ -41,7 +43,9 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       const ref = doc(db, 'users', user.uid);
       const snap = await getDoc(ref);
-      if (snap.exists()) {
+      const exists = snap.exists();
+      setProfileDocExists(exists);
+      if (exists) {
         const data = snap.data() as UserProfileDoc;
         setFirstName(data.firstName ?? '');
         setLastName(data.lastName ?? '');
@@ -143,19 +147,35 @@ export default function ProfilePage() {
       }
 
       const ref = doc(db, 'users', user.uid);
-      await setDoc(
-        ref,
-        {
-          displayName: displayNameToPersist || null,
-          firstName: firstName || null,
-          lastName: lastName || null,
-          company: company || null,
-          phone: phone || null,
-          email: nextEmail,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+      const payload = {
+        displayName: displayNameToPersist || null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        company: company || null,
+        phone: phone || null,
+        email: nextEmail,
+        updatedAt: serverTimestamp(),
+      };
+
+      try {
+        if (profileDocExists) {
+          await updateDoc(ref, payload);
+        } else {
+          await setDoc(ref, payload, { merge: true });
+          setProfileDocExists(true);
+        }
+      } catch (fireError) {
+        console.error('Profil-Daten konnten nicht gespeichert werden', fireError);
+        const firebaseCode = (fireError as FirebaseError)?.code;
+        if (firebaseCode === 'permission-denied') {
+          setStatus('Dir fehlt die Berechtigung, dieses Profil zu speichern. Bitte melde dich erneut an.');
+        } else if (firebaseCode === 'resource-exhausted' || firebaseCode === 'unavailable') {
+          setStatus('Der Speicherdienst ist gerade nicht erreichbar. Bitte versuche es gleich noch einmal.');
+        } else {
+          setStatus(`Profil konnte nicht gespeichert werden (${firebaseCode ?? 'unbekannter Fehler'}).`);
+        }
+        return;
+      }
 
       const hints = [profileErrorMessage, emailErrorMessage].filter(Boolean);
       setStatus(hints.length ? `Gespeichert, aber Hinweis: ${hints.join(' ')}` : 'Änderungen gespeichert.');
