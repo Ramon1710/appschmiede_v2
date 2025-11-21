@@ -535,11 +535,11 @@ export default function TemplatesPage() {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
         <Header />
-        <main className="grid flex-1 place-items-center p-6">Bitte anmelden.</main>
+        <main className="grid flex-1 place-items-center px-4 py-10">Bitte anmelden.</main>
       </div>
     );
 
-    const createFromTemplate = async (tpl: Template) => {
+  const createFromTemplate = async (tpl: Template) => {
       if (!user) return;
       setError(null);
       setCreatingTemplateId(tpl.id);
@@ -613,8 +613,8 @@ export default function TemplatesPage() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       <Header />
-      <main className="flex-1 p-6">
-        <div className="mx-auto max-w-5xl space-y-6">
+      <main className="flex-1 w-full px-4 py-10 lg:px-10">
+        <div className="flex flex-col gap-6">
           <header className="space-y-1">
             <h1 className="text-3xl font-semibold">Vorlagenbibliothek</h1>
             <p className="text-sm text-neutral-400">

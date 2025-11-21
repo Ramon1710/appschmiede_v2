@@ -36,23 +36,23 @@ export default function DashboardPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen text-neutral-100 p-6">
-        <div className="mx-auto max-w-7xl flex gap-6">
+      <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[260px_minmax(0,1fr)_260px]">
           {/* Left Ad Space */}
-          <aside className="w-64 flex-shrink-0">
-            <div className="sticky top-6 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 space-y-4">
-              <div className="text-xs text-neutral-400 uppercase tracking-wider">Werbung</div>
-              <div className="aspect-square bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center text-neutral-500 text-sm">
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
+              <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
+              <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 text-sm text-neutral-500 flex items-center justify-center">
                 Anzeige 1
               </div>
-              <div className="aspect-square bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-xl flex items-center justify-center text-neutral-500 text-sm">
+              <div className="aspect-square rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-sm text-neutral-500 flex items-center justify-center">
                 Anzeige 2
               </div>
             </div>
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1 space-y-6">
+          <div className="flex flex-col gap-6">
             <header className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">Dashboard</h1>
               <span className="ml-auto text-sm opacity-70">{user.email}</span>
@@ -143,13 +143,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Right Ad Space */}
-          <aside className="w-64 flex-shrink-0">
-            <div className="sticky top-6 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 space-y-4">
-              <div className="text-xs text-neutral-400 uppercase tracking-wider">Werbung</div>
-              <div className="aspect-square bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl flex items-center justify-center text-neutral-500 text-sm">
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
+              <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
+              <div className="aspect-square rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-sm text-neutral-500 flex items-center justify-center">
                 Anzeige 3
               </div>
-              <div className="aspect-square bg-gradient-to-br from-pink-500/20 to-orange-500/20 rounded-xl flex items-center justify-center text-neutral-500 text-sm">
+              <div className="aspect-square rounded-xl bg-gradient-to-br from-pink-500/20 to-orange-500/20 text-sm text-neutral-500 flex items-center justify-center">
                 Anzeige 4
               </div>
             </div>

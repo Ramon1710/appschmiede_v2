@@ -59,8 +59,8 @@ export default function ProjectsIndexPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen text-neutral-100 p-6">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
+        <div className="flex flex-col gap-6">
           <header className="flex items-center gap-3">
             <h1 className="text-3xl font-bold">Projekte</h1>
             <span className="ml-auto text-sm opacity-70">{user.email}</span>
