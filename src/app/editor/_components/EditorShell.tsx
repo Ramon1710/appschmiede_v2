@@ -8,7 +8,7 @@ import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
-import { savePage, subscribePages, createPage, deletePage } from '@/lib/db-editor';
+import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
@@ -359,6 +359,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
+  const currentPageMeta = useMemo(() => pages.find((p) => p.id === currentPageId) ?? null, [pages, currentPageId]);
 
   const settingsHref = useMemo(() => (_projectId ? `/editor/settings?projectId=${_projectId}` : null), [_projectId]);
 
@@ -674,8 +675,11 @@ export default function EditorShell({ initialPageId }: Props) {
       return false;
     }
 
+    const preservedName = currentPageMeta?.name ?? tree.name ?? 'Unbenannte Seite';
+
     const nextTree = applyTreeUpdate((prev) => ({
       ...prev,
+      name: preservedName,
       tree: {
         ...prev.tree,
         props: {
@@ -691,7 +695,7 @@ export default function EditorShell({ initialPageId }: Props) {
     setPages((prev) => {
       const existing = prev.find((page) => page.id === currentPageId) ?? null;
       const updatedPage: PageTree = existing
-        ? { ...existing, tree: nextTree.tree, name: nextTree.name }
+        ? { ...existing, tree: nextTree.tree }
         : {
             id: currentPageId,
             name: nextTree.name,
@@ -705,7 +709,7 @@ export default function EditorShell({ initialPageId }: Props) {
     });
 
     if (_projectId && currentPageId && nextTree) {
-      const payload = nextTree;
+      const payload = { ...nextTree, name: preservedName };
       latestTree.current = payload;
       (async () => {
         try {
@@ -721,7 +725,7 @@ export default function EditorShell({ initialPageId }: Props) {
     }
     setSelectedId(null);
     return true;
-  }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice]);
+  }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice, currentPageMeta, tree.name]);
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
@@ -859,14 +863,18 @@ export default function EditorShell({ initialPageId }: Props) {
         throw new Error('Keine Seitenergebnisse erhalten.');
       }
 
-      const updatedTree = applyTreeUpdate((prev) => ({
-        ...prev,
-        name: data.page?.name ?? prev.name,
-        tree: data.page?.tree ?? prev.tree,
-      }));
+      const updatedTree = applyTreeUpdate((prev) => {
+        const stableName = currentPageMeta?.name ?? prev.name ?? tree.name ?? 'Unbenannte Seite';
+        return {
+          ...prev,
+          name: stableName,
+          tree: data.page?.tree ?? prev.tree,
+        };
+      });
+      const preservedName = updatedTree.name ?? currentPageMeta?.name ?? tree.name ?? 'Unbenannte Seite';
       setSelectedId(null);
 
-      await savePage(_projectId, currentPageId, updatedTree);
+      await savePage(_projectId, currentPageId, { ...updatedTree, name: preservedName });
       pendingSyncHash.current = hashPage(updatedTree);
       isDirty.current = false;
 
@@ -878,7 +886,22 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setAiBusy(false);
     }
-  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name]);
+  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta]);
+
+  const promptRenamePage = useCallback(async () => {
+    if (!(_projectId && currentPageId)) return;
+    const currentName = currentPageMeta?.name ?? tree.name ?? '';
+    const nextName = window.prompt('Neuer Seitenname', currentName)?.trim();
+    if (!nextName || nextName === currentName) return;
+    try {
+      await renamePage(_projectId, currentPageId, nextName);
+      setPages((prev) => prev.map((p) => (p.id === currentPageId ? { ...p, name: nextName } : p)));
+      applyTreeUpdate((prev) => ({ ...prev, name: nextName }), { markDirty: false });
+    } catch (error) {
+      console.error('renamePage failed', error);
+      alert('Seite konnte nicht umbenannt werden.');
+    }
+  }, [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate]);
 
   const onExport = useCallback(() => {
     if (!(_projectId && pages.length)) {
@@ -1134,7 +1157,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     </select>
                   </div>
                   {pages.length > 0 && (
-                    <div className="mt-2">
+                    <div className="mt-2 flex gap-2">
                       <select
                         className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
                         value={currentPageId ?? ''}
@@ -1144,6 +1167,14 @@ export default function EditorShell({ initialPageId }: Props) {
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                       </select>
+                      <button
+                        type="button"
+                        onClick={promptRenamePage}
+                        className="rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200 transition hover:bg-white/10"
+                        disabled={!currentPageId}
+                      >
+                        Umbenennen
+                      </button>
                     </div>
                   )}
                   <div className="mt-2 flex items-center gap-2">
@@ -1271,7 +1302,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   </button>
                 )}
               </div>
-              <div className="mt-3">
+              <div className="mt-3 flex gap-2">
                 <select
                   className="w-full rounded border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
                   value={currentPageId ?? ''}
@@ -1281,6 +1312,14 @@ export default function EditorShell({ initialPageId }: Props) {
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
+                <button
+                  type="button"
+                  onClick={promptRenamePage}
+                  className="rounded border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200"
+                  disabled={!currentPageId}
+                >
+                  ✏️
+                </button>
               </div>
               <div className="mt-2 flex items-center gap-2">
                 <button
