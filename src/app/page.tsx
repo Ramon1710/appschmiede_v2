@@ -4,36 +4,106 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 
-const highlights = [
+const workflowSteps = [
   {
-    title: 'In Minuten prototypen',
-    description: 'Vorlagen auswählen, KI starten und Ergebnisse direkt auf dem Gerät testen.',
+    title: 'Template auswählen',
+    description:
+      'Starte mit einer Vorlage für dein Use-Case: Support-Chat, Aufgabenverwaltung, Zeiterfassung, Analytics, Dokumentation und mehr. Ein Klick – und dein erstes Projekt ist angelegt.',
   },
   {
-    title: 'Editor + KI aus einer Hand',
-    description: 'Überall verfügbar: Projekte, Seiten, Assets und Teamfreigaben bleiben synchron.',
+    title: 'Mit KI erweitern',
+    description:
+      'Beschreibe in eigenen Worten, was deine App können soll. Die KI legt passende Seiten, Abschnitte und Inhalte an – inklusive Farben, Layouts und Strukturen, die zu deinem Projekt passen.',
   },
   {
-    title: 'Keine Agentur notwendig',
-    description: 'Bring dein Team an einen Tisch und iteriere live – ohne Wartezeiten oder hohe Setup-Kosten.',
+    title: 'Im Editor anpassen & testen',
+    description:
+      'Feinschliff machst du im visuellen Editor: Texte, Buttons, Abschnitte, Layout – alles per Drag & Drop. Mit QR-Code öffnest du deine App direkt auf dem Smartphone und testest sie live.',
   },
 ];
 
-const timeline = [
+const featureList = [
   {
-    label: 'Schritt 1',
-    title: 'Registrieren und Profil anlegen',
-    description: 'Teammitglieder einladen und Rechte vergeben.',
+    title: 'Projekt-Dashboard',
+    description:
+      'Verwalte alle deine App-Projekte an einem Ort, filtere nach Status und öffne jede App mit einem Klick im Editor.',
   },
   {
-    label: 'Schritt 2',
-    title: 'Vorlagen + KI kombinieren',
-    description: 'Login-Screens, Chats oder Supportseiten einbauen und mit KI erweitern.',
+    title: 'Visueller Editor',
+    description:
+      'Bearbeite Seiten im Phone-Frame, verschiebe Elemente per Drag & Drop, passe Eigenschaften im Property-Panel an und wechsle schnell zwischen Seiten.',
   },
   {
-    label: 'Schritt 3',
-    title: 'Teilen und testen',
-    description: 'Per Vorschau-Links oder QR-Codes sofort Feedback ausrollen.',
+    title: 'KI-gestützte Seitenerstellung',
+    description:
+      'Lass aus einer einfachen Beschreibung komplette App-Strukturen generieren: Startseiten, Sektionen, CTAs, Tools – abgestimmt auf deine Branche.',
+  },
+  {
+    title: 'Spezielle Tool-Seiten',
+    description:
+      'Greife auf fertige Bausteine zu: Chat-Support, Aufgabenverwaltung, Zeiterfassung, Analytics-Dashboard, Support-Doku, QR-Tools und mehr.',
+  },
+  {
+    title: 'Öffentliche Vorschau & QR-Code',
+    description:
+      'Teile deine App über eine Vorschau-URL oder QR-Code. Ideal, um Feedback von Team, Kund:innen oder Tester:innen einzuholen.',
+  },
+  {
+    title: 'Abrechnung & Billing-Bereich',
+    description:
+      'Upgrade dein Konto, wenn du mehr brauchst: Integriertes Billing mit Stripe, klar getrennte Projekte und jederzeit erweiterbar.',
+  },
+  {
+    title: 'Rechtlich sauber unterwegs',
+    description:
+      'Impressum, Datenschutz und Legal-Modal sind eingebaut – so kannst du deine App professionell präsentieren und bleibst auf der sicheren Seite.',
+  },
+];
+
+const audience = [
+  {
+    title: 'Gründer:innen & Solo-Selbstständige',
+    description:
+      'Baue in wenigen Stunden einen klickbaren Prototypen für dein Produkt, teste dein Angebot mit echten Nutzer:innen und überzeuge Investor:innen oder Partner.',
+  },
+  {
+    title: 'Agenturen & Freelancer',
+    description:
+      'Erstelle Demo-Apps für Kund:innen, präsentiere Varianten im Browser und passe Layouts live im Gespräch an – ohne jedes Mal bei null anzufangen.',
+  },
+  {
+    title: 'Unternehmen & Teams',
+    description:
+      'Setze interne Tools wie Zeiterfassung, Aufgabenboards, Support-Apps oder Dashboards um, ohne deine IT-Abteilung zu blockieren.',
+  },
+];
+
+const kiHighlights = [
+  'Erkennt Branche, Farben & Stil automatisch',
+  'Generiert mehrere Seiten auf einmal',
+  'Ideal für erste Versionen, Pitches und interne Tools',
+];
+
+const reasons = [
+  {
+    title: 'Schneller Start statt leere Leinwand',
+    description:
+      'Templates und Tool-Seiten geben dir Struktur, bevor du überhaupt eine Zeile Text geschrieben hast.',
+  },
+  {
+    title: 'Alles in einer Plattform',
+    description:
+      'Vom Projektmanagement über den Editor bis zur Vorschau: Du musst nicht zwischen fünf Tools springen.',
+  },
+  {
+    title: 'Echte Apps testen, nicht nur Konzepte',
+    description:
+      'Teile deine Vorschau mit Kund:innen oder Kolleg:innen – per Link oder QR-Code – und sammle Feedback, bevor du groß investierst.',
+  },
+  {
+    title: 'Skalierbar durch Abos & Funktionen',
+    description:
+      'Starte klein, erweitere bei Bedarf – ohne den Überblick über deine Projekte zu verlieren.',
   },
 ];
 
@@ -41,90 +111,142 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#03050a] text-white">
       <Header />
-      <main className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-4 py-10 lg:px-8">
-        <aside className="hidden w-48 flex-shrink-0 flex-col gap-4 lg:flex">
-          {[1, 2].map((index) => (
-            <div
-              key={index}
-              className="flex h-56 flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 text-center text-xs text-neutral-200"
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-12 lg:px-0">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-10 text-center shadow-2xl">
+          <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">No-Code Builder</p>
+          <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+            Von der Idee zur App in wenigen Minuten
+          </h1>
+          <p className="mx-auto mt-5 max-w-3xl text-lg text-neutral-200">
+            Melde dich an, wähle ein Template, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/register"
+              className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
             >
-              <Link
-                href="/login"
-                className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
-              >
-                Bereits registriert? Login
-              </Link>
-              <p className="mt-3 text-[11px] text-white/70">Jetzt im Dashboard weiterbauen</p>
-            </div>
-          ))}
-        </aside>
+              Jetzt kostenlos starten
+            </Link>
+            <Link
+              href="/projects"
+              className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
+            >
+              Beispiele ansehen
+            </Link>
+          </div>
+        </section>
 
-        <div className="flex-1 space-y-6">
-          <section className="grid gap-5 lg:grid-cols-3">
-            {highlights.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h3 className="text-lg font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm text-neutral-300">{item.description}</p>
+        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">Ablauf</p>
+            <h2 className="text-3xl font-semibold">So funktioniert die AppSchmiede</h2>
+            <p className="text-base text-neutral-300">
+              AppSchmiede ist deine Werkbank für digitale Produkte. Statt monatelang zu planen, baust du in wenigen Schritten eine funktionsfähige App,
+              testest sie mit deinem Team oder Kund:innen und entscheidest dann, wie es weitergeht.
+            </p>
+          </header>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {workflowSteps.map((step, index) => (
+              <div key={step.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400">Schritt {index + 1}</span>
+                <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
+                <p className="mt-3 text-sm text-neutral-300">{step.description}</p>
               </div>
             ))}
-          </section>
+          </div>
+        </section>
 
-          <section className="rounded-3xl border border-white/10 bg-[#050914]/80 p-8">
-            <div className="space-y-6">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">So funktioniert es</p>
-                <h2 className="text-3xl font-semibold">In drei Schritten zu deinem Prototypen</h2>
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <h2 className="text-3xl font-semibold">Alles, was du zum App-Bau brauchst – in einer Oberfläche</h2>
+            <p className="text-base text-neutral-300">
+              AppSchmiede bündelt alle Schritte, die du für moderne Web-Apps brauchst – von der Idee bis zur Vorschau auf dem Handy.
+            </p>
+          </header>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {featureList.map((feature) => (
+              <div key={feature.title} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
+                <h3 className="text-xl font-semibold">{feature.title}</h3>
+                <p className="mt-3 text-sm text-neutral-300">{feature.description}</p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                {timeline.map((step) => (
-                  <div key={step.label} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{step.label}</p>
-                    <h3 className="mt-2 text-lg font-semibold">{step.title}</h3>
-                    <p className="mt-2 text-sm text-neutral-300">{step.description}</p>
-                  </div>
-                ))}
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <h2 className="text-3xl font-semibold">Für Gründer:innen, Agenturen und Teams, die schneller testen wollen</h2>
+            <p className="text-base text-neutral-300">
+              AppSchmiede richtet sich an alle, die digitale Ideen nicht nur auf Papier, sondern direkt vor Augen sehen wollen.
+            </p>
+          </header>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {audience.map((group) => (
+              <div key={group.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <h3 className="text-xl font-semibold">{group.title}</h3>
+                <p className="mt-3 text-sm text-neutral-300">{group.description}</p>
               </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div>
+              <h2 className="text-3xl font-semibold">KI an deiner Seite – kein Code notwendig</h2>
+              <p className="mt-4 text-base text-neutral-300">
+                Statt pixelgenauen Wireframes und komplizierten Tickets beschreibst du einfach, was du brauchst: „Eine App zur Zeiterfassung für mein Team,
+                mit Projektübersicht, Stundenerfassung und Auswertung.“ Die KI erstellt dir die passende Struktur, Seiten und Bausteine. Du entscheidest,
+                was bleibt – den Rest passt du im Editor an.
+              </p>
             </div>
-          </section>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-8">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <h2 className="text-3xl font-semibold">Updates & Roadmap</h2>
-                <p className="mt-3 text-sm text-neutral-300">
-                  Wir liefern jede Woche neue Widgets, KI-Verbesserungen und Integrationen. In der Roadmap siehst du, woran wir arbeiten:
-                  Stripe-Checkout, mehrsprachige Projekte, Team-Rollen und ausführliche Analytics.
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-[#070b16] p-5">
+              {kiHighlights.map((highlight) => (
+                <p key={highlight} className="text-sm text-neutral-200">
+                  ✓ {highlight}
                 </p>
-                <div className="mt-4 space-y-2 text-sm text-neutral-200">
-                  <p>✓ Stripe-Zahlungsflüsse inklusive Rechnungsarchiv</p>
-                  <p>✓ KI-Vorlagen für Branchen (Handwerk, Beratung, Gastro)</p>
-                  <p>✓ Export in React Native & Web-Embeds</p>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
-                <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Live-Status</p>
-                <ul className="mt-4 space-y-3 text-sm text-neutral-200">
-                  <li>• 4 neue Templates diese Woche</li>
-                  <li>• KI-Modelle für Chat + Location in Beta</li>
-                  <li>• Hosting & Auth powered by Firebase</li>
-                  <li>• DSGVO-konformes Logging mit Export</li>
-                </ul>
-              </div>
+              ))}
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
 
-        <aside className="hidden w-48 flex-shrink-0 flex-col gap-4 lg:flex">
-          {[3, 4].map((index) => (
-            <div
-              key={index}
-              className="flex h-56 flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-pink-500/10 to-rose-500/10 text-center text-xs text-neutral-200"
+        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <h2 className="text-3xl font-semibold">Warum du deine nächste App in der AppSchmiede bauen solltest</h2>
+            <p className="text-base text-neutral-300">
+              Weil du keine Zeit für endlose Abstimmungen, Lastenhefte und Warteschlangen in der IT hast.
+            </p>
+          </header>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {reasons.map((reason) => (
+              <div key={reason.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <h3 className="text-xl font-semibold">{reason.title}</h3>
+                <p className="mt-3 text-sm text-neutral-300">{reason.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1731] via-[#050c1c] to-[#03050a] p-8 text-center shadow-2xl">
+          <h2 className="text-3xl font-semibold">Bereit, deine erste App zu schmieden?</h2>
+          <p className="mx-auto mt-4 max-w-3xl text-base text-neutral-200">
+            Lege heute dein erstes Projekt an und erlebe, wie sich deine Idee innerhalb weniger Minuten in eine klickbare App verwandelt. Du kannst jederzeit klein anfangen – und wachsen, wenn deine Anforderungen steigen.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/register"
+              className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
             >
-              <p className="font-semibold">Werbefläche {index}</p>
-              <p className="mt-1 text-[11px] text-neutral-400">Perfekt für deine Tools & Services</p>
-            </div>
-          ))}
-        </aside>
+              Jetzt kostenlos registrieren
+            </Link>
+            <Link
+              href="/projects"
+              className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
+            >
+              Projekt anlegen und loslegen
+            </Link>
+          </div>
+        </section>
       </main>
 
       <LegalModalTrigger className="fixed bottom-4 left-4" />
