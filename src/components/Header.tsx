@@ -4,10 +4,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import useAuth from '@/hooks/useAuth';
+import useUserProfile from '@/hooks/useUserProfile';
 import LogoutButton from './LogoutButton';
 
 export default function Header() {
   const { user, loading } = useAuth();
+  const { profile } = useUserProfile(user?.uid);
+  const coinsValue = profile?.coinsBalance;
+  const formattedCoins =
+    typeof coinsValue === 'number'
+      ? coinsValue >= Number.MAX_SAFE_INTEGER
+        ? '∞'
+        : coinsValue.toLocaleString('de-DE')
+      : null;
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -41,9 +50,20 @@ export default function Header() {
         <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
         <Link href="/editor" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Editor</Link>
         <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>
+        <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Coins</Link>
       </nav>
 
       <div className="flex items-center gap-3 text-sm">
+        {profile && formattedCoins && (
+          <Link
+            href="/tools/billing"
+            className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white transition hover:border-cyan-400/50 hover:bg-white/10"
+          >
+            <span className="text-[10px] uppercase tracking-[0.35em] text-neutral-300">Coins</span>
+            <span className="text-sm font-semibold">{formattedCoins}</span>
+            <span className="text-[11px] text-cyan-300">Aufladen</span>
+          </Link>
+        )}
         {!loading && user ? (
           <div className="relative" ref={menuRef}>
             <button
