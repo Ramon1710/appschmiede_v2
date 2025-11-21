@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 
@@ -107,32 +108,87 @@ const reasons = [
   },
 ];
 
+const adSlotsLeft = [
+  {
+    title: 'Partner-Spot 01',
+    description: 'Zeig dein Lieblings-Plugin für Prototyping und sichere dir Leads direkt im Editor.',
+    gradient: 'from-cyan-500/30 to-blue-600/20',
+  },
+  {
+    title: 'Early-Bird Deal',
+    description: '20 % Rabatt auf Illustrationen & Mockups von Studio Forma – nur diese Woche.',
+    gradient: 'from-purple-500/30 to-indigo-500/10',
+  },
+];
+
+const adSlotsRight = [
+  {
+    title: 'KI-Workshop',
+    description: 'Live-Session: Konzepte in 60 Minuten zur klickbaren App. Jetzt Platz sichern.',
+    gradient: 'from-emerald-500/20 to-cyan-500/20',
+  },
+  {
+    title: 'Template-Marktplatz',
+    description: 'Verkaufe deine App-Schablonen direkt in der AppSchmiede Community.',
+    gradient: 'from-rose-500/20 to-orange-500/20',
+  },
+];
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#03050a] text-white">
       <Header />
-      <main className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-4 py-12 lg:px-0">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-10 text-center shadow-2xl">
-          <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">No-Code Builder</p>
-          <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
-            Von der Idee zur App in wenigen Minuten
-          </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-lg text-neutral-200">
-            Melde dich an, wähle ein Template, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/register"
-              className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
-            >
-              Jetzt kostenlos starten
-            </Link>
-            <Link
-              href="/projects"
-              className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
-            >
-              Beispiele ansehen
-            </Link>
+      <main className="mx-auto w-full max-w-6xl px-4 py-12 lg:px-0">
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[220px_minmax(0,1fr)_220px]">
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 space-y-4">
+              {adSlotsLeft.map((ad) => (
+                <div
+                  key={ad.title}
+                  className={`rounded-2xl border border-white/10 bg-gradient-to-br ${ad.gradient} p-4 text-sm text-white shadow-lg`}
+                >
+                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">Anzeige</p>
+                  <h3 className="mt-2 text-lg font-semibold">{ad.title}</h3>
+                  <p className="mt-2 text-white/80">{ad.description}</p>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          <div className="flex flex-col gap-12">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-10 shadow-2xl">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+            <div className="flex-1 text-center lg:text-left">
+              <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">No-Code Builder</p>
+              <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+                Von der Idee zur App in wenigen Minuten
+              </h1>
+              <p className="mt-5 text-lg text-neutral-200">
+                Melde dich an, wähle ein Template, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.
+              </p>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+                <Link
+                  href="/register"
+                  className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
+                >
+                  Jetzt kostenlos starten
+                </Link>
+                <Link
+                  href="/projects"
+                  className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
+                >
+                  Beispiele ansehen
+                </Link>
+              </div>
+            </div>
+            <div className="flex flex-1 items-center justify-center">
+              <div className="relative h-56 w-56 sm:h-64 sm:w-64">
+                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-cyan-500 via-blue-500 to-fuchsia-600 blur-2xl opacity-40" />
+                <div className="relative flex h-full w-full items-center justify-center rounded-[32px] border border-white/15 bg-black/20 backdrop-blur">
+                  <Image src="/logo.png" alt="AppSchmiede Logo" width={220} height={220} priority className="drop-shadow-2xl" />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -247,6 +303,23 @@ export default function HomePage() {
             </Link>
           </div>
         </section>
+          </div>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 space-y-4">
+              {adSlotsRight.map((ad) => (
+                <div
+                  key={ad.title}
+                  className={`rounded-2xl border border-white/10 bg-gradient-to-br ${ad.gradient} p-4 text-sm text-white shadow-lg`}
+                >
+                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">Anzeige</p>
+                  <h3 className="mt-2 text-lg font-semibold">{ad.title}</h3>
+                  <p className="mt-2 text-white/80">{ad.description}</p>
+                </div>
+              ))}
+            </div>
+          </aside>
+        </div>
       </main>
 
       <LegalModalTrigger className="fixed bottom-4 left-4" />
