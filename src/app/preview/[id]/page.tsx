@@ -1,37 +1,135 @@
 'use client';
-import { db } from '@/lib/firebase';
+
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
-import type { Project } from '@/types/editor';
+import PreviewCanvas from '../PreviewCanvas';
+import { db } from '@/lib/firebase';
+import { listPages } from '@/lib/db-editor';
+import type { PageTree } from '@/lib/editorTypes';
 
+type LoadState =
+	| { status: 'loading' }
+	| { status: 'ready'; page: PageTree; projectName: string; notice?: string }
+	| { status: 'empty'; message: string }
+	| { status: 'error'; message: string };
 
-export default function Preview({ params }:{ params:{ id:string }}){
-const [project, setProject] = useState<Project| null>(null);
-useEffect(()=>{ (async()=>{ const snap = await getDoc(doc(db,'projects', params.id)); if (snap.exists()) setProject(snap.data() as Project); })(); },[params.id]);
-if (!project) return <div className="grid place-items-center min-h-screen">Lade Vorschau…</div>;
-const page = project.pages[0];
-return (
-<div className="min-h-screen bg-neutral-950 text-neutral-100 grid place-items-center p-6">
-<div className="w-[390px]">
-<h1 className="text-sm mb-2 opacity-60">Vorschau: {project.name}</h1>
-<div className="rounded-2xl overflow-hidden border border-white/10">
-<div className="aspect-[390/844] bg-black relative">
-{page.nodeIds.map(id=>{
-const n = project.nodes[id];
-const style = { position:'absolute' as const, left:n.frame.x, top:n.frame.y, width:n.frame.w, height:n.frame.h };
-return (
-<div key={id} style={style}>
-{n.type==='text' && <div style={{color:n.style?.color||'#fff', fontSize:n.style?.fontSize||16, fontWeight:n.style?.fontWeight||400}}>{n.props?.text||'Text'}</div>}
-{n.type==='button' && <button className="w-full h-full rounded-md border border-white/20 bg-white/10">{n.props?.label||'Button'}</button>}
-{n.type==='image' && <img className="w-full h-full object-cover" src={n.props?.src||''} alt=""/>}
-{n.type==='input' && <input className="w-full h-full rounded-md bg-neutral-800 px-2" placeholder={n.props?.placeholder||'Eingabe'} />}
-{n.type==='container' && <div className="w-full h-full" style={{background:n.style?.background||'#111'}} />}
-</div>
-);
-})}
-</div>
-</div>
-</div>
-</div>
-);
+export default function Preview({ params }: { params: { id: string } }) {
+	const search = useSearchParams();
+	const requestedPageId = search.get('page');
+	const [state, setState] = useState<LoadState>({ status: 'loading' });
+
+	useEffect(() => {
+		let cancelled = false;
+
+		const load = async () => {
+			setState({ status: 'loading' });
+			try {
+				let projectName = 'App Vorschau';
+				try {
+					const projectSnap = await getDoc(doc(db, 'projects', params.id));
+					if (projectSnap.exists()) {
+						const data = projectSnap.data();
+						const rawName = typeof data?.name === 'string' ? data.name.trim() : '';
+						if (rawName) projectName = rawName;
+					}
+				} catch (metaError) {
+					console.warn('Projekt-Metadaten konnten nicht geladen werden', metaError);
+				}
+
+				const pages = await listPages(params.id);
+				if (cancelled) return;
+
+				if (!pages.length) {
+					setState({
+						status: 'empty',
+						message: 'Für dieses Projekt wurde noch keine Seite gespeichert.',
+					});
+					return;
+				}
+
+				let page: PageTree = pages[0];
+				let notice: string | undefined;
+				if (requestedPageId) {
+					const match = pages.find((candidate) => candidate.id === requestedPageId);
+					if (match) {
+						page = match;
+					} else {
+						notice = 'Die angeforderte Seite wurde nicht gefunden. Es wird die erste gespeicherte Seite gezeigt.';
+						page = pages[0];
+					}
+				}
+
+				setState({
+					status: 'ready',
+					projectName,
+					page,
+					notice,
+				});
+			} catch (error) {
+				console.error('Preview load failed', error);
+				if (cancelled) return;
+				setState({
+					status: 'error',
+					message: 'Die Vorschau konnte nicht geladen werden. Bitte nochmals speichern oder später erneut versuchen.',
+				});
+			}
+		};
+
+		void load();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [params.id, requestedPageId]);
+
+	if (state.status === 'loading') {
+		return (
+			<div className="grid min-h-screen place-items-center bg-neutral-950 text-neutral-300">
+				<p className="text-sm">Vorschau wird geladen…</p>
+			</div>
+		);
+	}
+
+	if (state.status === 'error') {
+		return (
+			<div className="grid min-h-screen place-items-center bg-neutral-950 px-6 text-center text-neutral-100">
+				<div className="max-w-sm space-y-3">
+					<h1 className="text-lg font-semibold text-white">Fehler beim Laden</h1>
+					<p className="text-sm text-neutral-400">{state.message}</p>
+				</div>
+			</div>
+		);
+	}
+
+	if (state.status === 'empty') {
+		return (
+			<div className="grid min-h-screen place-items-center bg-neutral-950 px-6 text-center text-neutral-100">
+				<div className="max-w-sm space-y-3">
+					<h1 className="text-lg font-semibold text-white">Noch keine Inhalte</h1>
+					<p className="text-sm text-neutral-400">{state.message}</p>
+				</div>
+			</div>
+		);
+	}
+
+	const fallbackUsed = Boolean(requestedPageId && state.page.id && state.page.id !== requestedPageId);
+
+	return (
+		<div className="min-h-screen bg-neutral-950 px-4 py-8 text-neutral-100">
+			<div className="mx-auto mb-6 flex max-w-xl flex-col items-center text-center">
+				<p className="text-xs uppercase tracking-[0.35em] text-emerald-300">Live Vorschau</p>
+				<h1 className="mt-2 text-2xl font-semibold text-white">{state.projectName}</h1>
+				<p className="text-sm text-neutral-400">
+					{state.page.name ?? 'Unbenannte Seite'}
+					{fallbackUsed ? ' (Fallback)' : ''}
+				</p>
+				{state.notice && <p className="mt-2 text-xs text-amber-300">{state.notice}</p>}
+			</div>
+			<PreviewCanvas page={state.page} />
+			<div className="mx-auto mt-6 max-w-xl text-center text-[11px] text-neutral-500">
+				Verwende das Dashboard, um Änderungen vorzunehmen. Speichere erneut, um die Vorschau zu aktualisieren.
+			</div>
+		</div>
+	);
 }
