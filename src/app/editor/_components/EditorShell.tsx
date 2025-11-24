@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
+import QRCodeButton from '../_extensions/QRCodeButton';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/lib/db-editor';
@@ -929,6 +930,24 @@ export default function EditorShell({ initialPageId }: Props) {
     URL.revokeObjectURL(url);
   }, [_projectId, pages]);
 
+  const flushPendingSave = useCallback(async () => {
+    if (!(_projectId && currentPageId)) return;
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+      saveTimeout.current = null;
+    }
+    if (!isDirty.current) return;
+    const snapshot = latestTree.current;
+    try {
+      await savePage(_projectId, currentPageId, snapshot);
+      pendingSyncHash.current = hashPage(snapshot);
+      isDirty.current = false;
+    } catch (error) {
+      console.error('Flush preview save failed', error);
+      isDirty.current = true;
+    }
+  }, [_projectId, currentPageId]);
+
   const handlePageSelection = useCallback((id: string | null) => {
     setCurrentPageId(id);
     const sel = pages.find((p) => p.id === id);
@@ -1112,6 +1131,12 @@ export default function EditorShell({ initialPageId }: Props) {
                   >
                     Export
                   </button>
+                  <QRCodeButton
+                    projectId={_projectId}
+                    pageId={currentPageId}
+                    onBeforeOpen={flushPendingSave}
+                    className="flex-1"
+                  />
                   <button
                     className="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                     onClick={() => {
@@ -1276,6 +1301,12 @@ export default function EditorShell({ initialPageId }: Props) {
                 >
                   Export
                 </button>
+                <QRCodeButton
+                  projectId={_projectId}
+                  pageId={currentPageId}
+                  onBeforeOpen={flushPendingSave}
+                  className="rounded"
+                />
                 <button
                   className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                   onClick={() => {
