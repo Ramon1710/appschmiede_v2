@@ -2145,6 +2145,7 @@ export default function EditorShell({ initialPageId }: Props) {
           </aside>
         </div>
       </div>
+    </div>
 
       {exportDialogOpen && (
         <div
