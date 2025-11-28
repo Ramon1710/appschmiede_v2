@@ -1874,81 +1874,9 @@ export default function EditorShell({ initialPageId }: Props) {
                       onClick={() => setToolboxOpen((prev) => !prev)}
                       className="flex w-full items-center justify-between text-left"
                     >
-                        </div>
-                      </div>
-
-                      {exportDialogOpen && (
-                        <div
-                          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur"
-                          onClick={() => setExportDialogOpen(false)}
-                        >
-                          <div
-                            className="w-full max-w-lg rounded-2xl border border-white/10 bg-neutral-950/95 p-6 text-white shadow-2xl"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <div className="space-y-1">
-                              <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Export</p>
-                              <h3 className="text-2xl font-semibold">Format auswählen</h3>
-                              <p className="text-sm text-neutral-300">Wähle das gewünschte Exportziel aus. Alle Varianten enthalten eine README mit Setup-Hinweisen.</p>
-                            </div>
-                            <div className="mt-6 space-y-3">
-                              <button
-                                type="button"
-                                className="w-full rounded-2xl border border-white/15 bg-white/5 p-4 text-left transition hover:bg-white/10 disabled:opacity-40"
-                                onClick={exportJson}
-                                disabled={!hasPages}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold">JSON</p>
-                                    <p className="text-sm text-neutral-400">Rohdaten aller Seiten (Import/Backup)</p>
-                                  </div>
-                                  <span className="text-lg">→</span>
-                                </div>
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 text-left text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-40"
-                                onClick={exportWebBundle}
-                                disabled={!hasPages || exporting === 'web'}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold">Web (ZIP)</p>
-                                    <p className="text-sm text-emerald-200/80">Vite/React-Starter mit allen Seiten</p>
-                                  </div>
-                                  <span className="text-lg">{exporting === 'web' ? '…' : '→'}</span>
-                                </div>
-                              </button>
-                              <button
-                                type="button"
-                                className="w-full rounded-2xl border border-amber-400/40 bg-amber-500/20 p-4 text-left text-amber-100 transition hover:bg-amber-500/30 disabled:opacity-40"
-                                onClick={exportAndroidKit}
-                                disabled={!hasPages || exporting === 'apk'}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <p className="font-semibold">Android Kit</p>
-                                    <p className="text-sm text-amber-100/80">Expo/React-Native Projekt inkl. README</p>
-                                  </div>
-                                  <span className="text-lg">{exporting === 'apk' ? '…' : '→'}</span>
-                                </div>
-                              </button>
-                            </div>
-                            <div className="mt-6 flex justify-end gap-2 text-sm">
-                              <button
-                                type="button"
-                                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-neutral-100 transition hover:bg-white/10"
-                                onClick={() => setExportDialogOpen(false)}
-                              >
-                                Abbrechen
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  );
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
+                        <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
                       </div>
                       <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
                     </button>
@@ -2218,6 +2146,77 @@ export default function EditorShell({ initialPageId }: Props) {
         </div>
       </div>
 
+      {exportDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur"
+          onClick={() => setExportDialogOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-neutral-950/95 p-6 text-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Export</p>
+              <h3 className="text-2xl font-semibold">Format auswählen</h3>
+              <p className="text-sm text-neutral-300">Wähle das gewünschte Exportziel aus. Alle Varianten enthalten eine README mit Setup-Hinweisen.</p>
+            </div>
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                className="w-full rounded-2xl border border-white/15 bg-white/5 p-4 text-left transition hover:bg-white/10 disabled:opacity-40"
+                onClick={exportJson}
+                disabled={!hasPages}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold">JSON</p>
+                    <p className="text-sm text-neutral-400">Rohdaten aller Seiten (Import/Backup)</p>
+                  </div>
+                  <span className="text-lg">→</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 text-left text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-40"
+                onClick={exportWebBundle}
+                disabled={!hasPages || exporting === 'web'}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold">Web (ZIP)</p>
+                    <p className="text-sm text-emerald-200/80">Vite/React-Starter mit allen Seiten</p>
+                  </div>
+                  <span className="text-lg">{exporting === 'web' ? '…' : '→'}</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-2xl border border-amber-400/40 bg-amber-500/20 p-4 text-left text-amber-100 transition hover:bg-amber-500/30 disabled:opacity-40"
+                onClick={exportAndroidKit}
+                disabled={!hasPages || exporting === 'apk'}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold">Android Kit</p>
+                    <p className="text-sm text-amber-100/80">Expo/React-Native Projekt inkl. README</p>
+                  </div>
+                  <span className="text-lg">{exporting === 'apk' ? '…' : '→'}</span>
+                </div>
+              </button>
+            </div>
+            <div className="mt-6 flex justify-end gap-2 text-sm">
+              <button
+                type="button"
+                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-neutral-100 transition hover:bg-white/10"
+                onClick={() => setExportDialogOpen(false)}
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {aiOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d101b] p-6 shadow-2xl">
@@ -2265,7 +2264,7 @@ export default function EditorShell({ initialPageId }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
