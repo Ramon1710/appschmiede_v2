@@ -13,6 +13,7 @@ import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
+import JSZip from 'jszip';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -86,6 +87,556 @@ const emptyTree: PageTree = {
     props: { bg: DEFAULT_PAGE_BACKGROUND },
     children: [],
   },
+};
+
+type ExportablePage = {
+  id?: string;
+  name: string;
+  folder?: string | null;
+  tree: PageTree['tree'];
+};
+
+const slugify = (value: string): string =>
+  (value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .replace(/-{2,}/g, '-')
+    || 'appschmiede-project';
+
+const pagesModuleTemplate = (pages: ExportablePage[]) =>
+  `const pages = ${JSON.stringify(pages, null, 2)};
+export default pages;
+`;
+
+const webReadmeTemplate = (projectTitle: string) => `# ${projectTitle} – Web Export
+
+Dieses Archiv enthält ein schlankes Vite/React-Projekt mit allen Seiten aus der AppSchmiede. So setzt du es ein:
+
+1. Node 18+ installieren
+2. Im Projektordner \`npm install\`
+3. \`.env\` anhand von \`.env.example\` anlegen (eigene APIs, Firebase, Stripe etc.)
+4. Entwicklung starten: \`npm run dev\`
+5. Produktion bauen: \`npm run build && npm run preview\`
+
+Die Renderer-Komponenten findest du in \`src/App.jsx\`. Die rohe Seitenstruktur liegt in \`src/pages-data.js\`.
+
+> Tipp: Ergänze in \`.env\` deine Keys (z. B. \`VITE_FIREBASE_API_KEY\`, \`VITE_API_BASE_URL\`) und verbinde die Werte im Code – Platzhalter sind bereits vorgesehen.
+`;
+
+const webPackageJson = (slug: string) =>
+  JSON.stringify(
+    {
+      name: slug,
+      version: '0.1.0',
+      private: true,
+      type: 'module',
+      scripts: {
+        dev: 'vite',
+        build: 'vite build',
+        preview: 'vite preview',
+      },
+      dependencies: {
+        react: '^18.3.1',
+        'react-dom': '^18.3.1',
+      },
+      devDependencies: {
+        '@vitejs/plugin-react': '^4.3.1',
+        vite: '^5.3.4',
+      },
+    },
+    null,
+    2
+  );
+
+const webEnvExample = `VITE_FIREBASE_API_KEY=PASTE_FIREBASE_KEY
+VITE_API_BASE_URL=https://your-api.example.com
+VITE_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+`;
+
+const webIndexHtml = (projectTitle: string) => `<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${projectTitle}</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+`;
+
+const webMainFile = `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './App.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+`;
+
+const webAppCss = `:root {
+  color-scheme: dark;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #03050a;
+  color: #f4f7ff;
+}
+
+.app-shell {
+  padding: 2rem clamp(1.5rem, 4vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.app-hero {
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 32px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: radial-gradient(circle at top, rgba(58, 181, 255, 0.2), transparent 60%), #050914;
+}
+
+.eyebrow {
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.page-card {
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(6, 10, 18, 0.85);
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.page-card h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.4rem;
+}
+
+.node-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.node-block {
+  border-radius: 18px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.node-block button {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem;
+  font-weight: 600;
+  background: linear-gradient(120deg, #38bdf8, #6366f1);
+  color: #05070e;
+  cursor: pointer;
+}
+
+.node-block input {
+  width: 100%;
+  border-radius: 12px;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+}
+
+.component-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+}
+`;
+
+const webAppFile = (projectTitle: string) => `import pages from './pages-data';
+
+const handleAction = (props = {}) => {
+  const action = props.action;
+  if (!action) return;
+  switch (action) {
+    case 'url':
+    case 'support-ticket':
+      if (props.url) window.open(props.url, '_blank');
+      break;
+    case 'email':
+      if (props.emailAddress) window.location.href = 'mailto:' + props.emailAddress;
+      break;
+    case 'call':
+      if (props.phoneNumber) window.location.href = 'tel:' + props.phoneNumber;
+      break;
+    default:
+      break;
+  }
+};
+
+const NodeRenderer = ({ node }) => {
+  if (!node) return null;
+  const style = node.style ?? {};
+  if (node.type === 'text') {
+    return <div className="node-block" style={style}><p>{node.props?.text ?? 'Text'}</p></div>;
+  }
+  if (node.type === 'button') {
+    return (
+      <div className="node-block" style={style}>
+        <button type="button" onClick={() => handleAction(node.props)}>
+          {node.props?.label ?? 'Button'}
+        </button>
+      </div>
+    );
+  }
+  if (node.type === 'input') {
+    return (
+      <div className="node-block" style={style}>
+        <input placeholder={node.props?.placeholder ?? 'Eingabe'} />
+      </div>
+    );
+  }
+  if (node.type === 'image') {
+    return (
+      <div className="node-block" style={style}>
+        <img src={node.props?.src ?? 'https://placehold.co/400x240'} alt={node.props?.alt ?? 'Bild'} style={{ width: '100%', borderRadius: 16 }} />
+      </div>
+    );
+  }
+  if (node.type === 'container') {
+    return (
+      <div className="node-block" style={style}>
+        <div className="component-chip">
+          <span>Container</span>
+          <span>{node.props?.component ?? 'Layout'}</span>
+        </div>
+        <div className="node-stack">
+          {(node.children ?? []).map((child) => (
+            <NodeRenderer key={child.id} node={child} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const PageCard = ({ page }) => {
+  const bg = page.tree?.props?.bg ?? 'linear-gradient(140deg,#0b1220,#050910)';
+  return (
+    <section className="page-card" style={{ background: bg }}>
+      <div className="component-chip">Seite</div>
+      <h2>{page.name}</h2>
+      {page.folder && <p className="eyebrow">Ordner: {page.folder}</p>}
+      <div className="node-stack">
+        {(page.tree?.children ?? []).map((node) => (
+          <NodeRenderer key={node.id} node={node} />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+export default function App() {
+  const orderedPages = Array.isArray(pages) ? pages : [];
+  return (
+    <div className="app-shell">
+      <div className="app-hero">
+        <p className="eyebrow">AppSchmiede Export</p>
+        <h1>${projectTitle}</h1>
+        <p>Pass das Projekt an, ergänze deine APIs in der .env und veröffentliche es überall.</p>
+      </div>
+      <main className="page-grid">
+        {orderedPages.map((page) => (
+          <PageCard key={page.id ?? page.name} page={page} />
+        ))}
+      </main>
+    </div>
+  );
+}
+`;
+
+const androidReadmeTemplate = (projectTitle: string) => `# ${projectTitle} – Android Kit
+
+Dieses Bundle ist ein Expo/React-Native-Projekt. So erzeugst du deine APK:
+
+1. Node 18+ und Expo CLI installieren: \`npm install -g expo-cli eas-cli\`
+2. Abhängigkeiten installieren: \`npm install\`
+3. \`.env\` aus \`.env.example\` kopieren und eigene Keys eintragen (EXPO_PUBLIC_*)
+4. Lokale Vorschau: \`npm run start\` und dann \`a\` für Android-Emulator oder QR-Code scannen.
+5. Native Dateien erzeugen: \`npx expo prebuild\`
+6. APK-Build über EAS: \`eas build -p android --profile preview\`
+
+Die Seitenstruktur liegt in \`pages-data.js\`. Passe \`App.js\` an, wenn du individuelle Komponenten rendern willst.
+`;
+
+const androidEnvExample = `EXPO_PUBLIC_API_BASE_URL=https://your-api.example.com
+EXPO_PUBLIC_FIREBASE_API_KEY=PASTE_FIREBASE_KEY
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+`;
+
+const androidPackageJson = (slug: string) =>
+  JSON.stringify(
+    {
+      name: `${slug}-android-kit`,
+      version: '1.0.0',
+      private: true,
+      main: 'node_modules/expo/AppEntry.js',
+      scripts: {
+        start: 'expo start -c',
+        android: 'expo run:android',
+        'build-apk': 'eas build -p android --profile preview',
+      },
+      dependencies: {
+        expo: '~51.0.0',
+        'expo-status-bar': '~1.12.0',
+        react: '18.2.0',
+        'react-dom': '18.2.0',
+        'react-native': '0.74.3',
+      },
+      devDependencies: {
+        '@babel/core': '^7.24.5',
+      },
+    },
+    null,
+    2
+  );
+
+const androidAppJson = (projectTitle: string, slug: string) =>
+  JSON.stringify(
+    {
+      expo: {
+        name: projectTitle,
+        slug: `${slug}-android`,
+        version: '1.0.0',
+        orientation: 'portrait',
+        scheme: slug.replace(/[^a-z0-9]/g, ''),
+        userInterfaceStyle: 'automatic',
+        splash: {
+          backgroundColor: '#05070e',
+        },
+        updates: {
+          enabled: true,
+        },
+        ios: {
+          supportsTablet: true,
+        },
+        android: {
+          adaptiveIcon: {
+            backgroundColor: '#05070e',
+          },
+          package: `com.appschmiede.${slug.replace(/[^a-z0-9]/g, '')}`,
+        },
+        extra: {
+          eas: {
+            projectId: '00000000-0000-0000-0000-000000000000',
+          },
+        },
+      },
+    },
+    null,
+    2
+  );
+
+const androidAppFile = (projectTitle: string) => `import React from 'react';
+import { SafeAreaView, ScrollView, View, Text, Image, TouchableOpacity, TextInput, Linking, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import pages from './pages-data';
+
+const handleAction = (props = {}) => {
+  const action = props.action;
+  if (!action) return;
+  if (action === 'url' && props.url) {
+    Linking.openURL(props.url);
+  } else if (action === 'email' && props.emailAddress) {
+    Linking.openURL('mailto:' + props.emailAddress);
+  } else if (action === 'call' && props.phoneNumber) {
+    Linking.openURL('tel:' + props.phoneNumber);
+  }
+};
+
+const NodeRenderer = ({ node }) => {
+  if (!node) return null;
+  if (node.type === 'text') {
+    return (
+      <View style={styles.nodeBlock}>
+        <Text style={styles.text}>{node.props?.text ?? 'Text'}</Text>
+      </View>
+    );
+  }
+  if (node.type === 'button') {
+    return (
+      <TouchableOpacity style={styles.button} onPress={() => handleAction(node.props)}>
+        <Text style={styles.buttonLabel}>{node.props?.label ?? 'Button'}</Text>
+      </TouchableOpacity>
+    );
+  }
+  if (node.type === 'input') {
+    return (
+      <View style={styles.nodeBlock}>
+        <TextInput style={styles.input} placeholderTextColor="#9ca3af" placeholder={node.props?.placeholder ?? 'Eingabe'} />
+      </View>
+    );
+  }
+  if (node.type === 'image') {
+    return (
+      <View style={styles.nodeBlock}>
+        <Image source={{ uri: node.props?.src ?? 'https://placehold.co/400x240' }} style={styles.image} />
+      </View>
+    );
+  }
+  if (node.type === 'container') {
+    return (
+      <View style={styles.nodeBlock}>
+        <Text style={styles.chip}>{node.props?.component ?? 'Container'}</Text>
+        <View style={styles.nodeStack}>
+          {(node.children ?? []).map((child) => (
+            <NodeRenderer key={child.id} node={child} />
+          ))}
+        </View>
+      </View>
+    );
+  }
+  return null;
+};
+
+const PageCard = ({ page }) => {
+  const bg = page.tree?.props?.bg ?? '#0b1220';
+  return (
+    <View style={[styles.pageCard, { backgroundColor: bg }]}>
+      <Text style={styles.pageTitle}>{page.name}</Text>
+      {page.folder && <Text style={styles.folderNote}>Ordner: {page.folder}</Text>}
+      <View style={styles.nodeStack}>
+        {(page.tree?.children ?? []).map((node) => (
+          <NodeRenderer key={node.id} node={node} />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+export default function App() {
+  const list = Array.isArray(pages) ? pages : [];
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="light" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.heroEyebrow}>AppSchmiede Export</Text>
+        <Text style={styles.heroTitle}>${projectTitle}</Text>
+        <Text style={styles.heroDescription}>Passe APIs in der .env an und baue mit Expo CLI deine eigene APK.</Text>
+        {list.map((page) => (
+          <PageCard key={page.id ?? page.name} page={page} />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { backgroundColor: '#03050a', flex: 1 },
+  scrollContent: { padding: 24, gap: 16 },
+  heroEyebrow: { color: '#94a3b8', letterSpacing: 6, textTransform: 'uppercase', fontSize: 12 },
+  heroTitle: { color: 'white', fontSize: 28, fontWeight: '700' },
+  heroDescription: { color: '#cbd5f5', marginBottom: 8 },
+  pageCard: { borderRadius: 24, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16 },
+  pageTitle: { color: 'white', fontSize: 20, fontWeight: '600' },
+  folderNote: { color: '#cbd5f5', fontSize: 12, marginBottom: 8 },
+  nodeStack: { flexDirection: 'column', gap: 12 },
+  nodeBlock: { borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', padding: 12, backgroundColor: 'rgba(5,9,20,0.55)' },
+  text: { color: 'white', fontSize: 16 },
+  button: { marginTop: 4, borderRadius: 999, paddingVertical: 12, backgroundColor: '#38bdf8' },
+  buttonLabel: { textAlign: 'center', fontWeight: '700', color: '#05070e' },
+  input: { borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', color: 'white' },
+  image: { width: '100%', height: 160, borderRadius: 16, backgroundColor: '#111' },
+  chip: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', color: '#cbd5f5' },
+});
+`;
+
+const easJson = `{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
+`;
+
+const babelConfig = `module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+  };
+};
+`;
+
+const createWebBundleBlob = async (projectTitle: string, slug: string, pages: ExportablePage[]) => {
+  const zip = new JSZip();
+  const root = zip.folder(`${slug}-web`) ?? zip;
+  root.file('README.md', webReadmeTemplate(projectTitle));
+  root.file('.env.example', webEnvExample);
+  root.file('package.json', webPackageJson(slug));
+  root.file('vite.config.js', "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});\n");
+  root.file('index.html', webIndexHtml(projectTitle));
+
+  const src = root.folder('src');
+  src?.file('main.jsx', webMainFile);
+  src?.file('App.jsx', webAppFile(projectTitle));
+  src?.file('App.css', webAppCss);
+  src?.file('pages-data.js', pagesModuleTemplate(pages));
+
+  const publicFolder = root.folder('public');
+  publicFolder?.file(
+    'favicon.svg',
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#6366f1"/></linearGradient></defs><rect width="120" height="120" rx="28" fill="#05070e"/><path d="M30 85 L45 30 L75 30 L90 85" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  );
+
+  return zip.generateAsync({ type: 'blob' });
+};
+
+const createAndroidBundleBlob = async (projectTitle: string, slug: string, pages: ExportablePage[]) => {
+  const zip = new JSZip();
+  const root = zip.folder(`${slug}-android-kit`) ?? zip;
+  root.file('README.md', androidReadmeTemplate(projectTitle));
+  root.file('.env.example', androidEnvExample);
+  root.file('package.json', androidPackageJson(slug));
+  root.file('app.json', androidAppJson(projectTitle, slug));
+  root.file('babel.config.js', babelConfig);
+  root.file('eas.json', easJson);
+  root.file('pages-data.js', pagesModuleTemplate(pages));
+  root.file('App.js', androidAppFile(projectTitle));
+
+  return zip.generateAsync({ type: 'blob' });
 };
 
 const hashPage = (page?: PageTree | null): string => {
@@ -195,6 +746,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
   useEffect(() => {
     latestTree.current = tree;
   }, [tree]);
@@ -269,6 +821,22 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [_projectId, currentPageId]);
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
+  const [exporting, setExporting] = useState<'web' | 'apk' | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const hasPages = pages.length > 0;
+
+  const triggerDownload = useCallback((blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    if (!downloadAnchor.current) {
+      downloadAnchor.current = document.createElement('a');
+      downloadAnchor.current.style.display = 'none';
+      document.body.appendChild(downloadAnchor.current);
+    }
+    downloadAnchor.current.href = url;
+    downloadAnchor.current.download = fileName;
+    downloadAnchor.current.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }, []);
 
   const applyTreeUpdate = useCallback(
     (updater: (prev: PageTree) => PageTree, options?: { markDirty?: boolean }): PageTree => {
@@ -359,7 +927,6 @@ export default function EditorShell({ initialPageId }: Props) {
     [tree, selectedId]
   );
 
-  const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
   const currentPageMeta = useMemo(() => pages.find((p) => p.id === currentPageId) ?? null, [pages, currentPageId]);
 
   const settingsHref = useMemo(() => (_projectId ? `/editor/settings?projectId=${_projectId}` : null), [_projectId]);
@@ -904,31 +1471,30 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate]);
 
-  const onExport = useCallback(() => {
-    if (!(_projectId && pages.length)) {
-      return;
-    }
-
-    const payload = {
-      projectId: _projectId,
-      exportedAt: new Date().toISOString(),
-      pages: pages.map(({ id, name, folder, tree }) => ({ id, name, folder: folder ?? null, tree })),
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    if (!downloadAnchor.current) {
-      downloadAnchor.current = document.createElement('a');
-      downloadAnchor.current.style.display = 'none';
-      document.body.appendChild(downloadAnchor.current);
-    }
-
-    downloadAnchor.current.href = url;
-    downloadAnchor.current.download = `appschmiede-${_projectId}.json`;
-    downloadAnchor.current.click();
-    URL.revokeObjectURL(url);
-  }, [_projectId, pages]);
+  const buildPagesSnapshot = useCallback((): ExportablePage[] => {
+    const active = latestTree.current;
+    return pages.map((page) => {
+      if (!page) return page as unknown as ExportablePage;
+      const isCurrent = Boolean(
+        active &&
+          ((active.id && page.id && active.id === page.id) || (currentPageId && page.id === currentPageId))
+      );
+      if (isCurrent && active) {
+        return {
+          id: active.id ?? page.id,
+          name: active.name ?? page.name ?? 'Seite',
+          folder: active.folder ?? page.folder ?? null,
+          tree: active.tree ?? page.tree,
+        };
+      }
+      return {
+        id: page.id,
+        name: page.name ?? 'Seite',
+        folder: page.folder ?? null,
+        tree: page.tree,
+      };
+    });
+  }, [pages, currentPageId]);
 
   const flushPendingSave = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
@@ -947,6 +1513,68 @@ export default function EditorShell({ initialPageId }: Props) {
       isDirty.current = true;
     }
   }, [_projectId, currentPageId]);
+
+  const exportJson = useCallback(async () => {
+    if (!(_projectId && hasPages)) {
+      window.alert('Bitte öffne ein Projekt mit mindestens einer Seite, bevor du exportierst.');
+      return;
+    }
+    setExportDialogOpen(false);
+    await flushPendingSave();
+    const snapshot = buildPagesSnapshot();
+    const payload = {
+      projectId: _projectId,
+      projectName: project?.name ?? null,
+      exportedAt: new Date().toISOString(),
+      pages: snapshot,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    triggerDownload(blob, `appschmiede-${_projectId}.json`);
+  }, [_projectId, hasPages, flushPendingSave, buildPagesSnapshot, triggerDownload, project?.name]);
+
+  const exportWebBundle = useCallback(async () => {
+    if (!(_projectId && hasPages)) {
+      window.alert('Bitte öffne ein Projekt mit mindestens einer Seite, bevor du exportierst.');
+      return;
+    }
+    setExportDialogOpen(false);
+    setExporting('web');
+    try {
+      await flushPendingSave();
+      const snapshot = buildPagesSnapshot();
+      const projectTitle = project?.name ?? 'AppSchmiede Projekt';
+      const slugSource = project?.name ?? _projectId ?? 'appschmiede';
+      const blob = await createWebBundleBlob(projectTitle, slugify(slugSource), snapshot);
+      triggerDownload(blob, `${slugify(slugSource)}-web.zip`);
+    } catch (error) {
+      console.error('Web export failed', error);
+      window.alert('Web-Export konnte nicht erstellt werden. Bitte versuche es erneut.');
+    } finally {
+      setExporting((prev) => (prev === 'web' ? null : prev));
+    }
+  }, [_projectId, hasPages, flushPendingSave, buildPagesSnapshot, project?.name, triggerDownload]);
+
+  const exportAndroidKit = useCallback(async () => {
+    if (!(_projectId && hasPages)) {
+      window.alert('Bitte öffne ein Projekt mit mindestens einer Seite, bevor du exportierst.');
+      return;
+    }
+    setExportDialogOpen(false);
+    setExporting('apk');
+    try {
+      await flushPendingSave();
+      const snapshot = buildPagesSnapshot();
+      const projectTitle = project?.name ?? 'AppSchmiede Projekt';
+      const slugSource = project?.name ?? _projectId ?? 'appschmiede';
+      const blob = await createAndroidBundleBlob(projectTitle, slugify(slugSource), snapshot);
+      triggerDownload(blob, `${slugify(slugSource)}-android-kit.zip`);
+    } catch (error) {
+      console.error('Android export failed', error);
+      window.alert('Android-Kit konnte nicht erstellt werden. Bitte versuche es erneut.');
+    } finally {
+      setExporting((prev) => (prev === 'apk' ? null : prev));
+    }
+  }, [_projectId, hasPages, flushPendingSave, buildPagesSnapshot, project?.name, triggerDownload]);
 
   const handlePageSelection = useCallback((id: string | null) => {
     setCurrentPageId(id);
@@ -1106,9 +1734,10 @@ export default function EditorShell({ initialPageId }: Props) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#05070e]">
-      <Header />
-      <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+    <>
+      <div className="flex h-screen flex-col bg-[#05070e]">
+        <Header />
+        <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
           <aside className="hidden w-[24rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex">
             <div className="flex h-full flex-col">
@@ -1123,11 +1752,11 @@ export default function EditorShell({ initialPageId }: Props) {
                   </Link>
                   <span className="text-xs uppercase tracking-[0.35em] text-neutral-500">Editor</span>
                 </div>
-                <div className="mt-4 flex items-center gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <button
-                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold transition hover:bg-white/10 disabled:opacity-40"
-                    onClick={onExport}
-                    disabled={!pages.length}
+                    className="flex-1 min-w-[9rem] rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30 disabled:opacity-40"
+                    onClick={() => setExportDialogOpen(true)}
+                    disabled={!hasPages}
                   >
                     Export
                   </button>
@@ -1135,10 +1764,10 @@ export default function EditorShell({ initialPageId }: Props) {
                     projectId={_projectId}
                     pageId={currentPageId}
                     onBeforeOpen={flushPendingSave}
-                    className="flex-1"
+                    className="flex-1 min-w-[9rem]"
                   />
                   <button
-                    className="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+                    className="flex-1 min-w-[9rem] rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                     onClick={() => {
                       setAiError(null);
                       setAiOpen(true);
@@ -1149,7 +1778,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   {settingsHref ? (
                     <Link
                       href={settingsHref}
-                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-semibold transition hover:bg-white/10"
+                      className="flex-1 min-w-[9rem] rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-semibold transition hover:bg-white/10"
                     >
                       ⚙️ Einstellungen
                     </Link>
@@ -1157,7 +1786,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     <button
                       type="button"
                       disabled
-                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
+                      className="flex-1 min-w-[9rem] rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
                     >
                       ⚙️ Einstellungen
                     </button>
@@ -1245,9 +1874,81 @@ export default function EditorShell({ initialPageId }: Props) {
                       onClick={() => setToolboxOpen((prev) => !prev)}
                       className="flex w-full items-center justify-between text-left"
                     >
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Werkzeuge</p>
-                        <p className="text-sm font-semibold text-neutral-100">Vorlagen, KI & Bausteine</p>
+                        </div>
+                      </div>
+
+                      {exportDialogOpen && (
+                        <div
+                          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur"
+                          onClick={() => setExportDialogOpen(false)}
+                        >
+                          <div
+                            className="w-full max-w-lg rounded-2xl border border-white/10 bg-neutral-950/95 p-6 text-white shadow-2xl"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <div className="space-y-1">
+                              <p className="text-xs uppercase tracking-[0.4em] text-cyan-200">Export</p>
+                              <h3 className="text-2xl font-semibold">Format auswählen</h3>
+                              <p className="text-sm text-neutral-300">Wähle das gewünschte Exportziel aus. Alle Varianten enthalten eine README mit Setup-Hinweisen.</p>
+                            </div>
+                            <div className="mt-6 space-y-3">
+                              <button
+                                type="button"
+                                className="w-full rounded-2xl border border-white/15 bg-white/5 p-4 text-left transition hover:bg-white/10 disabled:opacity-40"
+                                onClick={exportJson}
+                                disabled={!hasPages}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-semibold">JSON</p>
+                                    <p className="text-sm text-neutral-400">Rohdaten aller Seiten (Import/Backup)</p>
+                                  </div>
+                                  <span className="text-lg">→</span>
+                                </div>
+                              </button>
+                              <button
+                                type="button"
+                                className="w-full rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 text-left text-emerald-100 transition hover:bg-emerald-500/25 disabled:opacity-40"
+                                onClick={exportWebBundle}
+                                disabled={!hasPages || exporting === 'web'}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-semibold">Web (ZIP)</p>
+                                    <p className="text-sm text-emerald-200/80">Vite/React-Starter mit allen Seiten</p>
+                                  </div>
+                                  <span className="text-lg">{exporting === 'web' ? '…' : '→'}</span>
+                                </div>
+                              </button>
+                              <button
+                                type="button"
+                                className="w-full rounded-2xl border border-amber-400/40 bg-amber-500/20 p-4 text-left text-amber-100 transition hover:bg-amber-500/30 disabled:opacity-40"
+                                onClick={exportAndroidKit}
+                                disabled={!hasPages || exporting === 'apk'}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-semibold">Android Kit</p>
+                                    <p className="text-sm text-amber-100/80">Expo/React-Native Projekt inkl. README</p>
+                                  </div>
+                                  <span className="text-lg">{exporting === 'apk' ? '…' : '→'}</span>
+                                </div>
+                              </button>
+                            </div>
+                            <div className="mt-6 flex justify-end gap-2 text-sm">
+                              <button
+                                type="button"
+                                className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-neutral-100 transition hover:bg-white/10"
+                                onClick={() => setExportDialogOpen(false)}
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
                       </div>
                       <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
                     </button>
@@ -1295,9 +1996,9 @@ export default function EditorShell({ initialPageId }: Props) {
                   <span>Dashboard</span>
                 </Link>
                 <button
-                  className="rounded border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold transition hover:bg-white/20 disabled:opacity-40"
-                  onClick={onExport}
-                  disabled={!pages.length}
+                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30 disabled:opacity-40"
+                  onClick={() => setExportDialogOpen(true)}
+                  disabled={!hasPages}
                 >
                   Export
                 </button>
@@ -1461,8 +2162,8 @@ export default function EditorShell({ initialPageId }: Props) {
                       onSelect={setSelectedId}
                       onRemove={onRemove}
                       onMove={onMove}
-                      onResize={(id, patch) => updateNode(id, patch)}
-                      onUpdateNode={(id, patch) => updateNode(id, patch)}
+                      onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                      onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
                     />
                   </div>
                 </div>
@@ -1492,8 +2193,8 @@ export default function EditorShell({ initialPageId }: Props) {
                     onSelect={setSelectedId}
                     onRemove={onRemove}
                     onMove={onMove}
-                    onResize={(id, patch) => updateNode(id, patch)}
-                    onUpdateNode={(id, patch) => updateNode(id, patch)}
+                    onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                    onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
                   />
                 </div>
               </div>
