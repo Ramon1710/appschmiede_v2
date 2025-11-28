@@ -1,11 +1,36 @@
 // path: src/app/editor/_components/PropertiesPanel.tsx
 'use client';
 
-import React, { useRef, useState } from 'react';
-import type { Node as EditorNode, NodeProps, NodeStyle } from '@/lib/editorTypes';
+import React, { useMemo, useRef, useState } from 'react';
+import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem } from '@/lib/editorTypes';
 
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const FALLBACK_COLOR = '#0f172a';
+const createNavId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `nav_${Math.random().toString(36).slice(2)}`;
+
+const NAV_DEFAULTS: Array<Omit<NavbarItem, 'id'>> = [
+  { label: 'Dashboard', action: 'navigate', target: '#dashboard' },
+  { label: 'Kontakt', action: 'navigate', target: '#contact' },
+];
+
+const normalizeNavItems = (items?: unknown): NavbarItem[] => {
+  if (Array.isArray(items) && items.length > 0) {
+    return items.map((raw) => ({
+      id: typeof raw?.id === 'string' ? raw.id : createNavId(),
+      label:
+        typeof raw?.label === 'string' && raw.label.trim().length > 0
+          ? raw.label.trim()
+          : 'Navigation',
+      action: (raw?.action as NavbarItem['action']) ?? 'navigate',
+      target: typeof raw?.target === 'string' ? raw.target : undefined,
+      targetPage: typeof raw?.targetPage === 'string' ? raw.targetPage : undefined,
+      url: typeof raw?.url === 'string' ? raw.url : undefined,
+      icon: typeof raw?.icon === 'string' ? raw.icon : undefined,
+    }));
+  }
+  return NAV_DEFAULTS.map((item) => ({ ...item, id: createNavId() }));
+};
 
 interface PropertiesPanelProps {
   node: EditorNode | null;
@@ -96,6 +121,36 @@ export default function PropertiesPanel({
   };
 
   const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
+  const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
+  const navItems = useMemo(() => (isNavbarContainer ? normalizeNavItems(node?.props?.navItems) : []), [isNavbarContainer, node?.props?.navItems]);
+
+  const updateNavItems = (next: NavbarItem[]) => {
+    setProps({ navItems: next });
+  };
+
+  const handleNavItemChange = (id: string, patch: Partial<NavbarItem>) => {
+    if (!isNavbarContainer) return;
+    const next = navItems.map((item) => (item.id === id ? { ...item, ...patch } : item));
+    updateNavItems(next);
+  };
+
+  const handleAddNavItem = () => {
+    if (!isNavbarContainer) return;
+    updateNavItems([
+      ...navItems,
+      {
+        id: createNavId(),
+        label: 'Navigation',
+        action: 'navigate',
+      },
+    ]);
+  };
+
+  const handleRemoveNavItem = (id: string) => {
+    if (!isNavbarContainer) return;
+    const next = navItems.filter((item) => item.id !== id);
+    updateNavItems(next.length ? next : []);
+  };
 
   return (
     <div className="p-4 space-y-4 text-sm bg-[#0b0b0f] h-full overflow-y-auto">
@@ -417,6 +472,119 @@ export default function PropertiesPanel({
                 onClick={promptContainerGradient}
                 className="w-full rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
               >KI Hintergrund generieren</button>
+
+              {isNavbarContainer && (
+                <div className="space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">Navigation</div>
+                  <p className="text-[11px] text-neutral-400">
+                    Passe Label, Icon und Ziel für jede Kachel an. Aktionen funktionieren genauso wie bei Buttons.
+                  </p>
+                  {navItems.map((item, index) => {
+                    const needsGenericTarget = ['call', 'email', 'chat', 'support-ticket'].includes(item.action);
+                    return (
+                      <div key={item.id} className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-3">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Eintrag {index + 1}</span>
+                          <button
+                            type="button"
+                            className="text-rose-300 transition hover:text-rose-200"
+                            onClick={() => handleRemoveNavItem(item.id)}
+                          >Entfernen</button>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Label</label>
+                          <input
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            value={item.label}
+                            onChange={(e) => handleNavItemChange(item.id, { label: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Icon (optional)</label>
+                          <input
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            placeholder="z.B. 📊"
+                            value={item.icon ?? ''}
+                            onChange={(e) => handleNavItemChange(item.id, { icon: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Aktion</label>
+                          <select
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            value={item.action}
+                            onChange={(e) => handleNavItemChange(item.id, { action: e.target.value as NavbarItem['action'] })}
+                          >
+                            <option value="navigate">Seite wechseln</option>
+                            <option value="url">Website öffnen</option>
+                            <option value="chat">Chat starten</option>
+                            <option value="call">Anrufen</option>
+                            <option value="email">E-Mail senden</option>
+                            <option value="support-ticket">Support-Ticket</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                            <option value="register">Registrierung</option>
+                            <option value="reset-password">Passwort zurücksetzen</option>
+                            <option value="toggle-theme">Dark/Light Mode</option>
+                          </select>
+                        </div>
+
+                        {item.action === 'navigate' && (
+                          <>
+                            <div>
+                              <label className="text-xs text-gray-400">Zielseite (Name oder ID)</label>
+                              <input
+                                className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                                placeholder="z.B. Unternehmen"
+                                value={item.targetPage ?? ''}
+                                onChange={(e) => handleNavItemChange(item.id, { targetPage: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400">Eigenes Ziel / Anker (optional)</label>
+                              <input
+                                className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                                placeholder="#unternehmen oder /dashboard"
+                                value={item.target ?? ''}
+                                onChange={(e) => handleNavItemChange(item.id, { target: e.target.value })}
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {item.action === 'url' && (
+                          <div>
+                            <label className="text-xs text-gray-400">URL</label>
+                            <input
+                              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                              placeholder="https://example.com"
+                              value={item.url ?? ''}
+                              onChange={(e) => handleNavItemChange(item.id, { url: e.target.value })}
+                            />
+                          </div>
+                        )}
+
+                        {needsGenericTarget && (
+                          <div>
+                            <label className="text-xs text-gray-400">Ziel (Telefon, E-Mail oder Kanal)</label>
+                            <input
+                              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                              placeholder="z.B. +49 123 456"
+                              value={item.target ?? ''}
+                              onChange={(e) => handleNavItemChange(item.id, { target: e.target.value })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={handleAddNavItem}
+                    className="w-full rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+                  >+ Navigationseintrag</button>
+                </div>
+              )}
             </div>
           )}
         </>
