@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
+import GoogleAdSlot from '@/components/GoogleAdSlot';
 
 const workflowSteps = [
   {
@@ -110,27 +111,27 @@ const reasons = [
 
 const adSlotsLeft = [
   {
+    slotKey: 'HOME_LEFT_PRIMARY',
     title: 'Partner-Spot 01',
     description: 'Zeig dein Lieblings-Plugin für Prototyping und sichere dir Leads direkt im Editor.',
-    gradient: 'from-cyan-500/30 to-blue-600/20',
   },
   {
+    slotKey: 'HOME_LEFT_SECONDARY',
     title: 'Early-Bird Deal',
     description: '20 % Rabatt auf Illustrationen & Mockups von Studio Forma – nur diese Woche.',
-    gradient: 'from-purple-500/30 to-indigo-500/10',
   },
 ];
 
 const adSlotsRight = [
   {
+    slotKey: 'HOME_RIGHT_PRIMARY',
     title: 'KI-Workshop',
     description: 'Live-Session: Konzepte in 60 Minuten zur klickbaren App. Jetzt Platz sichern.',
-    gradient: 'from-emerald-500/20 to-cyan-500/20',
   },
   {
+    slotKey: 'HOME_RIGHT_SECONDARY',
     title: 'Template-Marktplatz',
     description: 'Verkaufe deine App-Schablonen direkt in der AppSchmiede Community.',
-    gradient: 'from-rose-500/20 to-orange-500/20',
   },
 ];
 
@@ -170,14 +171,16 @@ export default function HomePage() {
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4">
               {adSlotsLeft.map((ad) => (
-                <div
-                  key={ad.title}
-                  className={`rounded-2xl border border-white/10 bg-gradient-to-br ${ad.gradient} p-4 text-sm text-white shadow-lg`}
-                >
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">Anzeige</p>
-                  <h3 className="mt-2 text-lg font-semibold">{ad.title}</h3>
-                  <p className="mt-2 text-white/80">{ad.description}</p>
-                </div>
+                <GoogleAdSlot
+                  key={ad.slotKey}
+                  slotKey={ad.slotKey}
+                  backgroundFallback={
+                    <>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
+                      <p className="mt-2 text-sm text-white/80">{ad.description}</p>
+                    </>
+                  }
+                />
               ))}
             </div>
           </aside>
@@ -367,14 +370,16 @@ export default function HomePage() {
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4">
               {adSlotsRight.map((ad) => (
-                <div
-                  key={ad.title}
-                  className={`rounded-2xl border border-white/10 bg-gradient-to-br ${ad.gradient} p-4 text-sm text-white shadow-lg`}
-                >
-                  <p className="text-xs uppercase tracking-[0.35em] text-white/70">Anzeige</p>
-                  <h3 className="mt-2 text-lg font-semibold">{ad.title}</h3>
-                  <p className="mt-2 text-white/80">{ad.description}</p>
-                </div>
+                <GoogleAdSlot
+                  key={ad.slotKey}
+                  slotKey={ad.slotKey}
+                  backgroundFallback={
+                    <>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
+                      <p className="mt-2 text-sm text-white/80">{ad.description}</p>
+                    </>
+                  }
+                />
               ))}
             </div>
           </aside>

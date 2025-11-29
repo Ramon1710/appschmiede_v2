@@ -143,7 +143,7 @@ export default function GuidedTour({
       {restartButton}
       {createPortal(
         <div className="fixed inset-0 z-40 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur" onClick={close} />
+          <div className="absolute inset-0 cursor-pointer" onClick={close} />
           {highlightRect && (
             <div
               className="pointer-events-none"
@@ -156,7 +156,7 @@ export default function GuidedTour({
                 borderRadius: 16,
                 boxShadow: '0 0 0 9999px rgba(2,6,23,0.78), 0 15px 45px rgba(6,182,212,0.3)',
                 border: '2px solid rgba(14, 165, 233, 0.8)',
-                backgroundColor: 'rgba(6,182,212,0.08)',
+                backgroundColor: 'rgba(6,182,212,0.04)',
                 transition: 'all 0.2s ease',
               }}
             />

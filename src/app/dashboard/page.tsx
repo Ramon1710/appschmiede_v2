@@ -9,8 +9,35 @@ import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 import GuidedTour from '@/components/GuidedTour';
+import GoogleAdSlot from '@/components/GoogleAdSlot';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
+
+const dashboardAdsLeft = [
+  {
+    slotKey: 'DASH_LEFT_PRIMARY',
+    title: 'Productivity Stack',
+    description: 'Buche dir Add-ons für dein Team – Integrationen, Support, Co-Piloten.',
+  },
+  {
+    slotKey: 'DASH_LEFT_SECONDARY',
+    title: 'Deal der Woche',
+    description: 'KI-gestützte Illustrationen für deine Apps 15 % günstiger.',
+  },
+];
+
+const dashboardAdsRight = [
+  {
+    slotKey: 'DASH_RIGHT_PRIMARY',
+    title: 'App-Launch Promo',
+    description: 'Schalte deine erste Kampagne direkt aus der AppSchmiede.',
+  },
+  {
+    slotKey: 'DASH_RIGHT_SECONDARY',
+    title: 'Cloud Ressourcen',
+    description: 'Skaliere Infrastruktur & Analysen mit Partner-Angeboten.',
+  },
+];
 
 export default function DashboardPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
@@ -61,12 +88,20 @@ export default function DashboardPage() {
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
               <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 text-sm text-neutral-500 flex items-center justify-center">
-                Anzeige 1
-              </div>
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 text-sm text-neutral-500 flex items-center justify-center">
-                Anzeige 2
-              </div>
+              {dashboardAdsLeft.map((ad) => (
+                <GoogleAdSlot
+                  key={ad.slotKey}
+                  slotKey={ad.slotKey}
+                  className="mt-2"
+                  style={{ display: 'block', minHeight: 260 }}
+                  backgroundFallback={
+                    <>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
+                      <p className="mt-1 text-sm text-neutral-300">{ad.description}</p>
+                    </>
+                  }
+                />
+              ))}
             </div>
           </aside>
 
@@ -166,12 +201,20 @@ export default function DashboardPage() {
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
               <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 text-sm text-neutral-500 flex items-center justify-center">
-                Anzeige 3
-              </div>
-              <div className="aspect-square rounded-xl bg-gradient-to-br from-pink-500/20 to-orange-500/20 text-sm text-neutral-500 flex items-center justify-center">
-                Anzeige 4
-              </div>
+              {dashboardAdsRight.map((ad) => (
+                <GoogleAdSlot
+                  key={ad.slotKey}
+                  slotKey={ad.slotKey}
+                  className="mt-2"
+                  style={{ display: 'block', minHeight: 260 }}
+                  backgroundFallback={
+                    <>
+                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
+                      <p className="mt-1 text-sm text-neutral-300">{ad.description}</p>
+                    </>
+                  }
+                />
+              ))}
             </div>
           </aside>
         </div>
