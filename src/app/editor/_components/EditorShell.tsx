@@ -97,6 +97,14 @@ type ExportablePage = {
   tree: PageTree['tree'];
 };
 
+type MobilePanel = 'toolbox' | 'canvas' | 'properties';
+
+const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: string; icon: string }> = [
+  { id: 'toolbox', label: 'Bausteine', icon: '🧱' },
+  { id: 'canvas', label: 'Vorschau', icon: '📱' },
+  { id: 'properties', label: 'Style', icon: '🎨' },
+];
+
 const slugify = (value: string): string =>
   (value || '')
     .toLowerCase()
@@ -811,7 +819,7 @@ export default function EditorShell({ initialPageId }: Props) {
   
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
-  const [mobilePanel, setMobilePanel] = useState<'toolbox' | 'canvas' | 'properties'>('canvas');
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateSelectValue, setTemplateSelectValue] = useState('');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
 
@@ -1918,148 +1926,135 @@ export default function EditorShell({ initialPageId }: Props) {
           </aside>
 
           <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
-            <div className="border-b border-[#111] bg-[#0b0b0f]/95 px-4 py-3 shadow-inner lg:hidden" data-tour-id="editor-actions">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
-                >
-                  <span className="text-lg">←</span>
-                  <span>Dashboard</span>
-                </Link>
-                <button
-                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30 disabled:opacity-40"
-                  onClick={() => setExportDialogOpen(true)}
-                  disabled={!hasPages}
-                >
-                  Export
-                </button>
-                <QRCodeButton
-                  projectId={_projectId}
-                  pageId={currentPageId}
-                  onBeforeOpen={flushPendingSave}
-                  className="rounded"
-                />
-                <button
-                  className="rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
-                  onClick={() => {
-                    setAiError(null);
-                    setAiOpen(true);
-                  }}
-                >
-                  KI
-                </button>
-                {settingsHref ? (
+            <div className="flex flex-1 flex-col lg:hidden">
+              <div className="sticky top-0 z-20 border-b border-white/10 bg-[#05070f]/95 px-4 py-4 text-white shadow-xl backdrop-blur" data-tour-id="editor-actions">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
+                    <p className="text-base font-semibold text-white">{project?.name ?? 'Unbenanntes Projekt'}</p>
+                    {project?.description && <p className="text-xs text-neutral-400">{project.description}</p>}
+                  </div>
                   <Link
-                    href={settingsHref}
-                    className="inline-flex items-center justify-center rounded border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold transition hover:bg-white/20"
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
                   >
-                    ⚙️ Einstellungen
+                    <span className="text-lg">←</span>
+                    <span>Dashboard</span>
                   </Link>
-                ) : (
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                  <button
+                    className="flex flex-col items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 font-semibold text-emerald-100 transition hover:bg-emerald-500/30 disabled:opacity-40"
+                    onClick={() => setExportDialogOpen(true)}
+                    disabled={!hasPages}
+                  >
+                    <span className="text-base">⬇️</span>
+                    <span>Export</span>
+                  </button>
+                  <QRCodeButton
+                    projectId={_projectId}
+                    pageId={currentPageId}
+                    onBeforeOpen={flushPendingSave}
+                    className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
+                  />
+                  <button
+                    className="flex flex-col items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-2 font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
+                    onClick={() => {
+                      setAiError(null);
+                      setAiOpen(true);
+                    }}
+                  >
+                    <span className="text-base">✨</span>
+                    <span>KI</span>
+                  </button>
+                </div>
+                <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 text-xs">
+                  <select
+                    className="w-full rounded-xl border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                    value={currentPageId ?? ''}
+                    onChange={(event) => handlePageSelection(event.target.value || null)}
+                  >
+                    {pages.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
                   <button
                     type="button"
-                    disabled
-                    className="rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
+                    onClick={promptRenamePage}
+                    className="rounded-xl border border-white/15 bg-white/5 px-3 font-semibold text-neutral-200 transition hover:bg-white/10 disabled:opacity-40"
+                    disabled={!currentPageId}
                   >
-                    ⚙️ Einstellungen
+                    ✏️
                   </button>
-                )}
+                  <button
+                    type="button"
+                    className="rounded-xl border border-white/10 bg-white/10 px-3 font-semibold transition hover:bg-white/20"
+                    onClick={async () => {
+                      if (!_projectId) return;
+                      const idx = pages.length + 1;
+                      const id = await createPage(_projectId, `Seite ${idx}`);
+                      handlePageSelection(id ?? null);
+                    }}
+                  >
+                    + Seite
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <button
+                    className="flex-1 rounded-xl border border-rose-500/40 bg-rose-500/20 px-3 py-2 font-semibold text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
+                    disabled={!_projectId || !currentPageId || pages.length <= 1}
+                    onClick={async () => {
+                      if (!(_projectId && currentPageId) || pages.length <= 1) return;
+                      const confirmed = window.confirm('Seite wirklich löschen?');
+                      if (!confirmed) return;
+                      try {
+                        await deletePage(_projectId, currentPageId);
+                        setSelectedId(null);
+                        setCurrentPageId(null);
+                        pendingSyncHash.current = null;
+                        isDirty.current = false;
+                      } catch (err) {
+                        console.error('Seite konnte nicht gelöscht werden', err);
+                      }
+                    }}
+                  >
+                    - Seite
+                  </button>
+                  {settingsHref ? (
+                    <Link
+                      href={settingsHref}
+                      className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-semibold text-xs transition hover:bg-white/20"
+                    >
+                      ⚙️ Einstellungen
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 font-semibold text-neutral-400"
+                    >
+                      ⚙️ Einstellungen
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="mt-3 flex gap-2">
-                <select
-                  className="w-full rounded border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
-                  value={currentPageId ?? ''}
-                  onChange={(event) => handlePageSelection(event.target.value || null)}
-                >
-                  {pages.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={promptRenamePage}
-                  className="rounded border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200"
-                  disabled={!currentPageId}
-                >
-                  ✏️
-                </button>
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <button
-                  className="flex-1 rounded border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
-                  disabled={!_projectId || !currentPageId || pages.length <= 1}
-                  onClick={async () => {
-                    if (!(_projectId && currentPageId) || pages.length <= 1) return;
-                    const confirmed = window.confirm('Seite wirklich löschen?');
-                    if (!confirmed) return;
-                    try {
-                      await deletePage(_projectId, currentPageId);
-                      setSelectedId(null);
-                      setCurrentPageId(null);
-                      pendingSyncHash.current = null;
-                      isDirty.current = false;
-                    } catch (err) {
-                      console.error('Seite konnte nicht gelöscht werden', err);
-                    }
-                  }}
-                >
-                  - Seite
-                </button>
-                <button
-                  className="flex-1 rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
-                  onClick={async () => {
-                    if (!_projectId) return;
-                    const idx = pages.length + 1;
-                    const id = await createPage(_projectId, `Seite ${idx}`);
-                    handlePageSelection(id ?? null);
-                  }}
-                >
-                  + Seite
-                </button>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                <button
-                  type="button"
-                  className={`rounded-lg border px-3 py-2 font-medium transition ${
-                    mobilePanel === 'toolbox'
-                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
-                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                  }`}
-                  onClick={() => setMobilePanel('toolbox')}
-                >
-                  Werkzeuge
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-lg border px-3 py-2 font-medium transition ${
-                    mobilePanel === 'canvas'
-                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
-                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                  }`}
-                  onClick={() => setMobilePanel('canvas')}
-                >
-                  Website Vorschau
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-lg border px-3 py-2 font-medium transition ${
-                    mobilePanel === 'properties'
-                      ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
-                      : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                  }`}
-                  onClick={() => setMobilePanel('properties')}
-                >
-                  Eigenschaften
-                </button>
-              </div>
-            </div>
 
-            <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-              {mobilePanel === 'toolbox' && (
-                <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
-                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-toolbox">
-                    <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+              <div className="relative flex-1 overflow-hidden bg-[#030409]">
+                <section
+                  className={`absolute inset-0 flex flex-col gap-4 overflow-y-auto px-4 py-4 transition-all duration-200 ease-out ${
+                    mobilePanel === 'toolbox' ? 'opacity-100 translate-x-0' : 'pointer-events-none opacity-0 translate-x-6'
+                  }`}
+                  data-tour-id="editor-toolbox"
+                >
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/90 p-4 shadow-2xl">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
+                        <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
+                      </div>
+                      <span className="text-[11px] text-neutral-400">Tippen zum Einfügen</span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: 'Bausteine' },
                         { id: 'templates', label: 'Vorlagen' },
@@ -2070,7 +2065,7 @@ export default function EditorShell({ initialPageId }: Props) {
                           onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
                           className={`rounded-lg border px-3 py-2 transition ${
                             toolboxTab === tab.id
-                              ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                              ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
                               : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
                           }`}
                         >
@@ -2078,16 +2073,20 @@ export default function EditorShell({ initialPageId }: Props) {
                         </button>
                       ))}
                     </div>
-                    <div className="mt-4 space-y-3">
+                    <div className="mt-4 space-y-3 overflow-y-auto pr-1">
                       {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
                       {toolboxTab === 'templates' && templateContent}
                     </div>
                   </div>
-                </div>
-              )}
-              {mobilePanel === 'canvas' && (
-                <div className="flex flex-1 min-h-0 flex-col overflow-auto px-4 py-4 lg:hidden">
-                  <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-3 shadow-2xl" data-tour-id="editor-canvas">
+                </section>
+
+                <section
+                  className={`absolute inset-0 flex flex-col overflow-hidden px-4 py-4 transition-all duration-200 ease-out ${
+                    mobilePanel === 'canvas' ? 'opacity-100 translate-x-0' : 'pointer-events-none opacity-0 translate-x-6'
+                  }`}
+                  data-tour-id="editor-canvas"
+                >
+                  <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/90 p-3 shadow-2xl">
                     <Canvas
                       tree={tree}
                       selectedId={selectedId}
@@ -2098,11 +2097,15 @@ export default function EditorShell({ initialPageId }: Props) {
                       onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
                     />
                   </div>
-                </div>
-              )}
-              {mobilePanel === 'properties' && (
-                <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
-                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-properties">
+                </section>
+
+                <section
+                  className={`absolute inset-0 flex flex-col gap-4 overflow-y-auto px-4 py-4 transition-all duration-200 ease-out ${
+                    mobilePanel === 'properties' ? 'opacity-100 translate-x-0' : 'pointer-events-none opacity-0 translate-x-6'
+                  }`}
+                  data-tour-id="editor-properties"
+                >
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/90 p-4 shadow-2xl">
                     <PropertiesPanel
                       node={selectedNode}
                       onUpdate={(patch) => {
@@ -2114,21 +2117,41 @@ export default function EditorShell({ initialPageId }: Props) {
                       onResetBackground={resetPageBackground}
                     />
                   </div>
-                </div>
-              )}
+                </section>
+              </div>
 
-              <div className="hidden flex-1 min-h-0 overflow-auto p-6 lg:flex">
-                <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
-                  <Canvas
-                    tree={tree}
-                    selectedId={selectedId}
-                    onSelect={setSelectedId}
-                    onRemove={onRemove}
-                    onMove={onMove}
-                    onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
-                    onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
-                  />
-                </div>
+              <nav className="grid grid-cols-3 border-t border-white/10 bg-[#05070f]/95 text-xs">
+                {MOBILE_NAV_ITEMS.map((item) => {
+                  const isActive = mobilePanel === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`flex flex-col items-center justify-center gap-1 py-2 font-semibold transition ${
+                        isActive ? 'text-emerald-200' : 'text-neutral-400 hover:text-neutral-200'
+                      }`}
+                      onClick={() => setMobilePanel(item.id)}
+                      aria-pressed={isActive}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <span className="text-[11px] uppercase tracking-widest">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="hidden flex-1 min-h-0 overflow-auto p-6 lg:flex">
+              <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
+                <Canvas
+                  tree={tree}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                  onRemove={onRemove}
+                  onMove={onMove}
+                  onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                  onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                />
               </div>
             </div>
           </main>

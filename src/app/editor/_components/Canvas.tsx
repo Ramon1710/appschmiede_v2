@@ -91,6 +91,7 @@ const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) 
 };
 
 const BOUNDS = { w: 414, h: 896 } as const;
+const INTERACTIVE_NODE_SELECTOR = 'button, input, textarea, select, a, label, [role="button"], [contenteditable="true"], [data-prevent-drag="true"]';
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
@@ -1222,42 +1223,93 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
 }
 
 export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, onResize, onUpdateNode }: CanvasProps) {
-  const dragging = useRef<null | { id: string; startX: number; startY: number }>(null);
-  const resizing = useRef<null | { id: string; dir: 'nw'|'ne'|'sw'|'se'; startX: number; startY: number; start: { x:number; y:number; w:number; h:number } }>(null);
+  type ResizeDir = 'nw' | 'ne' | 'sw' | 'se';
+  const dragging = useRef<null | { id: string; pointerId: number; startX: number; startY: number }>(null);
+  const resizing = useRef<null | { id: string; pointerId: number; dir: ResizeDir; startX: number; startY: number; start: { x: number; y: number; w: number; h: number } }>(null);
 
-  const onMouseDown = (e: React.MouseEvent, id: string) => {
-    if (e.button !== 0) return;
-    dragging.current = { id, startX: e.clientX, startY: e.clientY };
+  const isInteractiveTarget = (event: React.PointerEvent): boolean => {
+    if (!(event.target instanceof Element)) return false;
+    return Boolean(event.target.closest(INTERACTIVE_NODE_SELECTOR));
+  };
+
+  const beginDrag = (event: React.PointerEvent<HTMLDivElement>, id: string) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (isInteractiveTarget(event)) return;
+    event.preventDefault();
+    dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     onSelect(id);
   };
 
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (resizing.current) {
+  const beginResize = (event: React.PointerEvent<HTMLDivElement>, node: EditorNode, dir: ResizeDir) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizing.current = {
+      id: node.id,
+      dir,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      start: { x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 120, h: node.h ?? 40 },
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (resizing.current && event.pointerId === resizing.current.pointerId) {
+      event.preventDefault();
       const { id, dir, startX, startY, start } = resizing.current;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      const minW = 40, minH = 32;
-      let x = start.x, y = start.y, w = start.w, h = start.h;
-      if (dir === 'se') { w = Math.max(minW, start.w + dx); h = Math.max(minH, start.h + dy); }
-      if (dir === 'ne') { w = Math.max(minW, start.w + dx); h = Math.max(minH, start.h - dy); y = start.y + dy; }
-      if (dir === 'sw') { w = Math.max(minW, start.w - dx); x = start.x + dx; h = Math.max(minH, start.h + dy); }
-      if (dir === 'nw') { w = Math.max(minW, start.w - dx); x = start.x + dx; h = Math.max(minH, start.h - dy); y = start.y + dy; }
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      const minW = 40;
+      const minH = 32;
+      let x = start.x;
+      let y = start.y;
+      let w = start.w;
+      let h = start.h;
+      if (dir === 'se') {
+        w = Math.max(minW, start.w + dx);
+        h = Math.max(minH, start.h + dy);
+      }
+      if (dir === 'ne') {
+        w = Math.max(minW, start.w + dx);
+        h = Math.max(minH, start.h - dy);
+        y = start.y + dy;
+      }
+      if (dir === 'sw') {
+        w = Math.max(minW, start.w - dx);
+        x = start.x + dx;
+        h = Math.max(minH, start.h + dy);
+      }
+      if (dir === 'nw') {
+        w = Math.max(minW, start.w - dx);
+        x = start.x + dx;
+        h = Math.max(minH, start.h - dy);
+        y = start.y + dy;
+      }
       onResize(id, { x, y, w, h });
       return;
     }
-    if (!dragging.current) return;
-    const { id, startX, startY } = dragging.current;
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
-    if (dx !== 0 || dy !== 0) {
-      onMove(id, dx, dy);
-      dragging.current = { id, startX: e.clientX, startY: e.clientY };
+    if (dragging.current && event.pointerId === dragging.current.pointerId) {
+      event.preventDefault();
+      const { id, startX, startY } = dragging.current;
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      if (dx !== 0 || dy !== 0) {
+        onMove(id, dx, dy);
+        dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
+      }
     }
   };
 
-  const onMouseUp = () => {
-    dragging.current = null;
-    resizing.current = null;
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragging.current?.pointerId === event.pointerId) {
+      dragging.current = null;
+    }
+    if (resizing.current?.pointerId === event.pointerId) {
+      resizing.current = null;
+    }
   };
 
   const rootBackground = typeof tree.tree.props?.bg === 'string' && tree.tree.props.bg.trim() !== ''
@@ -1267,17 +1319,20 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
   return (
     <div
       className="relative mx-auto flex h-full w-full items-start justify-center overflow-x-hidden overflow-y-auto p-6"
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-      onMouseDown={(event) => {
+      onPointerDown={(event) => {
         if (event.currentTarget === event.target) onSelect(null);
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={(event) => {
+        if (event.pointerType === 'mouse') handlePointerUp(event);
       }}
     >
       <div
         className="relative shrink-0 overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
         style={{ width: BOUNDS.w, height: BOUNDS.h, background: rootBackground }}
-        onMouseDown={(event) => {
+        onPointerDown={(event) => {
           if (event.currentTarget === event.target) onSelect(null);
         }}
       >
@@ -1289,10 +1344,11 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
             width: n.w ?? 120,
             height: n.h ?? 40,
             cursor: 'move',
+            touchAction: 'none',
           };
           const isSel = n.id === selectedId;
           return (
-            <div key={n.id} style={style} className="group" onMouseDown={(e) => onMouseDown(e, n.id)}>
+            <div key={n.id} style={style} className="group" onPointerDown={(event) => beginDrag(event, n.id)}>
               <RenderNode
                 node={n}
                 onUpdate={(patch) => onUpdateNode(n.id, patch)}
@@ -1313,19 +1369,19 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
                   </button>
                   {/* Resize Handles */}
                   <div
-                    onMouseDown={(e) => { e.stopPropagation(); resizing.current = { id: n.id, dir: 'nw', startX: e.clientX, startY: e.clientY, start: { x: n.x||0, y: n.y||0, w: n.w||120, h: n.h||40 } }; }}
+                    onPointerDown={(event) => beginResize(event, n, 'nw')}
                     className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
                   />
                   <div
-                    onMouseDown={(e) => { e.stopPropagation(); resizing.current = { id: n.id, dir: 'ne', startX: e.clientX, startY: e.clientY, start: { x: n.x||0, y: n.y||0, w: n.w||120, h: n.h||40 } }; }}
+                    onPointerDown={(event) => beginResize(event, n, 'ne')}
                     className="absolute -right-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
                   />
                   <div
-                    onMouseDown={(e) => { e.stopPropagation(); resizing.current = { id: n.id, dir: 'sw', startX: e.clientX, startY: e.clientY, start: { x: n.x||0, y: n.y||0, w: n.w||120, h: n.h||40 } }; }}
+                    onPointerDown={(event) => beginResize(event, n, 'sw')}
                     className="absolute -left-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
                   />
                   <div
-                    onMouseDown={(e) => { e.stopPropagation(); resizing.current = { id: n.id, dir: 'se', startX: e.clientX, startY: e.clientY, start: { x: n.x||0, y: n.y||0, w: n.w||120, h: n.h||40 } }; }}
+                    onPointerDown={(event) => beginResize(event, n, 'se')}
                     className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
                   />
                 </>
