@@ -4,6 +4,16 @@ export const ADMIN_EMAIL = 'Ramon.meyer@hotmail.de' as const;
 
 export type AppPlanId = 'free' | 'starter' | 'pro' | 'business';
 export type AppUserRole = 'admin' | 'user';
+export type PlanStatus = 'trialing' | 'active' | 'canceled';
+
+export type BillingMethodType = 'credit-card' | 'sepa';
+
+export interface BillingMethodInfo {
+  type: BillingMethodType;
+  label: string;
+  last4?: string | null;
+  expiresAt?: string | null;
+}
 
 export interface AppUserProfile {
   email: string | null;
@@ -15,8 +25,11 @@ export interface AppUserProfile {
   plan: AppPlanId;
   planSince?: Timestamp | null;
   planExpiresAt?: Timestamp | null;
+  planStatus?: PlanStatus;
+  subscriptionRenewsAt?: Timestamp | null;
   coinsBalance: number;
   role: AppUserRole;
+  billingMethod?: BillingMethodInfo | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
 }

@@ -8,317 +8,1160 @@ import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
-import GuidedTour from '@/components/GuidedTour';
+const createConstructionManagerTemplate = (): Template => {
+  const boardOptions = [
+    { id: fallbackId(), label: 'Planung', description: 'Genehmigung läuft', color: '#38bdf8' },
+    { id: fallbackId(), label: 'Im Bau', description: 'Teams vor Ort', color: '#fbbf24' },
+    { id: fallbackId(), label: 'Abnahme', description: 'Gutachter eingeplant', color: '#34d399' },
+  ];
 
-type Template = {
-  id: string;
-  name: string;
-  description: string;
-  projectName: string;
-  pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
-};
+  const pages: Template['pages'] = [
+    {
+      name: 'Projektübersicht',
+      folder: 'Projekte',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#091326,#14243c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Alle Baustellen im Blick' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'status-board',
+              statusBoard: { title: 'Bauphasen', activeId: boardOptions[1].id, options: boardOptions },
+            },
+          },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'task-manager',
+              tasks: [
+                { id: fallbackId(), title: 'Material liefern lassen', done: false },
+                { id: fallbackId(), title: 'Gerüst freigeben', done: true },
+              ],
+            },
+          },
+          {
+            type: 'container',
+            h: 180,
+            props: { component: 'analytics' },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Dokumentation',
+      folder: 'Projekte',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0a1424,#17263d)' },
+        children: stack([
+          { type: 'text', props: { text: 'Pläne & Fotos' }, style: { fontSize: 26, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'folder-structure',
+              folderTree: [
+                { id: fallbackId(), name: 'Rohbau', children: [{ id: fallbackId(), name: 'Statische Pläne' }] },
+                { id: fallbackId(), name: 'Innenausbau', children: [{ id: fallbackId(), name: 'Boden' }] },
+              ],
+            },
+          },
+          {
+            type: 'container',
+            h: 200,
+            props: { component: 'audio-recorder', audioNotes: [] },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Bautagebuch',
+      folder: 'Projekte',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101b2e)' },
+        children: stack([
+          { type: 'text', props: { text: 'Tagesberichte' }, style: { fontSize: 26, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'time-tracking',
+              timeTracking: {
+                entries: [
+                  { id: fallbackId(), label: 'Team Nord', seconds: 3600, startedAt: new Date().toISOString() },
+                  { id: fallbackId(), label: 'Team Süd', seconds: 5400, endedAt: new Date().toISOString() },
+                ],
+              },
+            },
+          },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Fotos hochladen', done: false },
+                { id: fallbackId(), title: 'Wetter protokollieren', done: true },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+  ];
 
-const fallbackId = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`);
-
-const defaultBackground = 'linear-gradient(135deg, #0b1220, #111827)';
-
-const nodeSize: Record<Node['type'], { w: number; h: number }> = {
-  text: { w: 296, h: 60 },
-  button: { w: 220, h: 52 },
-  image: { w: 296, h: 200 },
-  input: { w: 296, h: 52 },
-  container: { w: 296, h: 180 },
-};
-
-const makeNode = (type: Node['type'], overrides: Partial<Node> = {}): Node => {
-  const size = nodeSize[type];
   return {
-    id: overrides.id ?? fallbackId(),
-    type,
-    x: overrides.x ?? 24,
-    y: overrides.y ?? 120,
-    w: overrides.w ?? size.w,
-    h: overrides.h ?? size.h,
-    props: overrides.props ?? {},
-    style: overrides.style ?? {},
-    children: overrides.children ?? [],
+    id: 'construction-manager',
+    name: 'Projekt- & Baustellenmanager',
+    description: 'Phasenboard, Bautagebuch und Dokumentenablage für Handwerksbetriebe.',
+    projectName: 'BauManager',
+    pages: withAuthPages('BauManager', pages),
   };
 };
 
-const withNavbar = (children: Node[], entries: Array<{ label: string; targetPage: string; icon?: string }>) => [
-  makeNode('container', {
-    y: 32,
-    h: 64,
-    props: {
-      component: 'navbar',
-      navItems: entries.map((entry) => ({
-        id: fallbackId(),
-        label: entry.label,
-        icon: entry.icon,
-        action: 'navigate',
-        target: `#${entry.targetPage.toLowerCase()}`,
-        targetPage: entry.targetPage,
-      })),
+const createTimeTrackingTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Timer',
+      folder: 'Zeiterfassung',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f30)' },
+        children: stack([
+          { type: 'text', props: { text: 'Aufträge starten & stoppen' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'time-tracking',
+              timeTracking: {
+                entries: [
+                  { id: fallbackId(), label: 'Projekt Atlas', seconds: 4200, startedAt: new Date().toISOString() },
+                  { id: fallbackId(), label: 'Service Call', seconds: 1800, endedAt: new Date().toISOString() },
+                ],
+              },
+            },
+          },
+          { type: 'button', props: { label: 'Neuen Timer', action: 'none' } },
+        ]),
+      },
     },
-  }),
-  ...children,
-];
+    {
+      name: 'Stundenzettel',
+      folder: 'Zeiterfassung',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0b1220,#142540)' },
+        children: stack([
+          { type: 'text', props: { text: 'Manuelle Erfassung' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'input', props: { placeholder: 'Datum', inputType: 'date' } },
+          { type: 'input', props: { placeholder: 'Projekt' } },
+          { type: 'input', props: { placeholder: 'Stunden', inputType: 'number' } },
+          { type: 'button', props: { label: 'Eintrag speichern', action: 'none' } },
+        ]),
+      },
+    },
+    {
+      name: 'Auswertung',
+      folder: 'Berichte',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101828)' },
+        children: stack([
+          { type: 'text', props: { text: 'Stunden nach Projekt' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'analytics' } },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Report exportieren', done: false },
+                { id: fallbackId(), title: 'Kunde informieren', done: false },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+  ];
 
-const stack = (items: Array<Partial<Node> & { type: Node['type'] }>, options?: { startY?: number; gap?: number }) => {
-  const startY = options?.startY ?? 120;
-  const gap = options?.gap ?? 24;
-  let cursor = startY;
-  return items.map((item) => {
-    const node = makeNode(item.type, { ...item, y: cursor } as Partial<Node>);
-    cursor += (node.h ?? 0) + gap;
-    return node;
-  });
+  return {
+    id: 'time-tracking',
+    name: 'Zeiterfassung & Stundenzettel',
+    description: 'Timer, manuelle Eingaben und schnelle Berichte.',
+    projectName: 'ZeitPro',
+    pages: withAuthPages('ZeitPro', pages),
+  };
 };
 
-const createCompanySuiteTemplate = (): Template => ({
-  id: 'company-suite',
-  name: 'Unternehmens-App',
-  description: 'Dashboard, Zeiterfassung, Aufgaben & Kommunikation für dein Team.',
-  projectName: 'Unternehmens-App',
-  pages: [
-    {
-      name: 'Login',
-      folder: 'Onboarding',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
-        children: stack([
-          {
-            type: 'text',
-            props: { text: 'Willkommen zurück in der Unternehmens-App' },
-            style: { fontSize: 28, fontWeight: 600 },
-          },
-          {
-            type: 'text',
-            h: 84,
-            props: {
-              text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
-            },
-            style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
-          },
-          { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
-          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
-          { type: 'button', props: { label: 'Einloggen', action: 'login' } },
-          { type: 'button', props: { label: 'Passwort vergessen', action: 'reset-password' } },
-          { type: 'button', props: { label: 'Neues Team registrieren', action: 'register' } },
-        ], { startY: 80 }),
-      },
-    },
-    {
-      name: 'Unternehmen',
-      folder: 'Übersicht',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: defaultBackground },
-        children: withNavbar(
-          stack([
-            {
-              type: 'text',
-              props: { text: 'Unternehmensübersicht' },
-              style: { fontSize: 28, fontWeight: 600 },
-            },
-            {
-              type: 'text',
-              props: {
-                text: 'Projekte, Zeiten und Benachrichtigungen auf einen Blick – immer aktuell für dein Führungsteam.',
-              },
-              style: { fontSize: 16, lineHeight: 1.5 },
-              h: 84,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'time-tracking',
-                timeTracking: {
-                  entries: [
-                    { id: fallbackId(), label: 'Projekt Alpha', seconds: 5400, endedAt: new Date().toISOString() },
-                    { id: fallbackId(), label: 'Projekt Beta', seconds: 3600, startedAt: new Date().toISOString() },
-                  ],
-                },
-              },
-              h: 200,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Kundentermin vorbereiten', done: false },
-                  { id: fallbackId(), title: 'Sprint-Review freigeben', done: true },
-                ],
-              },
-              h: 200,
-            },
-          ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen', icon: '📊' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Zeiterfassung',
-      folder: 'Team',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#091322,#152846)' },
-        children: withNavbar(
-          stack([
-            {
-              type: 'text',
-              props: { text: 'Zeiterfassung pro Projekt' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'time-tracking',
-                timeTracking: {
-                  entries: [
-                    {
-                      id: fallbackId(),
-                      label: 'Projekt Atlas – Konzept',
-                      seconds: 7200,
-                      startedAt: new Date(Date.now() - 7200 * 1000).toISOString(),
-                      endedAt: new Date().toISOString(),
-                    },
-                    {
-                      id: fallbackId(),
-                      label: 'Projekt Atlas – Entwicklung',
-                      seconds: 3600,
-                      startedAt: new Date().toISOString(),
-                    },
-                  ],
-                },
-              },
-              h: 220,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'folder-structure',
-                folderTree: [
-                  { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Sprint 1' }] },
-                  { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Design' }] },
-                ],
-              },
-              h: 220,
-            },
-          ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Aufgaben',
-      folder: 'Team',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#101828,#1f2638)' },
-        children: withNavbar(
-          stack([
-            {
-              type: 'text',
-              props: { text: 'Aufgaben & Benachrichtigungen' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Marketing-Kampagne briefen', done: false },
-                  { id: fallbackId(), title: 'Feedbackrunde Team', done: false },
-                ],
-              },
-              h: 220,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'todo',
-                todoItems: [
-                  { id: fallbackId(), title: 'Benachrichtigung: Alex neue Aufgabe', done: false },
-                  { id: fallbackId(), title: 'Reminder: Arbeitszeit bestätigen', done: false },
-                ],
-              },
-              h: 200,
-            },
-          ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Kommunikation',
-      folder: 'Team',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#10172a,#1a1f3b)' },
-        children: withNavbar(
-          stack([
-            {
-              type: 'text',
-              props: { text: 'Team-Chat & Projektkommunikation' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
-            { type: 'container', props: { component: 'chat' }, h: 240 },
-            { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
-            {
-              type: 'container',
-              props: {
-                component: 'support',
-                supportChannel: 'chat',
-                supportTarget: 'support@unternehmen.app',
-              },
-              h: 160,
-            },
-          ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
-          ]
-        ),
-      },
-    },
-  ],
-});
+const createMiniCrmTemplate = (): Template => {
+  const pipelineOptions = [
+    { id: fallbackId(), label: 'Lead', description: 'Neu eingetroffen', color: '#38bdf8' },
+    { id: fallbackId(), label: 'Angebot', description: 'Warten auf Feedback', color: '#fbbf24' },
+    { id: fallbackId(), label: 'Vertrag', description: 'Finalisierung', color: '#34d399' },
+  ];
 
-const createChatAppTemplate = (): Template => ({
-  id: 'team-chat',
-  name: 'Teamchat & Support',
-  description: 'Login, Chatfenster, Support-Tickets und Upload-Aktionen in einem Paket.',
-  projectName: 'Teamchat',
-  pages: [
+  const pages: Template['pages'] = [
     {
-      name: 'Login',
-      folder: 'Onboarding',
+      name: 'Kundenliste',
+      folder: 'CRM',
       tree: {
         id: 'root',
         type: 'container',
-        props: { bg: 'linear-gradient(140deg,#050c18,#101b2e)' },
+        props: { bg: 'linear-gradient(135deg,#080f1c,#151e33)' },
         children: stack([
+          { type: 'text', props: { text: 'Kontakte & Firmen' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'table' } },
+          {
+            type: 'container',
+            h: 180,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Lisa zurückrufen', done: false },
+                { id: fallbackId(), title: 'Neue Leads importieren', done: true },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Pipeline',
+      folder: 'CRM',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0c1627,#172843)' },
+        children: stack([
+          { type: 'text', props: { text: 'Deal-Status' }, style: { fontSize: 26, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: { component: 'status-board', statusBoard: { title: 'Pipeline', activeId: pipelineOptions[0].id, options: pipelineOptions } },
+          },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'task-manager',
+              tasks: [
+                { id: fallbackId(), title: 'Pitch Deck updaten', done: false },
+                { id: fallbackId(), title: 'Vertrag versenden', done: false },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Aktivitäten',
+      folder: 'CRM',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1c30)' },
+        children: stack([
+          { type: 'text', props: { text: 'Notizen & Kommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'support',
+              supportChannel: 'email',
+              supportTarget: 'sales@kontakt.pro',
+              supportTickets: [],
+            },
+          },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'mini-crm',
+    name: 'Kunden- & Kontaktmanager',
+    description: 'Pipeline, Aufgaben und Teamchat für kleine Sales-Teams.',
+    projectName: 'KontaktPro',
+    pages: withAuthPages('KontaktPro', pages),
+  };
+};
+
+const createCourseTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Kursplan',
+      folder: 'Seminare',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0b1223,#1a2750)' },
+        children: stack([
+          { type: 'text', props: { text: 'Nächste Sessions' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+          { type: 'button', props: { label: 'Neue Session', action: 'none' } },
+        ]),
+      },
+    },
+    {
+      name: 'Materialien',
+      folder: 'Seminare',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071022,#101a35)' },
+        children: stack([
+          { type: 'text', props: { text: 'Bibliothek' }, style: { fontSize: 26, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'folder-structure',
+              folderTree: [
+                { id: fallbackId(), name: 'Präsentationen', children: [{ id: fallbackId(), name: 'Tag 1' }] },
+                { id: fallbackId(), name: 'Aufgaben', children: [{ id: fallbackId(), name: 'Templates' }] },
+              ],
+            },
+          },
+          { type: 'container', h: 180, props: { component: 'video-player', videoUrl: 'https://example.com/intro' } },
+        ]),
+      },
+    },
+    {
+      name: 'Feedback',
+      folder: 'Seminare',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1c30)' },
+        children: stack([
+          { type: 'text', props: { text: 'Fragen & Aufgaben' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'input', props: { placeholder: 'Wie lief die Session?' } },
+          { type: 'input', props: { placeholder: 'Nächste Schritte', inputType: 'text' } },
+          {
+            type: 'container',
+            h: 200,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Feedback einsammeln', done: false },
+                { id: fallbackId(), title: 'Materialien verschicken', done: true },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'course-app',
+    name: 'Kurs- & Seminar-App',
+    description: 'Kursplan, Materialien und Feedbackkanäle für Trainer:innen.',
+    projectName: 'SeminarFlow',
+    pages: withAuthPages('SeminarFlow', pages),
+  };
+};
+
+const createFieldServiceTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Einsätze',
+      folder: 'Service',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#111f32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Team unterwegs' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'task-manager',
+              tasks: [
+                { id: fallbackId(), title: 'Wartung Heizwerk', done: false, assignee: 'Team Blau' },
+                { id: fallbackId(), title: 'Notfall Köln', done: false, assignee: 'Team Rot' },
+              ],
+            },
+          },
+          { type: 'container', h: 200, props: { component: 'analytics' } },
+        ]),
+      },
+    },
+    {
+      name: 'Routen',
+      folder: 'Service',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071225,#0f1c33)' },
+        children: stack([
+          { type: 'text', props: { text: 'Einsatzkarte' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'Deutschland' } },
+        ]),
+      },
+    },
+    {
+      name: 'Dokumentation',
+      folder: 'Service',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1928)' },
+        children: stack([
+          { type: 'text', props: { text: 'Protokoll & Notizen' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 200, props: { component: 'audio-recorder', audioNotes: [] } },
+          { type: 'container', h: 200, props: { component: 'folder-structure', folderTree: [{ id: fallbackId(), name: 'Berichte' }] } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'field-service',
+    name: 'Field Service & Wartung',
+    description: 'Einsatzplanung, Kartenansicht und Dokumentation für Außendienst-Teams.',
+    projectName: 'ServicePro',
+    pages: withAuthPages('ServicePro', pages),
+  };
+};
+
+const createPropertyManagementTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Objekte',
+      folder: 'Immobilien',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#070f1c,#101f33)' },
+        children: stack([
+          { type: 'text', props: { text: 'Portfolio & Standorte' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'D/A/CH' } },
+          {
+            type: 'container',
+            h: 180,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Exposé prüfen', done: true },
+                { id: fallbackId(), title: 'Preis kalkulieren', done: false },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Besichtigungen',
+      folder: 'Immobilien',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1b32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kalender & Kontakte' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+          { type: 'button', props: { label: 'Besichtigung planen', action: 'none' } },
+        ]),
+      },
+    },
+    {
+      name: 'Anfragen',
+      folder: 'Immobilien',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#091424,#132037)' },
+        children: stack([
+          { type: 'text', props: { text: 'Interessenten-Chat' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'support', supportChannel: 'email', supportTarget: 'hello@makler.app' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'property-suite',
+    name: 'Immobilien & Verwaltung',
+    description: 'Standorte, Termine und Interessenten-Chat für Makler:innen.',
+    projectName: 'MaklerSuite',
+    pages: withAuthPages('MaklerSuite', pages),
+  };
+};
+
+const createFitnessTemplate = (): Template => {
+  const statusOptions = [
+    { id: fallbackId(), label: 'Aktiv', description: 'Mitglied trainiert', color: '#34d399' },
+    { id: fallbackId(), label: 'Pause', description: 'Urlaub oder krank', color: '#fbbf24' },
+    { id: fallbackId(), label: 'Neu', description: 'Schnuppermonat', color: '#60a5fa' },
+  ];
+
+  const pages: Template['pages'] = [
+    {
+      name: 'Mitglieder',
+      folder: 'Fitness',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f30)' },
+        children: stack([
+          { type: 'text', props: { text: 'Community betreuen' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'status-board', statusBoard: { title: 'Mitgliedsstatus', activeId: statusOptions[0].id, options: statusOptions } } },
+          { type: 'container', h: 200, props: { component: 'todo', todoItems: [{ id: fallbackId(), title: 'Willkommensmail senden', done: false }] } },
+        ]),
+      },
+    },
+    {
+      name: 'Kursplan',
+      folder: 'Fitness',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071225,#131f3a)' },
+        children: stack([
+          { type: 'text', props: { text: 'Wochenübersicht' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Community',
+      folder: 'Fitness',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101828)' },
+        children: stack([
+          { type: 'text', props: { text: 'Chat & Betreuung' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'support', supportChannel: 'chat', supportTarget: 'coach@studio.fit' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'fitness-coach',
+    name: 'Fitness & Coaching',
+    description: 'Mitgliederstatus, Kursplan und Community-Chat für Coaches.',
+    projectName: 'CoachFlow',
+    pages: withAuthPages('CoachFlow', pages),
+  };
+};
+
+const createRestaurantTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Bestellungen',
+      folder: 'Gastro',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#080f1d,#141f34)' },
+        children: stack([
+          { type: 'text', props: { text: 'Serviceboard' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'task-manager',
+              tasks: [
+                { id: fallbackId(), title: 'Tisch 5 - Starter', done: false },
+                { id: fallbackId(), title: 'Take-away 021', done: true },
+              ],
+            },
+          },
+          { type: 'container', h: 200, props: { component: 'todo', todoItems: [{ id: fallbackId(), title: 'Inventur', done: false }] } },
+        ]),
+      },
+    },
+    {
+      name: 'Reservierungen',
+      folder: 'Gastro',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1d34)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kalender' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Lieferung',
+      folder: 'Gastro',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2b)' },
+        children: stack([
+          { type: 'text', props: { text: 'Routen & Fahrer' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'Stadtgebiet' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'restaurant-suite',
+    name: 'Gastro & Catering',
+    description: 'Bestellungen, Tischplanung und Lieferübersicht für Restaurants.',
+    projectName: 'GastroFlow',
+    pages: withAuthPages('GastroFlow', pages),
+  };
+};
+
+const createMedicalTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Termine',
+      folder: 'Praxis',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1c32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Sprechstunden' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Akte',
+      folder: 'Praxis',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071124,#0f1f33)' },
+        children: stack([
+          { type: 'text', props: { text: 'Dokumentenablage' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'folder-structure', folderTree: [{ id: fallbackId(), name: 'Patienten A-L' }] } },
+        ]),
+      },
+    },
+    {
+      name: 'Nachrichten',
+      folder: 'Praxis',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2b)' },
+        children: stack([
+          { type: 'text', props: { text: 'Teamkommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'support', supportChannel: 'email', supportTarget: 'praxis@health.app' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'medical-office',
+    name: 'Praxis & Termine',
+    description: 'Terminierung, Aktenablage und sichere Kommunikation für Praxisteams.',
+    projectName: 'PraxisFlow',
+    pages: withAuthPages('PraxisFlow', pages),
+  };
+};
+
+const createInventoryTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Lagerstand',
+      folder: 'Inventory',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#070f1d,#111f34)' },
+        children: stack([
+          { type: 'text', props: { text: 'Bestände prüfen' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'table' } },
+          { type: 'button', props: { label: 'Wareneingang buchen', action: 'none' } },
+        ]),
+      },
+    },
+    {
+      name: 'Bestellungen',
+      folder: 'Inventory',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Nachbestellungen' }, style: { fontSize: 26, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Schrauben M5', done: false },
+                { id: fallbackId(), title: 'Etikettenrolle', done: true },
+              ],
+            },
+          },
+        ]),
+      },
+    },
+    {
+      name: 'Kennzahlen',
+      folder: 'Inventory',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Rotation & Forecast' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'analytics' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'inventory-tracker',
+    name: 'Inventory & Lager',
+    description: 'Bestände, Nachbestellungen und Kennzahlen im Griff.',
+    projectName: 'LagerPilot',
+    pages: withAuthPages('LagerPilot', pages),
+  };
+};
+
+const createLogisticsTemplate = (): Template => {
+  const driverOptions = [
+    { id: fallbackId(), label: 'Depot A', description: 'Nordflotte', color: '#38bdf8' },
+    { id: fallbackId(), label: 'Depot B', description: 'Südflotte', color: '#fbbf24' },
+    { id: fallbackId(), label: 'Depot C', description: 'Express', color: '#34d399' },
+  ];
+
+  const pages: Template['pages'] = [
+    {
+      name: 'Sendungen',
+      folder: 'Logistik',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f31)' },
+        children: stack([
+          { type: 'text', props: { text: 'Tracking & Karte' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'Europa' } },
+        ]),
+      },
+    },
+    {
+      name: 'Flotte',
+      folder: 'Logistik',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071125,#131f37)' },
+        children: stack([
+          { type: 'text', props: { text: 'Depots & Fahrer' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'status-board', statusBoard: { title: 'Depots', activeId: driverOptions[0].id, options: driverOptions } } },
+          { type: 'container', h: 200, props: { component: 'task-manager', tasks: [{ id: fallbackId(), title: 'Route 12 prüfen', done: false }] } },
+        ]),
+      },
+    },
+    {
+      name: 'Dokumente',
+      folder: 'Logistik',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Lieferscheine' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'folder-structure', folderTree: [{ id: fallbackId(), name: 'KW12' }] } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'logistics-tracker',
+    name: 'Logistik & Routen',
+    description: 'Sendungen tracken, Flottenstatus checken und Dokumente bündeln.',
+    projectName: 'CargoFlow',
+    pages: withAuthPages('CargoFlow', pages),
+  };
+};
+
+const createAgencyTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Briefings',
+      folder: 'Agentur',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#111f32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Projekte priorisieren' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'container',
+            h: 220,
+            props: {
+              component: 'todo',
+              todoItems: [
+                { id: fallbackId(), title: 'Moodboard erstellen', done: false },
+                { id: fallbackId(), title: 'Offer verschicken', done: true },
+              ],
+            },
+          },
+          { type: 'button', props: { label: 'Briefing hinzufügen', action: 'none' } },
+        ]),
+      },
+    },
+    {
+      name: 'Studio',
+      folder: 'Agentur',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#080f1e,#142036)' },
+        children: stack([
+          { type: 'text', props: { text: 'Auswertung & Ideen' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'analytics' } },
+          { type: 'container', h: 200, props: { component: 'video-player', videoUrl: 'https://example.com/showcase' } },
+        ]),
+      },
+    },
+    {
+      name: 'Kundenchat',
+      folder: 'Agentur',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1e34)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'support', supportChannel: 'email', supportTarget: 'hello@agentur.app' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'agency-workflow',
+    name: 'Agentur & Kundenportal',
+    description: 'Briefings, Präsentationen und Kundenkommunikation bündeln.',
+    projectName: 'AgencyHub',
+    pages: withAuthPages('AgencyHub', pages),
+  };
+};
+
+const createPhotographyTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Shootings',
+      folder: 'Foto',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kalender & Locations' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Uploads',
+      folder: 'Foto',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#080f1e,#141f36)' },
+        children: stack([
+          { type: 'text', props: { text: 'Dateien & Freigaben' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'folder-structure', folderTree: [{ id: fallbackId(), name: 'Kunde A' }] } },
+          { type: 'container', h: 200, props: { component: 'audio-recorder', audioNotes: [] } },
+        ]),
+      },
+    },
+    {
+      name: 'Kundenbereich',
+      folder: 'Foto',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2d)' },
+        children: stack([
+          { type: 'text', props: { text: 'Freigabe & Support' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'qr-code', qrUrl: 'https://clientshots.app' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'photography-portal',
+    name: 'Foto & Media Portal',
+    description: 'Shootings planen, Uploads organisieren und Freigaben teilen.',
+    projectName: 'ClientShots',
+    pages: withAuthPages('ClientShots', pages),
+  };
+};
+
+const createRetailTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Stores',
+      folder: 'Retail',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f31)' },
+        children: stack([
+          { type: 'text', props: { text: 'Pop-up Standorte' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'Europa' } },
+        ]),
+      },
+    },
+    {
+      name: 'Teamplan',
+      folder: 'Retail',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071125,#142039)' },
+        children: stack([
+          { type: 'text', props: { text: 'Besetzungen' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Promotion',
+      folder: 'Retail',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'KPIs & Targets' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'analytics' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'retail-popups',
+    name: 'Retail & Pop-up',
+    description: 'Standorte, Teamplanung und KPI-Tracking für Retail-Teams.',
+    projectName: 'RetailHub',
+    pages: withAuthPages('RetailHub', pages),
+  };
+};
+
+const createNonprofitTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Spenden',
+      folder: 'Nonprofit',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0e1c32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Impact Dashboard' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'analytics' } },
+          { type: 'container', h: 200, props: { component: 'qr-code', qrUrl: 'https://spenden.app' } },
+        ]),
+      },
+    },
+    {
+      name: 'Volunteers',
+      folder: 'Nonprofit',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071125,#131f37)' },
+        children: stack([
+          { type: 'text', props: { text: 'Aufgaben & Schichten' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'todo', todoItems: [{ id: fallbackId(), title: 'Stand aufbauen', done: false }] } },
+        ]),
+      },
+    },
+    {
+      name: 'Community',
+      folder: 'Nonprofit',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Update & Support' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'chat' } },
+          { type: 'container', h: 200, props: { component: 'support', supportChannel: 'email', supportTarget: 'help@impact.org' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'nonprofit-hub',
+    name: 'Nonprofit & Impact',
+    description: 'Spendenstatus, Volunteer-Planung und Community-Updates.',
+    projectName: 'ImpactHub',
+    pages: withAuthPages('ImpactHub', pages),
+  };
+};
+
+const createTravelTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Reiseideen',
+      folder: 'Travel',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Destinationen & Karte' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'map', mapLocation: 'Weltkarte' } },
+        ]),
+      },
+    },
+    {
+      name: 'Routenplaner',
+      folder: 'Travel',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071125,#132037)' },
+        children: stack([
+          { type: 'text', props: { text: 'Termine & Abflüge' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Anfragen',
+      folder: 'Travel',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kundenservice' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'support', supportChannel: 'chat', supportTarget: 'reisen@agency.travel' } },
+          { type: 'container', h: 200, props: { component: 'chat' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'travel-agency',
+    name: 'Travel & Routen',
+    description: 'Destinationen, Terminplanung und Support für Reisebüros.',
+    projectName: 'TravelDesk',
+    pages: withAuthPages('TravelDesk', pages),
+  };
+};
+
+const createCoworkingTemplate = (): Template => {
+  const statusOptions = [
+    { id: fallbackId(), label: 'Freie Plätze', description: 'Hot Desk verfügbar', color: '#34d399' },
+    { id: fallbackId(), label: 'Konferenzraum', description: 'Buchungen offen', color: '#38bdf8' },
+    { id: fallbackId(), label: 'Events', description: 'Workshops geplant', color: '#fbbf24' },
+  ];
+
+  const pages: Template['pages'] = [
+    {
+      name: 'Raumbelegung',
+      folder: 'Coworking',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#0f1f32)' },
+        children: stack([
+          { type: 'text', props: { text: 'Kalender & Slots' }, style: { fontSize: 28, fontWeight: 600 } },
+          { type: 'container', h: 240, props: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
+        ]),
+      },
+    },
+    {
+      name: 'Mitglieder',
+      folder: 'Coworking',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#071125,#131f37)' },
+        children: stack([
+          { type: 'text', props: { text: 'Community Status' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'status-board', statusBoard: { title: 'Spaces', activeId: statusOptions[0].id, options: statusOptions } } },
+        ]),
+      },
+    },
+    {
+      name: 'Support',
+      folder: 'Coworking',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050c18,#101a2c)' },
+        children: stack([
+          { type: 'text', props: { text: 'Concierge & Chat' }, style: { fontSize: 26, fontWeight: 600 } },
+          { type: 'container', h: 220, props: { component: 'support', supportChannel: 'chat', supportTarget: 'hi@space.app' } },
+          { type: 'container', h: 200, props: { component: 'chat' } },
+        ]),
+      },
+    },
+  ];
+
+  return {
+    id: 'coworking-hub',
+    name: 'Coworking & Spaces',
+    description: 'Raumbelegung, Mitgliederstatus und Concierge-Desk.',
+    projectName: 'SpaceDesk',
+    pages: withAuthPages('SpaceDesk', pages),
+  };
+};
+
+const templates: Template[] = [
+  createCompanySuiteTemplate(),
+  createChatAppTemplate(),
+  createEventTemplate(),
+  createConstructionManagerTemplate(),
+  createTimeTrackingTemplate(),
+  createMiniCrmTemplate(),
+  createCourseTemplate(),
+  createFieldServiceTemplate(),
+  createPropertyManagementTemplate(),
+  createFitnessTemplate(),
+  createRestaurantTemplate(),
+  createMedicalTemplate(),
+  createInventoryTemplate(),
+  createLogisticsTemplate(),
+  createAgencyTemplate(),
+  createPhotographyTemplate(),
+  createRetailTemplate(),
+  createNonprofitTemplate(),
+  createTravelTemplate(),
+  createCoworkingTemplate(),
+];
           {
             type: 'text',
             props: { text: 'Teamchat Login' },
@@ -520,6 +1363,7 @@ const createEventTemplate = (): Template => ({
     },
   ],
 });
+
 
 const templates: Template[] = [createCompanySuiteTemplate(), createChatAppTemplate(), createEventTemplate()];
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';

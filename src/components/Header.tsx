@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
+import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
 
 export default function Header() {
@@ -18,6 +19,7 @@ export default function Header() {
         : coinsValue.toLocaleString('de-DE')
       : null;
   const [open, setOpen] = useState(false);
+  const [hasProjects, setHasProjects] = useState(true);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -31,6 +33,19 @@ export default function Header() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
+
+  useEffect(() => {
+    if (!user?.uid) {
+      setHasProjects(true);
+      return undefined;
+    }
+    const unsubscribe = subscribeProjects(user.uid, (projects) => {
+      setHasProjects(projects.length > 0);
+    });
+    return () => unsubscribe();
+  }, [user?.uid]);
+
+  const editorDisabled = Boolean(user) && !hasProjects;
 
   return (
     <header className="relative z-40 w-full flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0b0b0f]/95 backdrop-blur-md shadow-lg">
@@ -48,7 +63,22 @@ export default function Header() {
         <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Startseite</Link>
         <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Dashboard</Link>
         <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
-        <Link href="/editor" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Editor</Link>
+        <Link
+          href="/editor"
+          aria-disabled={editorDisabled}
+          tabIndex={editorDisabled ? -1 : undefined}
+          onClick={(event) => {
+            if (editorDisabled) {
+              event.preventDefault();
+            }
+          }}
+          className={`hover:text-cyan-400 transition text-sm uppercase tracking-wide ${
+            editorDisabled ? 'cursor-not-allowed text-neutral-500 opacity-60 hover:text-neutral-500' : ''
+          }`}
+          title={editorDisabled ? 'Lege zuerst ein Projekt an, bevor du den Editor öffnest.' : undefined}
+        >
+          Editor
+        </Link>
         <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>
         <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Preise</Link>
         <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Coins</Link>

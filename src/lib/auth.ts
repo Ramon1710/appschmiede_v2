@@ -1,5 +1,6 @@
 import { auth, db } from '@/lib/firebase';
 import { buildInitialUserDoc } from '@/lib/user-utils';
+import type { BillingMethodInfo } from '@/types/user';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -14,13 +15,14 @@ export async function registerWithEmail(
   email: string,
   password: string,
   displayName?: string,
-  company?: string
+  company?: string,
+  billingMethod?: BillingMethodInfo | null
 ): Promise<User> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   if (displayName) await updateProfile(cred.user, { displayName });
   await setDoc(
     doc(db, 'users', cred.user.uid),
-    buildInitialUserDoc(email, displayName ?? null, company ?? null)
+    buildInitialUserDoc(email, displayName ?? null, company ?? null, billingMethod ?? null)
   );
   return cred.user;
 }

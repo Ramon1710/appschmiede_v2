@@ -1678,7 +1678,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const toolboxContent = (
-    <div className="max-h-[440px] overflow-y-auto pr-1">
+    <div className="h-full overflow-y-auto pr-1">
       <CategorizedToolbox onAdd={addNode} />
     </div>
   );
@@ -1810,10 +1810,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
                   <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
                   <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? 'Kein Projekt geladen'}</div>
-                  <p className="text-xs text-neutral-400">{project?.description ?? 'Keine Beschreibung'}</p>
-                  <p className="mt-2 text-[11px] text-neutral-500">
-                    Projektwechsel erfolgt nur über den Menüpunkt <span className="font-semibold">Projekte</span> in der oberen Leiste.
-                  </p>
+                  {project?.description && <p className="text-xs text-neutral-400">{project.description}</p>}
                   <div className="mt-3 flex gap-2">
                     <select
                       className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
@@ -1874,48 +1871,48 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto px-4 py-4">
-                <div className="space-y-4">
-                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4" data-tour-id="editor-toolbox">
-                    <button
-                      type="button"
-                      onClick={() => setToolboxOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between text-left"
-                    >
-                      <div>
-                        <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
-                        <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
+                <section className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-4" data-tour-id="editor-toolbox">
+                  <button
+                    type="button"
+                    onClick={() => setToolboxOpen((prev) => !prev)}
+                    className="flex w-full items-center justify-between text-left"
+                  >
+                    <div>
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
+                      <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
+                    </div>
+                    <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
+                  </button>
+                  {toolboxOpen && (
+                    <div className="mt-4 flex flex-1 flex-col overflow-hidden">
+                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                        {[
+                          { id: 'components', label: 'Bausteine' },
+                          { id: 'templates', label: 'Vorlagen' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
+                            className={`rounded-lg border px-3 py-2 transition ${
+                              toolboxTab === tab.id
+                                ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                                : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
                       </div>
-                      <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
-                    </button>
-                    {toolboxOpen && (
-                      <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
-                          {[
-                            { id: 'components', label: 'Bausteine' },
-                            { id: 'templates', label: 'Vorlagen' },
-                          ].map((tab) => (
-                            <button
-                              key={tab.id}
-                              type="button"
-                              onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
-                              className={`rounded-lg border px-3 py-2 transition ${
-                                toolboxTab === tab.id
-                                  ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
-                                  : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                              }`}
-                            >
-                              {tab.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div>
-                          {toolboxTab === 'components' && <div>{toolboxContent}</div>}
-                          {toolboxTab === 'templates' && <div className="space-y-3">{templateContent}</div>}
-                        </div>
+                      <div className="mt-4 flex-1 overflow-hidden">
+                        {toolboxTab === 'components' && toolboxContent}
+                        {toolboxTab === 'templates' && (
+                          <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
+                        )}
                       </div>
-                    )}
-                  </section>
-                </div>
+                    </div>
+                  )}
+                </section>
               </div>
             </div>
           </aside>

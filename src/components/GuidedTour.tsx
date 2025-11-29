@@ -19,7 +19,6 @@ export type GuidedTourProps = {
 };
 
 const PADDING = 12;
-const TOOLTIP_WIDTH = 320;
 
 export default function GuidedTour({
   storageKey,
@@ -121,36 +120,6 @@ export default function GuidedTour({
     };
   }, [active, steps]);
 
-  const tooltipStyle: React.CSSProperties = useMemo(() => {
-    if (!highlightRect) return { top: '20%', left: '50%', transform: 'translateX(-50%)' };
-    const placement = steps[active ?? 0]?.placement ?? 'bottom';
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
-    const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-    let top = highlightRect.bottom + 24;
-    let left = highlightRect.left;
-
-    if (placement === 'top') {
-      top = highlightRect.top - 24;
-    }
-    if (placement === 'left') {
-      left = highlightRect.left - TOOLTIP_WIDTH - 24;
-    }
-    if (placement === 'right') {
-      left = highlightRect.right + 24;
-    }
-
-    if (placement === 'top') {
-      top -= 200;
-    }
-
-    left = clamp(left, 16, viewportWidth - TOOLTIP_WIDTH - 16);
-    top = clamp(top, 16, viewportHeight - 200);
-
-    return { top, left, width: TOOLTIP_WIDTH };
-  }, [active, highlightRect, steps]);
-
   if (!mounted) return null;
 
   const restartButton = (
@@ -185,38 +154,38 @@ export default function GuidedTour({
                 width: highlightRect.width + PADDING * 2,
                 height: highlightRect.height + PADDING * 2,
                 borderRadius: 16,
-                boxShadow: '0 0 0 9999px rgba(2,6,23,0.75)',
+                boxShadow: '0 0 0 9999px rgba(2,6,23,0.78), 0 15px 45px rgba(6,182,212,0.3)',
                 border: '2px solid rgba(14, 165, 233, 0.8)',
+                backgroundColor: 'rgba(6,182,212,0.08)',
                 transition: 'all 0.2s ease',
               }}
             />
           )}
-          <div
-            className="pointer-events-auto rounded-2xl border border-white/10 bg-[#050b17]/95 p-4 text-white shadow-2xl"
-            style={tooltipStyle}
-          >
-            <p className="text-[10px] uppercase tracking-[0.4em] text-cyan-300">Schritt {active + 1} / {steps.length}</p>
-            <h2 className="mt-2 text-lg font-semibold">{step.title}</h2>
-            <p className="mt-2 text-sm text-neutral-200">{step.description}</p>
-            <div className="mt-4 flex justify-between text-xs font-semibold">
-              <button
-                type="button"
-                className="rounded-full border border-white/20 px-3 py-1 text-white/80 transition hover:border-white/50 hover:text-white"
-                onClick={active === 0 ? close : prev}
-              >
-                {active === 0 ? 'Schließen' : 'Zurück'}
-              </button>
-              <div className="flex gap-2">
+          <div className="pointer-events-none fixed inset-x-0 bottom-6 flex justify-center px-4">
+            <div className="pointer-events-auto w-full max-w-2xl rounded-3xl border border-white/10 bg-[#050b17]/95 p-6 text-white shadow-2xl">
+              <p className="text-[11px] uppercase tracking-[0.4em] text-cyan-300">Schritt {active + 1} / {steps.length}</p>
+              <h2 className="mt-3 text-2xl font-semibold">{step.title}</h2>
+              <p className="mt-3 text-base text-neutral-100">{step.description}</p>
+              <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  className="rounded-full border border-white/20 px-3 py-1 text-white/80 transition hover:border-white/50 hover:text-white"
+                  className="flex-1 rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/60 hover:text-white"
                   onClick={close}
                 >
-                  Skip
+                  Abbrechen
                 </button>
+                {active > 0 && (
+                  <button
+                    type="button"
+                    className="rounded-2xl border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-white/60 hover:text-white"
+                    onClick={prev}
+                  >
+                    Zurück
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-3 py-1 text-white shadow hover:opacity-90"
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
                   onClick={active === steps.length - 1 ? close : next}
                 >
                   {active === steps.length - 1 ? 'Fertig' : 'Weiter'}
