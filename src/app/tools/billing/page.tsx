@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import Header from '@/components/Header';
+import GuidedTour from '@/components/GuidedTour';
 
 const ONE_SITE_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_ONE_SITE!;
 const COINS_10_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_COINS_10!;
@@ -28,12 +29,30 @@ export default function BillingPage() {
     }
   };
 
+  const billingTourSteps = [
+    {
+      id: 'billing-intro',
+      title: 'Coins & Einmalprodukte',
+      description: 'Hier siehst du, wofür Coins benötigt werden und wie du sie in wenigen Sekunden auflädst.',
+    },
+    {
+      id: 'billing-packs',
+      title: 'Pakete auswählen',
+      description: 'Wähle zwischen Coins oder der One-Site-App. Jeder Button öffnet direkt den Stripe-Checkout.',
+    },
+    {
+      id: 'billing-steps',
+      title: 'So läuft die Aufladung ab',
+      description: 'Kurze Anleitung, wie Checkout, Webhook und Guthabenanzeige zusammenspielen.',
+    },
+  ];
+
   return (
     <>
       <Header />
       <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-          <header className="space-y-3">
+          <header className="space-y-3" data-tour-id="billing-intro">
             <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">Coins & Billing</p>
             <h1 className="text-3xl font-semibold">Coins aufladen oder Einmal-Projekte kaufen</h1>
             <p className="text-base text-neutral-300">
@@ -42,7 +61,7 @@ export default function BillingPage() {
             </p>
           </header>
 
-          <section className="grid gap-4 md:grid-cols-3">
+          <section className="grid gap-4 md:grid-cols-3" data-tour-id="billing-packs">
             <div className="rounded-2xl border border-white/10 bg-neutral-900/80 p-5 shadow-lg">
               <div className="text-xs uppercase tracking-[0.35em] text-violet-300">Schnellstart</div>
               <div className="mt-2 text-xl font-semibold">One-Site App</div>
@@ -83,7 +102,7 @@ export default function BillingPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 text-sm text-neutral-300">
+          <section className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 text-sm text-neutral-300" data-tour-id="billing-steps">
             <h2 className="text-lg font-semibold text-white">So funktioniert die Aufladung</h2>
             <ol className="mt-3 space-y-2 text-neutral-300">
               <li>1. Paket auswählen und auf den Button klicken.</li>
@@ -98,6 +117,7 @@ export default function BillingPage() {
           </div>
         </div>
       </main>
+      <GuidedTour storageKey="tour-billing" steps={billingTourSteps} restartLabel="Coins Tutorial" />
     </>
   );
 }

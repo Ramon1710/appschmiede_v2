@@ -8,6 +8,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
+import GuidedTour from '@/components/GuidedTour';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 
@@ -32,6 +33,24 @@ export default function DashboardPage() {
         </main>
       </>
     );
+
+  const tourSteps = [
+    {
+      id: 'dashboard-cta',
+      title: 'Loslegen mit Projekten',
+      description: 'Hier startest du entweder ein neues Projekt oder springst direkt zu bestehenden Arbeitsflächen.',
+    },
+    {
+      id: 'dashboard-shortcuts',
+      title: 'Schnellzugriffe',
+      description: 'Diese Kacheln bringen dich ohne Umwege in Projekte, Editor oder Vorlagen.',
+    },
+    {
+      id: 'dashboard-recent',
+      title: 'Zuletzt bearbeitet',
+      description: 'Hier findest du die Projekte, die du zuletzt geöffnet hast – perfekt zum Weiterarbeiten.',
+    },
+  ] as const;
 
   return (
     <>
@@ -68,6 +87,7 @@ export default function DashboardPage() {
                 <div className="flex gap-3 pt-2 text-sm">
                   <Link
                     href="/projects"
+                    data-tour-id="dashboard-cta"
                     className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow-lg transition hover:from-cyan-400 hover:to-blue-400"
                   >
                     Projekte öffnen
@@ -87,7 +107,7 @@ export default function DashboardPage() {
             </section>
 
             {/* Quick Links */}
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <section className="grid grid-cols-1 gap-4 md:grid-cols-3" data-tour-id="dashboard-shortcuts">
               <Link
                 href="/projects"
                 className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 transition hover:bg-neutral-800/80"
@@ -115,7 +135,7 @@ export default function DashboardPage() {
             </section>
 
             {/* Recent Projects */}
-            <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3">
+            <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3" data-tour-id="dashboard-recent">
               <h2 className="font-semibold">Zuletzt bearbeitet</h2>
               {projects.length === 0 ? (
                 <div className="text-sm opacity-70">Keine Projekte gefunden. Erstelle ein neues Projekt über "Projekte".</div>
@@ -157,6 +177,7 @@ export default function DashboardPage() {
         </div>
       </main>
       <LegalModalTrigger className="fixed bottom-4 left-4" />
+      <GuidedTour storageKey="tour-dashboard" steps={tourSteps} />
     </>
   );
 }

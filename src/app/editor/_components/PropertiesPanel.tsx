@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem, TimeEntry } from '@/lib/editorTypes';
+import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem, TimeEntry, StatusOption } from '@/lib/editorTypes';
 
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const FALLBACK_COLOR = '#0f172a';
@@ -10,6 +10,47 @@ const createNavId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `nav_${Math.random().toString(36).slice(2)}`;
 const createTimeEntryId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `time_${Math.random().toString(36).slice(2)}`;
+const createStatusId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `status_${Math.random().toString(36).slice(2)}`;
+
+const STATUS_COLOR_CYCLE = ['#22c55e', '#facc15', '#f97316', '#ef4444', '#a855f7', '#0ea5e9'];
+const STATUS_PRESETS: Array<Omit<StatusOption, 'id'>> = [
+  { label: 'Verfügbar', color: '#22c55e', description: 'Direkt einsatzbereit' },
+  { label: 'Gebucht', color: '#f97316', description: 'Für Kund:innen reserviert' },
+  { label: 'Offen', color: '#0ea5e9', description: 'Wartet auf Bestätigung' },
+];
+
+type StatusBoardState = {
+  title: string;
+  activeId: string | null;
+  options: StatusOption[];
+};
+
+const normalizeStatusBoard = (raw?: unknown): StatusBoardState => {
+  const board = (raw as NodeProps['statusBoard']) ?? undefined;
+  const source = Array.isArray(board?.options) && board?.options.length > 0
+    ? board?.options
+    : STATUS_PRESETS.map((preset) => ({ ...preset, id: createStatusId() }));
+  const options = source.map((option, index) => ({
+    id: typeof option?.id === 'string' ? option.id : createStatusId(),
+    label: typeof option?.label === 'string' && option.label.trim() ? option.label.trim() : `Status ${index + 1}`,
+    description: typeof option?.description === 'string' && option.description.trim() ? option.description.trim() : undefined,
+    color:
+      typeof option?.color === 'string' && option.color.trim()
+        ? option.color
+        : STATUS_COLOR_CYCLE[index % STATUS_COLOR_CYCLE.length],
+  }));
+  const title = typeof board?.title === 'string' && board.title.trim() ? board.title.trim() : 'Status';
+  const candidate = typeof board?.activeId === 'string' ? board.activeId : null;
+  const activeId = options.some((option) => option.id === candidate)
+    ? candidate
+    : options[0]?.id ?? null;
+  return {
+    title,
+    activeId,
+    options,
+  };
+};
 
 const NAV_DEFAULTS: Array<Omit<NavbarItem, 'id'>> = [
   { label: 'Dashboard', action: 'navigate', target: '#dashboard' },
@@ -175,11 +216,13 @@ export default function PropertiesPanel({
   const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
   const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
   const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
+  const isStatusBoardContainer = node?.type === 'container' && node.props?.component === 'status-board';
   const navItems = useMemo(() => (isNavbarContainer ? normalizeNavItems(node?.props?.navItems) : []), [isNavbarContainer, node?.props?.navItems]);
   const timeEntries = useMemo(
     () => (isTimeTrackingContainer ? normalizeTimeEntries(node?.props?.timeTracking?.entries) : []),
     [isTimeTrackingContainer, node?.props?.timeTracking?.entries]
   );
+  const statusBoardState = useMemo(() => (isStatusBoardContainer ? normalizeStatusBoard(node?.props?.statusBoard) : null), [isStatusBoardContainer, node?.props?.statusBoard]);
 
   const updateNavItems = (next: NavbarItem[]) => {
     setProps({ navItems: next });
@@ -271,6 +314,53 @@ export default function PropertiesPanel({
       return entry;
     });
     updateTimeEntries(next);
+  };
+
+  const updateStatusBoard = (updater: (prev: StatusBoardState) => StatusBoardState) => {
+    if (!isStatusBoardContainer) return;
+    const prev = statusBoardState ?? normalizeStatusBoard(node?.props?.statusBoard);
+    const next = updater(prev);
+    const safeActive = next.options.some((option) => option.id === next.activeId)
+      ? next.activeId
+      : next.options[0]?.id ?? null;
+    setProps({ statusBoard: { ...next, activeId: safeActive ?? null } });
+  };
+
+  const handleStatusBoardTitleChange = (value: string) => {
+    updateStatusBoard((prev) => ({ ...prev, title: value }));
+  };
+
+  const handleStatusOptionChange = (id: string, patch: Partial<StatusOption>) => {
+    updateStatusBoard((prev) => ({
+      ...prev,
+      options: prev.options.map((option) => (option.id === id ? { ...option, ...patch } : option)),
+    }));
+  };
+
+  const handleAddStatusOption = () => {
+    updateStatusBoard((prev) => {
+      const nextIndex = prev.options.length;
+      const newOption: StatusOption = {
+        id: createStatusId(),
+        label: `Status ${nextIndex + 1}`,
+        color: STATUS_COLOR_CYCLE[nextIndex % STATUS_COLOR_CYCLE.length],
+      };
+      return { ...prev, options: [...prev.options, newOption] };
+    });
+  };
+
+  const handleRemoveStatusOption = (id: string) => {
+    updateStatusBoard((prev) => {
+      const nextOptions = prev.options.filter((option) => option.id !== id);
+      const nextActive = nextOptions.some((option) => option.id === prev.activeId)
+        ? prev.activeId
+        : nextOptions[0]?.id ?? null;
+      return { ...prev, options: nextOptions, activeId: nextActive };
+    });
+  };
+
+  const handleSetActiveStatus = (id: string) => {
+    updateStatusBoard((prev) => ({ ...prev, activeId: id }));
   };
 
   return (
@@ -817,6 +907,90 @@ export default function PropertiesPanel({
                       className="w-full rounded border border-dotted border-sky-300/40 px-3 py-1.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/10"
                     >Demo-Daten wiederherstellen</button>
                   </div>
+                </div>
+              )}
+
+              {isStatusBoardContainer && statusBoardState && (
+                <div className="space-y-3 rounded-xl border border-cyan-500/40 bg-cyan-500/5 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-cyan-200">Status Board</div>
+                  <p className="text-[11px] text-neutral-400">Definiere eigene Stati, Farben und Beschreibungen. Über den Stern setzt du den aktiven Status.</p>
+                  <div>
+                    <label className="text-xs text-gray-400">Titel</label>
+                    <input
+                      className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                      value={statusBoardState.title}
+                      onChange={(e) => handleStatusBoardTitleChange(e.target.value)}
+                    />
+                  </div>
+                  {statusBoardState.options.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-white/20 bg-black/20 px-3 py-2 text-[11px] text-neutral-400">
+                      Noch keine Statuswerte angelegt. Füge unten neue Stati hinzu.
+                    </div>
+                  )}
+                  {statusBoardState.options.map((option, index) => {
+                    const isActive = option.id === statusBoardState.activeId;
+                    return (
+                      <div key={option.id} className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-3">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Status {index + 1}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${
+                                isActive
+                                  ? 'border-cyan-400/60 bg-cyan-500/20 text-cyan-100'
+                                  : 'border-white/15 bg-white/5 text-neutral-400 hover:bg-white/10'
+                              }`}
+                              onClick={() => handleSetActiveStatus(option.id)}
+                            >{isActive ? 'Aktiv' : 'Aktivieren'}</button>
+                            <button
+                              type="button"
+                              className="text-rose-300 transition hover:text-rose-200"
+                              onClick={() => handleRemoveStatusOption(option.id)}
+                            >Entfernen</button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Label</label>
+                          <input
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            value={option.label}
+                            onChange={(e) => handleStatusOptionChange(option.id, { label: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Beschreibung (optional)</label>
+                          <textarea
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm min-h-[60px]"
+                            value={option.description ?? ''}
+                            onChange={(e) => handleStatusOptionChange(option.id, { description: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Farbe</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              className="h-10 w-16 rounded border border-white/10 bg-neutral-900"
+                              value={option.color ?? '#22c55e'}
+                              onChange={(e) => handleStatusOptionChange(option.id, { color: e.target.value })}
+                            />
+                            <input
+                              className="flex-1 bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                              placeholder="#22c55e"
+                              value={option.color ?? ''}
+                              onChange={(e) => handleStatusOptionChange(option.id, { color: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={handleAddStatusOption}
+                    className="w-full rounded border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/30"
+                  >+ Status</button>
                 </div>
               )}
             </div>

@@ -134,6 +134,33 @@ const adSlotsRight = [
   },
 ];
 
+const pricingPlans = [
+  {
+    id: 'one-site',
+    badge: 'Schnellstart',
+    title: 'One-Site App',
+    price: '20 € einmalig',
+    description: 'Ideal für Demos, Ideenpitches oder eine einzelne Landingpage inklusive AI-Editor-Zugriff.',
+    features: ['Eine komplette Seite inkl. Komponenten', 'Bereit zum Teilen über QR & Vorschau', 'Upgrade jederzeit möglich'],
+  },
+  {
+    id: 'coins-10',
+    badge: 'Flexibel',
+    title: '10 Coins',
+    price: 'Guthaben für KI',
+    description: 'Perfekt, um einzelne Seiten, Bildgenerationen oder Textbausteine nachzuladen.',
+    features: ['Reicht für mehrere KI-Läufe', 'Ideal für Soloprojekte', 'Keine Mindestlaufzeit'],
+  },
+  {
+    id: 'coins-50',
+    badge: 'Beliebt',
+    title: '50 Coins',
+    price: 'Team-Ready',
+    description: 'Für Teams oder komplexere Apps mit vielen Seiten – spart gegenüber Einzelkäufen.',
+    features: ['Mehr Volumen zum Paketpreis', 'Gemeinsam nutzbar im Workspace', 'Bevorzugter Support bei Fragen'],
+  },
+];
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#03050a] text-white">
@@ -278,6 +305,38 @@ export default function HomePage() {
               <div key={reason.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <h3 className="text-xl font-semibold">{reason.title}</h3>
                 <p className="mt-3 text-sm text-neutral-300">{reason.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="preise" className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Preise & Guthaben</p>
+            <h2 className="text-3xl font-semibold">Transparentes Guthaben statt Abo-Zwang</h2>
+            <p className="text-base text-neutral-300">
+              Lade Coins genau dann auf, wenn du KI-Features brauchst – oder buche eine One-Site-App als fertige Demo. Bezahlt wird sicher über Stripe,
+              das Guthaben landet sofort neben deinem Profilbild.
+            </p>
+          </header>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {pricingPlans.map((plan) => (
+              <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
+                <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
+                <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
+                <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
+                <ul className="mt-4 space-y-2 text-sm text-neutral-200">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>✓ {feature}</li>
+                  ))}
+                </ul>
+                <Link
+                  href="/tools/billing"
+                  className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
+                >
+                  Zu Coins & Billing
+                </Link>
               </div>
             ))}
           </div>

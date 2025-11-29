@@ -52,6 +52,13 @@ export type TimeEntry = {
   endedAt?: string;
 };
 
+export type StatusOption = {
+  id: string;
+  label: string;
+  description?: string;
+  color?: string;
+};
+
 export type AudioNote = {
   id: string;
   label: string;
@@ -88,6 +95,11 @@ export type NodeProps = {
   navItems?: NavbarItem[];
   timeTracking?: {
     entries: TimeEntry[];
+  };
+  statusBoard?: {
+    title?: string;
+    activeId?: string | null;
+    options: StatusOption[];
   };
   folderTree?: FolderNode[];
   tasks?: TaskItem[];

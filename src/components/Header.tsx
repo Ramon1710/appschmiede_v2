@@ -50,6 +50,7 @@ export default function Header() {
         <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
         <Link href="/editor" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Editor</Link>
         <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>
+        <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Preise</Link>
         <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Coins</Link>
       </nav>
 

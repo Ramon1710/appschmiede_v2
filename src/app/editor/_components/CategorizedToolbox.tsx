@@ -96,6 +96,22 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         },
         {
           type: 'container',
+          label: 'Statusanzeige',
+          icon: '🟢',
+          defaultProps: {
+            component: 'status-board',
+            statusBoard: {
+              title: 'Status',
+              options: [
+                { id: crypto.randomUUID(), label: 'Verfügbar', color: '#22c55e', description: 'Direkt einsatzbereit' },
+                { id: crypto.randomUUID(), label: 'Gebucht', color: '#f97316', description: 'Für Kund:innen reserviert' },
+                { id: crypto.randomUUID(), label: 'Offen', color: '#0ea5e9', description: 'Wartet auf Bestätigung' },
+              ],
+            },
+          },
+        },
+        {
+          type: 'container',
           label: 'Ordnerstruktur',
           icon: '📁',
           defaultProps: {

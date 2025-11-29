@@ -10,6 +10,7 @@ import type {
   TimeEntry,
   AudioNote,
   FolderNode,
+  StatusOption,
   NodeProps,
 } from '@/lib/editorTypes';
 
@@ -244,6 +245,65 @@ const TimeTrackingWidget = ({
     </div>
   );
 };
+
+const StatusBoardWidget = ({
+  title,
+  options,
+  activeId,
+  onSelect,
+}: {
+  title: string;
+  options: StatusOption[];
+  activeId: string | null;
+  onSelect?: (id: string) => void;
+}) => (
+  <div className="h-full rounded-xl border border-cyan-500/40 bg-[#04121b] p-3 text-xs text-neutral-200">
+    <div className="flex items-center justify-between">
+      <span className="uppercase tracking-widest text-cyan-200/80">{title || 'Status'}</span>
+      <span className="text-[11px] text-neutral-500">{options.length} Stati</span>
+    </div>
+    <div className="mt-3 flex flex-col gap-2">
+      {options.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-white/15 px-3 py-2 text-[11px] text-neutral-400">
+          Noch keine Statuswerte definiert.
+        </div>
+      ) : (
+        options.map((option) => {
+          const color = option.color ?? '#38bdf8';
+          const isActive = option.id === activeId;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className="flex w-full flex-col rounded-lg border px-3 py-2 text-left transition hover:bg-white/5"
+              style={{
+                borderColor: color,
+                backgroundColor: isActive ? applyAlpha(color, 0.25) : 'transparent',
+                color: '#e2e8f0',
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect?.(option.id);
+              }}
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">{option.label}</span>
+                <span className="text-[10px] uppercase tracking-widest" style={{ color: isActive ? '#bef264' : '#94a3b8' }}>
+                  {isActive ? 'Aktiv' : 'Inaktiv'}
+                </span>
+              </div>
+              {option.description && (
+                <span className="text-[11px] text-white/70">{option.description}</span>
+              )}
+            </button>
+          );
+        })
+      )}
+    </div>
+    <p className="mt-3 text-[10px] text-neutral-500">Tipp: Klicke auf einen Status, um ihn zu aktivieren.</p>
+  </div>
+);
 
 type FolderTreeProps = {
   nodes: FolderNode[];
@@ -912,6 +972,25 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
         );
       }
 
+      if (component === 'status-board') {
+        const board = ensureStatusBoard(node.props?.statusBoard);
+        return (
+          <StatusBoardWidget
+            title={board.title}
+            options={board.options}
+            activeId={board.activeId}
+            onSelect={(nextId) =>
+              onUpdate({
+                props: {
+                  ...node.props,
+                  statusBoard: { ...board, activeId: nextId },
+                },
+              })
+            }
+          />
+        );
+      }
+
       if (component === 'folder-structure') {
         const tree = ensureFolderTree(node.props?.folderTree);
         return (
@@ -1322,6 +1401,44 @@ function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
   }));
 }
 
+type StatusBoardData = {
+  title: string;
+  activeId: string | null;
+  options: StatusOption[];
+};
+
+const STATUS_COLOR_CYCLE = ['#22c55e', '#facc15', '#f97316', '#ef4444', '#a855f7', '#0ea5e9'];
+const STATUS_PRESETS: Array<Omit<StatusOption, 'id'>> = [
+  { label: 'Verfügbar', color: '#22c55e', description: 'Direkt einsatzbereit' },
+  { label: 'Gebucht', color: '#f97316', description: 'Für Kund:innen reserviert' },
+  { label: 'Offen', color: '#0ea5e9', description: 'Wartet auf Bestätigung' },
+];
+
+function ensureStatusBoard(board?: NodeProps['statusBoard'] | null): StatusBoardData {
+  const rawOptions = Array.isArray(board?.options) && board?.options.length > 0
+    ? board.options
+    : STATUS_PRESETS.map((preset) => ({ ...preset, id: createId() }));
+  const normalized = rawOptions.map((option, index) => ({
+    id: typeof option?.id === 'string' ? option.id : createId(),
+    label: typeof option?.label === 'string' && option.label.trim() ? option.label.trim() : `Status ${index + 1}`,
+    description: typeof option?.description === 'string' && option.description.trim() ? option.description.trim() : undefined,
+    color:
+      typeof option?.color === 'string' && option.color.trim()
+        ? option.color
+        : STATUS_COLOR_CYCLE[index % STATUS_COLOR_CYCLE.length],
+  }));
+  const title = typeof board?.title === 'string' && board.title.trim() ? board.title.trim() : 'Status';
+  const activeCandidate = typeof board?.activeId === 'string' ? board?.activeId : null;
+  const activeId = normalized.some((option) => option.id === activeCandidate)
+    ? activeCandidate
+    : normalized[0]?.id ?? null;
+  return {
+    title,
+    activeId,
+    options: normalized,
+  };
+}
+
 function ensureFolderTree(nodes?: FolderNode[] | null): FolderNode[] {
   const normalized = mapFolderNodes(nodes);
   if (normalized.length > 0) return normalized;
@@ -1367,4 +1484,17 @@ function ensureAudioNotes(notes?: AudioNote[] | null): AudioNote[] {
     createdAt: note.createdAt ?? new Date().toISOString(),
     url: note.url ?? '',
   }));
+}
+
+function applyAlpha(color: string, alpha: number) {
+  if (typeof color !== 'string' || !color.startsWith('#')) return color;
+  const hex = color.slice(1);
+  if (![3, 6].includes(hex.length)) return color;
+  const normalized = hex.length === 3 ? hex.split('').map((char) => char + char).join('') : hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  if ([r, g, b].some((value) => Number.isNaN(value))) return color;
+  const clampedAlpha = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${clampedAlpha})`;
 }

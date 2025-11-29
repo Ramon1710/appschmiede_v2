@@ -8,6 +8,7 @@ import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
+import GuidedTour from '@/components/GuidedTour';
 
 type Template = {
   id: string;
@@ -610,19 +611,37 @@ export default function TemplatesPage() {
       router.push(`/editor?projectId=${projectId}`);
     };
 
+  const templatesTourSteps = [
+    {
+      id: 'templates-intro',
+      title: 'Vorlagenbibliothek',
+      description: 'Hier findest du kuratierte Projekte, die alle Bausteine des Editors bereits kombiniert verwenden.',
+    },
+    {
+      id: 'templates-grid',
+      title: 'Fertige Use-Cases',
+      description: 'Jede Karte beschreibt einen kompletten Flow – z. B. Unternehmens-Suite, Chat oder Event-App.',
+    },
+    {
+      id: 'templates-create',
+      title: 'Projekt erzeugen',
+      description: 'Mit einem Klick wird ein neues Projekt inkl. Seitenstruktur angelegt und direkt im Editor geöffnet.',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       <Header />
       <main className="flex-1 w-full px-4 py-10 lg:px-10">
         <div className="flex flex-col gap-6">
-          <header className="space-y-1">
+          <header className="space-y-1" data-tour-id="templates-intro">
             <h1 className="text-3xl font-semibold">Vorlagenbibliothek</h1>
             <p className="text-sm text-neutral-400">
               Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt
               weiter angepasst werden.
             </p>
           </header>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
             {templates.map((tpl) => (
               <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
                 <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
@@ -636,6 +655,7 @@ export default function TemplatesPage() {
                       ? 'bg-white/5 text-neutral-500 cursor-wait'
                       : 'bg-white/10 text-neutral-100 hover:bg-white/20'
                   }`}
+                  data-tour-id="templates-create"
                 >
                   {creatingTemplateId === tpl.id ? 'Wird erstellt…' : 'Projekt erstellen'}
                 </button>
@@ -649,6 +669,7 @@ export default function TemplatesPage() {
           )}
         </div>
       </main>
+      <GuidedTour storageKey="tour-templates" steps={templatesTourSteps} restartLabel="Vorlagen Tutorial" />
     </div>
   );
 }

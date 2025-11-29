@@ -7,6 +7,7 @@ import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
 import QRCodeButton from '../_extensions/QRCodeButton';
+import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/lib/db-editor';
@@ -730,7 +731,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const paramsProjectId = typeof routeParams?.projectId === 'string' ? routeParams.projectId : null;
   const [manualProjectId, setManualProjectId] = useState<string | null>(null);
   const derivedProjectId = queryProjectId ?? paramsProjectId ?? storedProjectId ?? null;
-  const _projectId = manualProjectId ?? derivedProjectId ?? null;
+  const _projectId = derivedProjectId ?? manualProjectId ?? null;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -855,31 +856,22 @@ export default function EditorShell({ initialPageId }: Props) {
     []
   );
 
-  const setProjectId = useCallback(
-    (nextId: string | null) => {
-      setManualProjectId(nextId);
-      setCurrentPageId(null);
-      setPages([]);
-      setSelectedId(null);
-      setTemplateSelectValue('');
-      setTemplateNotice(null);
-      applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
-      pendingSyncHash.current = null;
-      isDirty.current = false;
-      if (typeof window !== 'undefined') {
-        const url = new URL(window.location.href);
-        if (nextId) {
-          url.searchParams.set('id', nextId);
-        } else {
-          url.searchParams.delete('id');
-        }
-        url.searchParams.delete('p');
-        url.searchParams.delete('pageId');
-        window.history.replaceState(null, '', url.toString());
-      }
-    },
-    [applyTreeUpdate, setCurrentPageId, setManualProjectId, setPages, setSelectedId, setTemplateNotice, setTemplateSelectValue]
-  );
+  const lastProjectIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const previous = lastProjectIdRef.current;
+    if (previous === _projectId) return;
+    lastProjectIdRef.current = _projectId;
+    if (previous === null) return;
+    setCurrentPageId(null);
+    setPages([]);
+    setSelectedId(null);
+    setTemplateSelectValue('');
+    setTemplateNotice(null);
+    applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
+    pendingSyncHash.current = null;
+    isDirty.current = false;
+  }, [_projectId, applyTreeUpdate]);
 
   const openTemplatesWindow = useCallback(() => {
     const url = '/tools/templates';
@@ -1691,6 +1683,29 @@ export default function EditorShell({ initialPageId }: Props) {
     </div>
   );
 
+  const editorTourSteps = [
+    {
+      id: 'editor-actions',
+      title: 'Export, QR & KI',
+      description: 'Hier findest du Export, QR-Vorschau und den KI-Assistenten – plus den Zugriff auf Seiteneinstellungen.',
+    },
+    {
+      id: 'editor-toolbox',
+      title: 'Bausteine & Vorlagen',
+      description: 'Ziehe Komponenten oder komplette Vorlagen direkt in deine Seite oder nutze das Dropdown für schnelle Layouts.',
+    },
+    {
+      id: 'editor-canvas',
+      title: 'Interaktive Arbeitsfläche',
+      description: 'Wähle Elemente aus, verschiebe sie per Drag & Drop und nutze die Handles zum Skalieren.',
+    },
+    {
+      id: 'editor-properties',
+      title: 'Eigenschaften & Styles',
+      description: 'Passe Texte, Aktionen, Hintergründe und responsive Einstellungen deiner ausgewählten Bausteine an.',
+    },
+  ];
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-[#05070e] text-white">
@@ -1741,7 +1756,7 @@ export default function EditorShell({ initialPageId }: Props) {
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
           <aside className="hidden w-[24rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex">
             <div className="flex h-full flex-col">
-              <div className="border-b border-[#111]/60 bg-[#0b0b0f]/95 px-4 py-4">
+              <div className="border-b border-[#111]/60 bg-[#0b0b0f]/95 px-4 py-4" data-tour-id="editor-actions">
                 <div className="flex items-center justify-between">
                   <Link
                     href="/dashboard"
@@ -1794,43 +1809,35 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
                   <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
-                  <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? 'Projekt wählen'}</div>
+                  <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? 'Kein Projekt geladen'}</div>
                   <p className="text-xs text-neutral-400">{project?.description ?? 'Keine Beschreibung'}</p>
-                  <div className="mt-3">
+                  <p className="mt-2 text-[11px] text-neutral-500">
+                    Projektwechsel erfolgt nur über den Menüpunkt <span className="font-semibold">Projekte</span> in der oberen Leiste.
+                  </p>
+                  <div className="mt-3 flex gap-2">
                     <select
                       className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
-                      value={_projectId ?? ''}
-                      onChange={(event) => setProjectId(event.target.value || null)}
+                      value={currentPageId ?? ''}
+                      onChange={(event) => handlePageSelection(event.target.value || null)}
+                      disabled={!pages.length}
                     >
-                      <option value="">Projekt auswählen</option>
-                      {projects.map((projectOption) => (
-                        <option key={projectOption.id ?? 'none'} value={projectOption.id ?? ''}>
-                          {projectOption.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {pages.length > 0 && (
-                    <div className="mt-2 flex gap-2">
-                      <select
-                        className="w-full rounded-xl border border-[#333] bg-neutral-900 px-3 py-2 text-sm"
-                        value={currentPageId ?? ''}
-                        onChange={(event) => handlePageSelection(event.target.value || null)}
-                      >
-                        {pages.map((p) => (
+                      {pages.length === 0 ? (
+                        <option value="">Keine Seiten vorhanden</option>
+                      ) : (
+                        pages.map((p) => (
                           <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        onClick={promptRenamePage}
-                        className="rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200 transition hover:bg-white/10"
-                        disabled={!currentPageId}
-                      >
-                        Umbenennen
-                      </button>
-                    </div>
-                  )}
+                        ))
+                      )}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={promptRenamePage}
+                      className="rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200 transition hover:bg-white/10 disabled:opacity-40"
+                      disabled={!currentPageId}
+                    >
+                      Umbenennen
+                    </button>
+                  </div>
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       className="flex-1 rounded border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
@@ -1868,7 +1875,7 @@ export default function EditorShell({ initialPageId }: Props) {
               </div>
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 <div className="space-y-4">
-                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <section className="rounded-2xl border border-white/10 bg-white/5 p-4" data-tour-id="editor-toolbox">
                     <button
                       type="button"
                       onClick={() => setToolboxOpen((prev) => !prev)}
@@ -1914,7 +1921,7 @@ export default function EditorShell({ initialPageId }: Props) {
           </aside>
 
           <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
-            <div className="border-b border-[#111] bg-[#0b0b0f]/95 px-4 py-3 shadow-inner lg:hidden">
+            <div className="border-b border-[#111] bg-[#0b0b0f]/95 px-4 py-3 shadow-inner lg:hidden" data-tour-id="editor-actions">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/dashboard"
@@ -2054,7 +2061,7 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
               {mobilePanel === 'toolbox' && (
                 <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
-                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-toolbox">
                     <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: 'Bausteine' },
@@ -2083,7 +2090,7 @@ export default function EditorShell({ initialPageId }: Props) {
               )}
               {mobilePanel === 'canvas' && (
                 <div className="flex flex-1 min-h-0 flex-col overflow-auto px-4 py-4 lg:hidden">
-                  <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-3 shadow-2xl">
+                  <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-3 shadow-2xl" data-tour-id="editor-canvas">
                     <Canvas
                       tree={tree}
                       selectedId={selectedId}
@@ -2098,7 +2105,7 @@ export default function EditorShell({ initialPageId }: Props) {
               )}
               {mobilePanel === 'properties' && (
                 <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4 lg:hidden">
-                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                  <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-properties">
                     <PropertiesPanel
                       node={selectedNode}
                       onUpdate={(patch) => {
@@ -2114,7 +2121,7 @@ export default function EditorShell({ initialPageId }: Props) {
               )}
 
               <div className="hidden flex-1 min-h-0 overflow-auto p-6 lg:flex">
-                <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl">
+                <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
                   <Canvas
                     tree={tree}
                     selectedId={selectedId}
@@ -2129,7 +2136,7 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
           </main>
 
-          <aside className="hidden w-[22rem] flex-shrink-0 flex-col border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex">
+          <aside className="hidden w-[22rem] flex-shrink-0 flex-col border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex" data-tour-id="editor-properties">
             <div className="flex-1 overflow-y-auto p-4">
               <PropertiesPanel
                 node={selectedNode}
@@ -2265,6 +2272,8 @@ export default function EditorShell({ initialPageId }: Props) {
           </div>
         </div>
       )}
+
+      <GuidedTour storageKey="tour-editor" steps={editorTourSteps} restartLabel="Editor Tutorial" />
     </>
   );
 }

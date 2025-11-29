@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
+import GuidedTour from '@/components/GuidedTour';
 import type { Project } from '@/types/editor';
 import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
 
@@ -56,6 +57,24 @@ export default function ProjectsIndexPage() {
       </>
     );
 
+  const tourSteps = [
+    {
+      id: 'projects-create-input',
+      title: 'Projektname festlegen',
+      description: 'Tippe hier den Namen deines neuen Projekts ein – z.B. "Marketing App".',
+    },
+    {
+      id: 'projects-create-button',
+      title: '+ Anlegen',
+      description: 'Mit diesem Button legst du das Projekt an und kannst es sofort im Editor öffnen.',
+    },
+    {
+      id: 'projects-list',
+      title: 'Projektübersicht',
+      description: 'Alle angelegten Projekte erscheinen hier. Mit den Buttons kannst du sie öffnen oder löschen.',
+    },
+  ];
+
   return (
     <>
       <Header />
@@ -73,11 +92,13 @@ export default function ProjectsIndexPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Projektname"
+                data-tour-id="projects-create-input"
                 className="flex-1 rounded-xl bg-neutral-800 px-3 py-2"
               />
               <button
                 onClick={onCreate}
                 disabled={loading || !name.trim()}
+                data-tour-id="projects-create-button"
                 className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
               >
                 + Anlegen
@@ -86,7 +107,7 @@ export default function ProjectsIndexPage() {
             {error && <div className="text-sm text-rose-400">{error}</div>}
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3">
+          <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3" data-tour-id="projects-list">
             <h2 className="font-semibold">Meine Projekte</h2>
             {projects.length === 0 ? (
               <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
@@ -112,6 +133,7 @@ export default function ProjectsIndexPage() {
           </section>
         </div>
       </main>
+      <GuidedTour storageKey="tour-projects" steps={tourSteps} />
     </>
   );
 }
