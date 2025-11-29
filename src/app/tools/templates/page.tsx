@@ -8,6 +8,641 @@ import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
+import GuidedTour from '@/components/GuidedTour';
+
+type Template = {
+  id: string;
+  name: string;
+  description: string;
+  projectName: string;
+  pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+};
+
+const fallbackId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+
+const defaultBackground = 'linear-gradient(135deg, #0b1220, #111827)';
+
+const nodeSize: Record<Node['type'], { w: number; h: number }> = {
+  text: { w: 296, h: 60 },
+  button: { w: 220, h: 52 },
+  image: { w: 296, h: 200 },
+  input: { w: 296, h: 52 },
+  container: { w: 296, h: 180 },
+};
+
+const makeNode = (type: Node['type'], overrides: Partial<Node> = {}): Node => {
+  const size = nodeSize[type];
+  return {
+    id: overrides.id ?? fallbackId(),
+    type,
+    x: overrides.x ?? 24,
+    y: overrides.y ?? 120,
+    w: overrides.w ?? size.w,
+    h: overrides.h ?? size.h,
+    props: overrides.props ?? {},
+    style: overrides.style ?? {},
+    children: overrides.children ?? [],
+  };
+};
+
+const withNavbar = (
+  children: Node[],
+  entries: Array<{ label: string; targetPage: string; icon?: string }>
+) => [
+  makeNode('container', {
+    y: 32,
+    h: 64,
+    props: {
+      component: 'navbar',
+      navItems: entries.map((entry) => ({
+        id: fallbackId(),
+        label: entry.label,
+        icon: entry.icon,
+        action: 'navigate',
+        target: `#${entry.targetPage.toLowerCase()}`,
+        targetPage: entry.targetPage,
+      })),
+    },
+  }),
+  ...children,
+];
+
+const stack = (
+  items: Array<Partial<Node> & { type: Node['type'] }>,
+  options?: { startY?: number; gap?: number }
+) => {
+  const startY = options?.startY ?? 120;
+  const gap = options?.gap ?? 24;
+  let cursor = startY;
+  return items.map((item) => {
+    const node = makeNode(item.type, { ...item, y: cursor } as Partial<Node>);
+    cursor += (node.h ?? 0) + gap;
+    return node;
+  });
+};
+
+const createAuthPages = (appName: string, options?: { background?: string }): Template['pages'] => {
+  const bg = options?.background ?? 'linear-gradient(140deg,#050c18,#111f2f)';
+  const baseText = `Willkommen bei ${appName}`;
+  const paragraph = `${appName} schützt deinen Workspace. Melde dich an oder lege ein neues Team an.`;
+
+  const login: Template['pages'][number] = {
+    name: 'Login',
+    folder: 'Auth',
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg },
+      children: stack(
+        [
+          { type: 'text', props: { text: baseText }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'text',
+            h: 64,
+            props: { text: paragraph },
+            style: { fontSize: 15, color: '#cbd5f5', lineHeight: 1.5 },
+          },
+          { type: 'input', props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Login', action: 'login' } },
+          {
+            type: 'button',
+            w: 260,
+            props: { label: 'Passwort vergessen', action: 'navigate', targetPage: 'Passwort Reset' },
+          },
+          {
+            type: 'button',
+            w: 260,
+            props: { label: 'Jetzt registrieren', action: 'navigate', targetPage: 'Registrierung' },
+          },
+        ],
+        { startY: 80 }
+      ),
+    },
+  };
+
+  const register: Template['pages'][number] = {
+    name: 'Registrierung',
+    folder: 'Auth',
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg },
+      children: stack(
+        [
+          { type: 'text', props: { text: `Konto erstellen – ${appName}` }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'text',
+            h: 64,
+            props: { text: 'Lade dein Team ein, sichere Projekte und verwalte Zugänge.' },
+            style: { fontSize: 15, color: '#d7e4ff' },
+          },
+          { type: 'input', props: { placeholder: 'Vorname', inputType: 'text' } },
+          { type: 'input', props: { placeholder: 'Nachname', inputType: 'text' } },
+          { type: 'input', props: { placeholder: 'Unternehmen oder Team', inputType: 'text' } },
+          { type: 'input', props: { placeholder: 'E-Mail', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+        ],
+        { startY: 80 }
+      ),
+    },
+  };
+
+  const reset: Template['pages'][number] = {
+    name: 'Passwort Reset',
+    folder: 'Auth',
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg },
+      children: stack(
+        [
+          { type: 'text', props: { text: 'Passwort vergessen?' }, style: { fontSize: 28, fontWeight: 600 } },
+          {
+            type: 'text',
+            h: 72,
+            props: {
+              text: 'Gib deine E-Mail-Adresse ein und wir schicken dir direkt einen Link zum Zurücksetzen.',
+            },
+            style: { fontSize: 15, color: '#dbeafe' },
+          },
+          { type: 'input', props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+          { type: 'button', props: { label: 'Link senden', action: 'reset-password' } },
+          {
+            type: 'button',
+            w: 240,
+            props: { label: 'Zurück zum Login', action: 'navigate', targetPage: 'Login' },
+          },
+        ],
+        { startY: 80 }
+      ),
+    },
+  };
+
+  return [login, register, reset];
+};
+
+const withAuthPages = (appName: string, pages: Template['pages'], options?: { background?: string }) => [
+  ...createAuthPages(appName, options),
+  ...pages,
+];
+
+const createCompanySuiteTemplate = (): Template => ({
+  id: 'company-suite',
+  name: 'Unternehmens-App',
+  description: 'Dashboard, Zeiterfassung, Aufgaben & Kommunikation für dein Team.',
+  projectName: 'Unternehmens-App',
+  pages: [
+    {
+      name: 'Login',
+      folder: 'Onboarding',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
+        children: stack(
+          [
+            {
+              type: 'text',
+              props: { text: 'Willkommen zurück in der Unternehmens-App' },
+              style: { fontSize: 28, fontWeight: 600 },
+            },
+            {
+              type: 'text',
+              h: 84,
+              props: {
+                text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
+              },
+              style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
+            },
+            { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
+            { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+            { type: 'button', props: { label: 'Einloggen', action: 'login' } },
+            { type: 'button', props: { label: 'Passwort vergessen', action: 'reset-password' } },
+            { type: 'button', props: { label: 'Neues Team registrieren', action: 'register' } },
+          ],
+          { startY: 80 }
+        ),
+      },
+    },
+    {
+      name: 'Unternehmen',
+      folder: 'Übersicht',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: defaultBackground },
+        children: withNavbar(
+          stack([
+            {
+              type: 'text',
+              props: { text: 'Unternehmensübersicht' },
+              style: { fontSize: 28, fontWeight: 600 },
+            },
+            {
+              type: 'text',
+              props: {
+                text: 'Projekte, Zeiten und Benachrichtigungen auf einen Blick – immer aktuell für dein Führungsteam.',
+              },
+              style: { fontSize: 16, lineHeight: 1.5 },
+              h: 84,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'time-tracking',
+                timeTracking: {
+                  entries: [
+                    { id: fallbackId(), label: 'Projekt Alpha', seconds: 5400, endedAt: new Date().toISOString() },
+                    { id: fallbackId(), label: 'Projekt Beta', seconds: 3600, startedAt: new Date().toISOString() },
+                  ],
+                },
+              },
+              h: 200,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'task-manager',
+                tasks: [
+                  { id: fallbackId(), title: 'Kundentermin vorbereiten', done: false },
+                  { id: fallbackId(), title: 'Sprint-Review freigeben', done: true },
+                ],
+              },
+              h: 200,
+            },
+          ]),
+          [
+            { label: 'Dashboard', targetPage: 'Unternehmen', icon: '📊' },
+            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
+            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
+            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Zeiterfassung',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#091322,#152846)' },
+        children: withNavbar(
+          stack([
+            {
+              type: 'text',
+              props: { text: 'Zeiterfassung pro Projekt' },
+              style: { fontSize: 26, fontWeight: 600 },
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'time-tracking',
+                timeTracking: {
+                  entries: [
+                    {
+                      id: fallbackId(),
+                      label: 'Projekt Atlas – Konzept',
+                      seconds: 7200,
+                      startedAt: new Date(Date.now() - 7200 * 1000).toISOString(),
+                      endedAt: new Date().toISOString(),
+                    },
+                    {
+                      id: fallbackId(),
+                      label: 'Projekt Atlas – Entwicklung',
+                      seconds: 3600,
+                      startedAt: new Date().toISOString(),
+                    },
+                  ],
+                },
+              },
+              h: 220,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'folder-structure',
+                folderTree: [
+                  { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Sprint 1' }] },
+                  { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Design' }] },
+                ],
+              },
+              h: 220,
+            },
+          ]),
+          [
+            { label: 'Dashboard', targetPage: 'Unternehmen' },
+            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
+            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Aufgaben',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#101828,#1f2638)' },
+        children: withNavbar(
+          stack([
+            {
+              type: 'text',
+              props: { text: 'Aufgaben & Benachrichtigungen' },
+              style: { fontSize: 26, fontWeight: 600 },
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'task-manager',
+                tasks: [
+                  { id: fallbackId(), title: 'Marketing-Kampagne briefen', done: false },
+                  { id: fallbackId(), title: 'Feedbackrunde Team', done: false },
+                ],
+              },
+              h: 220,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'todo',
+                todoItems: [
+                  { id: fallbackId(), title: 'Benachrichtigung: Alex neue Aufgabe', done: false },
+                  { id: fallbackId(), title: 'Reminder: Arbeitszeit bestätigen', done: false },
+                ],
+              },
+              h: 200,
+            },
+          ]),
+          [
+            { label: 'Dashboard', targetPage: 'Unternehmen' },
+            { label: 'Zeiten', targetPage: 'Zeiterfassung' },
+            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Kommunikation',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#10172a,#1a1f3b)' },
+        children: withNavbar(
+          stack([
+            {
+              type: 'text',
+              props: { text: 'Team-Chat & Projektkommunikation' },
+              style: { fontSize: 26, fontWeight: 600 },
+            },
+            { type: 'container', props: { component: 'chat' }, h: 240 },
+            { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
+            {
+              type: 'container',
+              props: {
+                component: 'support',
+                supportChannel: 'chat',
+                supportTarget: 'support@unternehmen.app',
+              },
+              h: 160,
+            },
+          ]),
+          [
+            { label: 'Dashboard', targetPage: 'Unternehmen' },
+            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
+          ]
+        ),
+      },
+    },
+  ],
+});
+
+const createChatAppTemplate = (): Template => ({
+  id: 'team-chat',
+  name: 'Teamchat & Support',
+  description: 'Login, Chatfenster, Support-Tickets und Upload-Aktionen in einem Paket.',
+  projectName: 'Teamchat',
+  pages: [
+    {
+      name: 'Login',
+      folder: 'Onboarding',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(140deg,#050c18,#101b2e)' },
+        children: stack([
+          {
+            type: 'text',
+            props: { text: 'Teamchat Login' },
+            style: { fontSize: 28, fontWeight: 600 },
+          },
+          {
+            type: 'text',
+            h: 72,
+            style: { fontSize: 15, color: '#cbd5f5', lineHeight: 1.6 },
+            props: { text: 'Melde dich mit deinem Firmenaccount an, um Chats und Supporttickets zu sehen.' },
+          },
+          { type: 'input', props: { placeholder: 'E-Mail', inputType: 'email' } },
+          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+          { type: 'button', props: { label: 'Login', action: 'login' } },
+          { type: 'button', props: { label: 'Invitations-Link anfordern', action: 'support-ticket' } },
+        ]),
+      },
+    },
+    {
+      name: 'Start',
+      folder: 'Übersicht',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(140deg,#0b1120,#1f2a40)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Willkommen im Teamchat' }, style: { fontSize: 28, fontWeight: 600 } },
+            {
+              type: 'text',
+              props: {
+                text: 'Bleib verbunden, starte Projekt-Chats und verwalte Support-Anfragen mit einem Fingertipp.',
+              },
+              style: { fontSize: 16 },
+              h: 80,
+            },
+            { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat', target: 'chat' } },
+            { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+            { type: 'button', props: { label: 'Login', action: 'login' } },
+          ]),
+          [
+            { label: 'Start', targetPage: 'Start', icon: '🏠' },
+            { label: 'Chat', targetPage: 'Chat', icon: '💬' },
+            { label: 'Support', targetPage: 'Support', icon: '🎫' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Chat',
+      folder: 'Kommunikation',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(140deg,#101926,#1d2a3d)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Projektchat' }, style: { fontSize: 26, fontWeight: 600 } },
+            { type: 'container', props: { component: 'chat' }, h: 280 },
+            { type: 'button', props: { label: 'Bild senden', action: 'upload-photo' } },
+            { type: 'button', props: { label: 'Audio aufnehmen', action: 'record-audio' } },
+          ]),
+          [
+            { label: 'Start', targetPage: 'Start' },
+            { label: 'Chat', targetPage: 'Chat', icon: '💬' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Support',
+      folder: 'Kommunikation',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(140deg,#0c1624,#14263c)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Support & Tickets' }, style: { fontSize: 26, fontWeight: 600 } },
+            {
+              type: 'container',
+              props: {
+                component: 'support',
+                supportChannel: 'ticket',
+                supportTarget: 'support@teamchat.app',
+                supportTickets: [
+                  {
+                    id: fallbackId(),
+                    subject: 'Datei-Upload funktioniert nicht',
+                    message: 'Bitte prüfen, ob die 10MB-Grenze erreicht ist.',
+                    createdAt: new Date().toISOString(),
+                    channel: 'ticket',
+                  },
+                ],
+              },
+              h: 220,
+            },
+          ]),
+          [
+            { label: 'Start', targetPage: 'Start' },
+            { label: 'Support', targetPage: 'Support', icon: '🎫' },
+          ]
+        ),
+      },
+    },
+  ],
+});
+
+const createEventTemplate = (): Template => ({
+  id: 'event-planner',
+  name: 'Event & Community',
+  description: 'Kalender, Karte, QR-Einlass und Aufgabenliste für dein nächstes Event.',
+  projectName: 'Event-App',
+  pages: [
+    {
+      name: 'Login',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#030b15,#111f2f)' },
+        children: stack(
+          [
+            {
+              type: 'text',
+              props: { text: 'Event Hub Login' },
+              style: { fontSize: 28, fontWeight: 600 },
+            },
+            {
+              type: 'text',
+              h: 72,
+              style: { fontSize: 15, lineHeight: 1.5, color: '#d8e4ff' },
+              props: { text: 'Greife auf Teilnehmerverwaltung, Check-in und Community-Komponenten zu.' },
+            },
+            { type: 'input', props: { placeholder: 'Event-E-Mail', inputType: 'email' } },
+            { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+            { type: 'button', props: { label: 'Login', action: 'login' } },
+            { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+          ],
+          { startY: 88 }
+        ),
+      },
+    },
+    {
+      name: 'Event',
+      folder: 'Events',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0a1424,#1d2b45)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Event Hub' }, style: { fontSize: 28, fontWeight: 600 } },
+            { type: 'container', props: { component: 'calendar', calendarFocusDate: new Date().toISOString() }, h: 240 },
+            { type: 'container', props: { component: 'map', mapLocation: 'Berlin, Germany' }, h: 220 },
+            { type: 'container', props: { component: 'qr-code', qrUrl: 'https://example.com/tickets' }, h: 160 },
+          ]),
+          [
+            { label: 'Event', targetPage: 'Event', icon: '🎟️' },
+            { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
+          ]
+        ),
+      },
+    },
+    {
+      name: 'Orga',
+      folder: 'Events',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#10172a,#1d2a3d)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Event Organisation' }, style: { fontSize: 26, fontWeight: 600 } },
+            {
+              type: 'container',
+              props: {
+                component: 'task-manager',
+                tasks: [
+                  { id: fallbackId(), title: 'Catering bestätigen', done: false },
+                  { id: fallbackId(), title: 'Location dekorieren', done: false },
+                  { id: fallbackId(), title: 'Speaker einweisen', done: true },
+                ],
+              },
+              h: 220,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'audio-recorder',
+                audioNotes: [],
+              },
+              h: 200,
+            },
+          ]),
+          [
+            { label: 'Event', targetPage: 'Event' },
+            { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
+          ]
+        ),
+      },
+    },
+  ],
+});
+
 const createConstructionManagerTemplate = (): Template => {
   const boardOptions = [
     { id: fallbackId(), label: 'Planung', description: 'Genehmigung läuft', color: '#38bdf8' },
@@ -1162,210 +1797,6 @@ const templates: Template[] = [
   createTravelTemplate(),
   createCoworkingTemplate(),
 ];
-          {
-            type: 'text',
-            props: { text: 'Teamchat Login' },
-            style: { fontSize: 28, fontWeight: 600 },
-          },
-          {
-            type: 'text',
-            h: 72,
-            style: { fontSize: 15, color: '#cbd5f5', lineHeight: 1.6 },
-            props: { text: 'Melde dich mit deinem Firmenaccount an, um Chats und Supporttickets zu sehen.' },
-          },
-          { type: 'input', props: { placeholder: 'E-Mail', inputType: 'email' } },
-          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
-          { type: 'button', props: { label: 'Login', action: 'login' } },
-          { type: 'button', props: { label: 'Invitations-Link anfordern', action: 'support-ticket' } },
-        ]),
-      },
-    },
-    {
-      name: 'Start',
-      folder: 'Übersicht',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(140deg,#0b1120,#1f2a40)' },
-        children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Willkommen im Teamchat' }, style: { fontSize: 28, fontWeight: 600 } },
-            {
-              type: 'text',
-              props: {
-                text: 'Bleib verbunden, starte Projekt-Chats und verwalte Support-Anfragen mit einem Fingertipp.',
-              },
-              style: { fontSize: 16 },
-              h: 80,
-            },
-            { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat', target: 'chat' } },
-            { type: 'button', props: { label: 'Registrieren', action: 'register' } },
-            { type: 'button', props: { label: 'Login', action: 'login' } },
-          ]),
-          [
-            { label: 'Start', targetPage: 'Start', icon: '🏠' },
-            { label: 'Chat', targetPage: 'Chat', icon: '💬' },
-            { label: 'Support', targetPage: 'Support', icon: '🎫' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Chat',
-      folder: 'Kommunikation',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(140deg,#101926,#1d2a3d)' },
-        children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Projektchat' }, style: { fontSize: 26, fontWeight: 600 } },
-            { type: 'container', props: { component: 'chat' }, h: 280 },
-            { type: 'button', props: { label: 'Bild senden', action: 'upload-photo' } },
-            { type: 'button', props: { label: 'Audio aufnehmen', action: 'record-audio' } },
-          ]),
-          [
-            { label: 'Start', targetPage: 'Start' },
-            { label: 'Chat', targetPage: 'Chat', icon: '💬' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Support',
-      folder: 'Kommunikation',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(140deg,#0c1624,#14263c)' },
-        children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Support & Tickets' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'support',
-                supportChannel: 'ticket',
-                supportTarget: 'support@teamchat.app',
-                supportTickets: [
-                  {
-                    id: fallbackId(),
-                    subject: 'Datei-Upload funktioniert nicht',
-                    message: 'Bitte prüfen, ob die 10MB-Grenze erreicht ist.',
-                    createdAt: new Date().toISOString(),
-                    channel: 'ticket',
-                  },
-                ],
-              },
-              h: 220,
-            },
-          ]),
-          [
-            { label: 'Start', targetPage: 'Start' },
-            { label: 'Support', targetPage: 'Support', icon: '🎫' },
-          ]
-        ),
-      },
-    },
-  ],
-});
-
-const createEventTemplate = (): Template => ({
-  id: 'event-planner',
-  name: 'Event & Community',
-  description: 'Kalender, Karte, QR-Einlass und Aufgabenliste für dein nächstes Event.',
-  projectName: 'Event-App',
-  pages: [
-    {
-      name: 'Login',
-      folder: 'Team',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#030b15,#111f2f)' },
-        children: stack([
-          {
-            type: 'text',
-            props: { text: 'Event Hub Login' },
-            style: { fontSize: 28, fontWeight: 600 },
-          },
-          {
-            type: 'text',
-            h: 72,
-            style: { fontSize: 15, lineHeight: 1.5, color: '#d8e4ff' },
-            props: { text: 'Greife auf Teilnehmerverwaltung, Check-in und Community-Komponenten zu.' },
-          },
-          { type: 'input', props: { placeholder: 'Event-E-Mail', inputType: 'email' } },
-          { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
-          { type: 'button', props: { label: 'Login', action: 'login' } },
-          { type: 'button', props: { label: 'Registrieren', action: 'register' } },
-        ], { startY: 88 }),
-      },
-    },
-    {
-      name: 'Event',
-      folder: 'Events',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#0a1424,#1d2b45)' },
-        children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Event Hub' }, style: { fontSize: 28, fontWeight: 600 } },
-            { type: 'container', props: { component: 'calendar', calendarFocusDate: new Date().toISOString() }, h: 240 },
-            { type: 'container', props: { component: 'map', mapLocation: 'Berlin, Germany' }, h: 220 },
-            { type: 'container', props: { component: 'qr-code', qrUrl: 'https://example.com/tickets' }, h: 160 },
-          ]),
-          [
-            { label: 'Event', targetPage: 'Event', icon: '🎟️' },
-            { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
-          ]
-        ),
-      },
-    },
-    {
-      name: 'Orga',
-      folder: 'Events',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#10172a,#1d2a3d)' },
-        children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Event Organisation' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Catering bestätigen', done: false },
-                  { id: fallbackId(), title: 'Location dekorieren', done: false },
-                  { id: fallbackId(), title: 'Speaker einweisen', done: true },
-                ],
-              },
-              h: 220,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'audio-recorder',
-                audioNotes: [],
-              },
-              h: 200,
-            },
-          ]),
-          [
-            { label: 'Event', targetPage: 'Event' },
-            { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
-          ]
-        ),
-      },
-    },
-  ],
-});
-
-
-const templates: Template[] = [createCompanySuiteTemplate(), createChatAppTemplate(), createEventTemplate()];
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
