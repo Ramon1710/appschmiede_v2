@@ -6,6 +6,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="de">
       <head>
+        <meta name="google-adsense-account" content="ca-pub-9591311841405142" />
         <Script
           id="adsense-loader"
           strategy="beforeInteractive"
