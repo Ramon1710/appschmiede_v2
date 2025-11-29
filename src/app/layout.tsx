@@ -8,8 +8,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <Script
           id="adsense-loader"
-          strategy="lazyOnload"
-          async
+          strategy="beforeInteractive"
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9591311841405142"
           crossOrigin="anonymous"
         />
