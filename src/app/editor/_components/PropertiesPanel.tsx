@@ -2,12 +2,14 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem } from '@/lib/editorTypes';
+import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem, TimeEntry } from '@/lib/editorTypes';
 
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const FALLBACK_COLOR = '#0f172a';
 const createNavId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `nav_${Math.random().toString(36).slice(2)}`;
+const createTimeEntryId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `time_${Math.random().toString(36).slice(2)}`;
 
 const NAV_DEFAULTS: Array<Omit<NavbarItem, 'id'>> = [
   { label: 'Dashboard', action: 'navigate', target: '#dashboard' },
@@ -30,6 +32,56 @@ const normalizeNavItems = (items?: unknown): NavbarItem[] => {
     }));
   }
   return NAV_DEFAULTS.map((item) => ({ ...item, id: createNavId() }));
+};
+
+const createDefaultTimeEntries = (): TimeEntry[] => {
+  const now = new Date();
+  const minutes = (mins: number) => new Date(now.getTime() - mins * 60 * 1000).toISOString();
+  return [
+    {
+      id: createTimeEntryId(),
+      label: 'Projekt Alpha',
+      seconds: 3600,
+      startedAt: minutes(90),
+      endedAt: minutes(30),
+    },
+    {
+      id: createTimeEntryId(),
+      label: 'Projekt Beta',
+      seconds: 2700,
+      startedAt: minutes(45),
+    },
+  ];
+};
+
+const normalizeTimeEntries = (entries?: unknown): TimeEntry[] => {
+  if (Array.isArray(entries) && entries.length > 0) {
+    return entries.map((raw) => ({
+      id: typeof raw?.id === 'string' ? raw.id : createTimeEntryId(),
+      label:
+        typeof raw?.label === 'string' && raw.label.trim().length > 0
+          ? raw.label.trim()
+          : 'Task',
+      seconds: typeof raw?.seconds === 'number' && Number.isFinite(raw.seconds) ? Math.max(0, raw.seconds) : 0,
+      startedAt: typeof raw?.startedAt === 'string' ? raw.startedAt : undefined,
+      endedAt: typeof raw?.endedAt === 'string' ? raw.endedAt : undefined,
+    }));
+  }
+  return createDefaultTimeEntries();
+};
+
+const toDateTimeLocal = (iso?: string) => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const tzOffset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+};
+
+const fromDateTimeLocal = (value: string) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 };
 
 interface PropertiesPanelProps {
@@ -122,7 +174,12 @@ export default function PropertiesPanel({
 
   const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
   const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
+  const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
   const navItems = useMemo(() => (isNavbarContainer ? normalizeNavItems(node?.props?.navItems) : []), [isNavbarContainer, node?.props?.navItems]);
+  const timeEntries = useMemo(
+    () => (isTimeTrackingContainer ? normalizeTimeEntries(node?.props?.timeTracking?.entries) : []),
+    [isTimeTrackingContainer, node?.props?.timeTracking?.entries]
+  );
 
   const updateNavItems = (next: NavbarItem[]) => {
     setProps({ navItems: next });
@@ -150,6 +207,70 @@ export default function PropertiesPanel({
     if (!isNavbarContainer) return;
     const next = navItems.filter((item) => item.id !== id);
     updateNavItems(next.length ? next : []);
+  };
+
+  const updateTimeEntries = (next: TimeEntry[]) => {
+    const existing = (node?.props?.timeTracking ?? {}) as Record<string, unknown>;
+    setProps({ timeTracking: { ...existing, entries: next } });
+  };
+
+  const handleTimeEntryChange = (id: string, patch: Partial<TimeEntry>) => {
+    if (!isTimeTrackingContainer) return;
+    updateTimeEntries(
+      timeEntries.map((entry) => {
+        if (entry.id !== id) return entry;
+        const nextEntry: TimeEntry = { ...entry, ...patch };
+        if (typeof patch.seconds === 'number') {
+          nextEntry.seconds = Math.max(0, patch.seconds);
+        }
+        return nextEntry;
+      })
+    );
+  };
+
+  const handleAddTimeEntry = () => {
+    if (!isTimeTrackingContainer) return;
+    updateTimeEntries([
+      ...timeEntries,
+      {
+        id: createTimeEntryId(),
+        label: 'Neuer Task',
+        seconds: 0,
+        startedAt: new Date().toISOString(),
+      },
+    ]);
+  };
+
+  const handleRemoveTimeEntry = (id: string) => {
+    if (!isTimeTrackingContainer) return;
+    updateTimeEntries(timeEntries.filter((entry) => entry.id !== id));
+  };
+
+  const handleClearTimeEntries = () => {
+    if (!isTimeTrackingContainer) return;
+    updateTimeEntries([]);
+  };
+
+  const handleRestoreDemoEntries = () => {
+    if (!isTimeTrackingContainer) return;
+    updateTimeEntries(createDefaultTimeEntries());
+  };
+
+  const handleTimeEntryStatusChange = (id: string, status: 'running' | 'done') => {
+    if (!isTimeTrackingContainer) return;
+    const nowIso = new Date().toISOString();
+    const next = timeEntries.map((entry) => {
+      if (entry.id === id) {
+        return status === 'running'
+          ? { ...entry, startedAt: entry.startedAt ?? nowIso, endedAt: undefined }
+          : { ...entry, endedAt: nowIso };
+      }
+      if (status === 'running' && !entry.endedAt) {
+        return { ...entry, endedAt: entry.endedAt ?? nowIso };
+      }
+      return entry;
+    });
+    updateTimeEntries(next);
   };
 
   return (
@@ -583,6 +704,119 @@ export default function PropertiesPanel({
                     onClick={handleAddNavItem}
                     className="w-full rounded border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-500/30"
                   >+ Navigationseintrag</button>
+                </div>
+              )}
+
+              {isTimeTrackingContainer && (
+                <div className="space-y-3 rounded-xl border border-sky-500/40 bg-sky-500/5 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-200">Zeiterfassung</div>
+                  <p className="text-[11px] text-neutral-400">
+                    Bearbeite Aufgaben, Laufzeiten und Start-/Endzeiten. Über die Buttons kannst du Einträge starten oder beenden.
+                  </p>
+                  {timeEntries.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-sky-500/40 bg-black/20 p-3 text-[11px] text-neutral-400">
+                      Noch keine Einträge vorhanden. Lege unten neue Einträge an oder stelle die Demo-Daten wieder her.
+                    </div>
+                  )}
+                  {timeEntries.map((entry, index) => {
+                    const isRunning = !entry.endedAt;
+                    const startedLocal = toDateTimeLocal(entry.startedAt);
+                    const endedLocal = toDateTimeLocal(entry.endedAt);
+                    const minutes = Number.isFinite(entry.seconds) ? Math.round((entry.seconds ?? 0) / 60) : 0;
+                    return (
+                      <div key={entry.id} className="space-y-2 rounded-lg border border-white/10 bg-black/40 p-3">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Eintrag {index + 1}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={isRunning ? 'text-lime-300' : 'text-neutral-500'}>
+                              {isRunning ? 'Laufend' : 'Gestoppt'}
+                            </span>
+                            <button
+                              type="button"
+                              className="text-rose-300 transition hover:text-rose-200"
+                              onClick={() => handleRemoveTimeEntry(entry.id)}
+                            >Entfernen</button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Label</label>
+                          <input
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            value={entry.label}
+                            onChange={(e) => handleTimeEntryChange(entry.id, { label: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400">Dauer (Minuten)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                            value={Number.isFinite(minutes) ? minutes : 0}
+                            onChange={(e) => {
+                              const parsed = Number(e.target.value);
+                              const sanitizedMinutes = Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+                              handleTimeEntryChange(entry.id, { seconds: sanitizedMinutes * 60 });
+                            }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-gray-400">Gestartet</label>
+                            <input
+                              type="datetime-local"
+                              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                              value={startedLocal}
+                              onChange={(e) => handleTimeEntryChange(entry.id, { startedAt: fromDateTimeLocal(e.target.value) })}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-400">Gestoppt</label>
+                            <input
+                              type="datetime-local"
+                              className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
+                              value={endedLocal}
+                              onChange={(e) => handleTimeEntryChange(entry.id, { endedAt: fromDateTimeLocal(e.target.value) })}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className={`flex-1 rounded border px-3 py-1.5 text-xs font-semibold transition ${
+                              isRunning
+                                ? 'border-rose-400/50 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20'
+                                : 'border-lime-400/40 bg-lime-500/20 text-lime-100 hover:bg-lime-500/30'
+                            }`}
+                            onClick={() => handleTimeEntryStatusChange(entry.id, isRunning ? 'done' : 'running')}
+                          >{isRunning ? 'Stoppen' : 'Starten'}</button>
+                          <button
+                            type="button"
+                            className="rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-neutral-200 hover:bg-white/10"
+                            onClick={() => handleTimeEntryChange(entry.id, { endedAt: undefined })}
+                          >Reset Endzeit</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddTimeEntry}
+                      className="flex-1 rounded border border-sky-400/50 bg-sky-500/20 px-3 py-1.5 text-xs font-semibold text-sky-100 transition hover:bg-sky-500/30"
+                    >+ Eintrag</button>
+                    <button
+                      type="button"
+                      onClick={handleClearTimeEntries}
+                      disabled={timeEntries.length === 0}
+                      className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-300 transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                    >Alle löschen</button>
+                    <button
+                      type="button"
+                      onClick={handleRestoreDemoEntries}
+                      className="w-full rounded border border-dotted border-sky-300/40 px-3 py-1.5 text-xs font-semibold text-sky-200 transition hover:bg-sky-500/10"
+                    >Demo-Daten wiederherstellen</button>
+                  </div>
                 </div>
               )}
             </div>
