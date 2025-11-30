@@ -35,4 +35,4 @@ export interface AppUserProfile {
 }
 
 export const DEFAULT_FREE_PLAN = 'free';
-export const DEFAULT_FREE_COINS = 20;
+export const DEFAULT_FREE_COINS = 30;

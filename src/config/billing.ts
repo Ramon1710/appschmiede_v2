@@ -12,36 +12,36 @@ export type PlanConfig = {
 
 export const PLAN_CONFIG: Record<AppPlanId, PlanConfig> = {
   free: {
-    label: 'Free',
+    label: 'Ohne Abo',
     monthlyPriceEur: 0,
     stripePriceId: null,
-    includedCoinsPerMonth: 20,
+    includedCoinsPerMonth: 0,
     maxProjects: 1,
   },
   starter: {
-    label: 'Starter',
-    monthlyPriceEur: 19,
-    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_STARTER'),
-    includedCoinsPerMonth: 300,
-    maxProjects: 10,
+    label: 'Spar Abo',
+    monthlyPriceEur: 9.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_SPAR_ABO'),
+    includedCoinsPerMonth: 80,
+    maxProjects: 3,
   },
   pro: {
-    label: 'Pro',
-    monthlyPriceEur: 59,
-    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_PRO'),
-    includedCoinsPerMonth: 1500,
-    maxProjects: 50,
+    label: 'Standard Abo',
+    monthlyPriceEur: 19.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_STANDARD_ABO'),
+    includedCoinsPerMonth: 150,
+    maxProjects: 6,
   },
   business: {
-    label: 'Business',
-    monthlyPriceEur: 149,
-    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_BUSINESS'),
-    includedCoinsPerMonth: 5000,
+    label: 'Premium',
+    monthlyPriceEur: 59.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_ABO'),
+    includedCoinsPerMonth: 0,
     maxProjects: 9999,
   },
 };
 
-export type CoinPackageKey = 'coins_100' | 'coins_300' | 'coins_1000';
+export type CoinPackageKey = 'coins_50' | 'coins_80' | 'coins_100' | 'coins_150' | 'coins_300';
 
 export type CoinPackageConfig = {
   label: string;
@@ -51,23 +51,35 @@ export type CoinPackageConfig = {
 };
 
 export const COIN_PACKAGES: Record<CoinPackageKey, CoinPackageConfig> = {
+  coins_50: {
+    label: '50 Coins',
+    coins: 50,
+    priceEur: 6.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_50'),
+  },
+  coins_80: {
+    label: '80 Coins',
+    coins: 80,
+    priceEur: 8.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_80'),
+  },
   coins_100: {
     label: '100 Coins',
     coins: 100,
-    priceEur: 9,
+    priceEur: 9.49,
     stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_100'),
+  },
+  coins_150: {
+    label: '150 Coins',
+    coins: 150,
+    priceEur: 13.99,
+    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_150'),
   },
   coins_300: {
     label: '300 Coins',
     coins: 300,
-    priceEur: 24,
+    priceEur: 26.99,
     stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_300'),
-  },
-  coins_1000: {
-    label: '1000 Coins',
-    coins: 1000,
-    priceEur: 69,
-    stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_COINS_1000'),
   },
 };
 

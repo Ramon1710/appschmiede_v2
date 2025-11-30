@@ -97,6 +97,7 @@ export async function POST(request: Request) {
         cancel_url: cancelUrl,
         customer_email: userData.email ?? undefined,
         metadata,
+        payment_method_types: ['card', 'paypal'],
         line_items: [
           {
             price: pkg.stripePriceId,

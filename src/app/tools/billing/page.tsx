@@ -5,25 +5,84 @@
 import { useState } from 'react';
 import Header from '@/components/Header';
 import GuidedTour from '@/components/GuidedTour';
+import useAuth from '@/hooks/useAuth';
+import type { CoinPackageKey } from '@/config/billing';
 
-const ONE_SITE_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_ONE_SITE!;
-const COINS_10_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_COINS_10!;
-const COINS_50_PRICE = process.env.NEXT_PUBLIC_STRIPE_PRICE_COINS_50!;
+const COIN_BUNDLES: Array<{
+  key: CoinPackageKey;
+  label: string;
+  badge: string;
+  coins: number;
+  priceLabel: string;
+  description: string;
+}> = [
+  {
+    key: 'coins_50',
+    label: 'Starter-Paket',
+    badge: 'Einsteiger',
+    coins: 50,
+    priceLabel: '6,99 €',
+    description: 'Perfekt, um neue Bausteine auszuprobieren oder erste KI-Läufe zu starten.',
+  },
+  {
+    key: 'coins_80',
+    label: 'Spar-Paket',
+    badge: 'Beliebt',
+    coins: 80,
+    priceLabel: '8,99 €',
+    description: 'Für kleinere Projekte, die regelmäßig neue Seiten oder Vorlagen brauchen.',
+  },
+  {
+    key: 'coins_100',
+    label: 'Creator-Paket',
+    badge: 'Teams',
+    coins: 100,
+    priceLabel: '9,49 €',
+    description: 'Ideal, wenn du häufig Bausteine einfügst und Templates testest.',
+  },
+  {
+    key: 'coins_150',
+    label: 'Studio-Paket',
+    badge: 'Agenturen',
+    coins: 150,
+    priceLabel: '13,99 €',
+    description: 'Mehr Volumen für größere App-Strukturen oder intensive KI-Nutzung.',
+  },
+  {
+    key: 'coins_300',
+    label: 'Scale-Paket',
+    badge: 'Projekte',
+    coins: 300,
+    priceLabel: '26,99 €',
+    description: 'Für Teams, die dauerhaft mit Vorlagen, Export und KI arbeiten.',
+  },
+];
 
 export default function BillingPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
 
-  const checkout = async (priceId: string) => {
-    setLoading(priceId);
+  const checkout = async (packageKey: CoinPackageKey) => {
+    if (!user?.uid) {
+      alert('Bitte melde dich an, um Coins zu kaufen.');
+      return;
+    }
+    setLoading(packageKey);
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ uid: user.uid, kind: 'coins', coinPackage: packageKey }),
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else alert(data.error || 'Fehler');
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data?.error ?? 'Checkout konnte nicht gestartet werden.');
+      }
+    } catch (error) {
+      console.error('Checkout fehlgeschlagen', error);
+      alert('Checkout konnte nicht gestartet werden.');
     } finally {
       setLoading(null);
     }
@@ -38,7 +97,7 @@ export default function BillingPage() {
     {
       id: 'billing-packs',
       title: 'Pakete auswählen',
-      description: 'Wähle zwischen Coins oder der One-Site-App. Jeder Button öffnet direkt den Stripe-Checkout.',
+      description: 'Wähle das passende Coin-Paket. Jeder Button öffnet direkt den Stripe-Checkout.',
     },
     {
       id: 'billing-steps',
@@ -54,66 +113,44 @@ export default function BillingPage() {
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
           <header className="space-y-3" data-tour-id="billing-intro">
             <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">Coins & Billing</p>
-            <h1 className="text-3xl font-semibold">Coins aufladen oder Einmal-Projekte kaufen</h1>
+            <h1 className="text-3xl font-semibold">Alle Bausteine laufen über Coins</h1>
             <p className="text-base text-neutral-300">
-              Coins benötigst du für KI-gestützte Funktionen wie Seiten-Generierung oder Bild-Erstellung. Wähle ein Paket und zahle sicher via Stripe. Nach
-              erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.
+              Coins brauchst du jetzt für Bausteine, Vorlagen, KI-Funktionen und neue Seiten. Lade das passende Paket auf und zahle sicher via Stripe – per Kreditkarte oder
+              PayPal. Nach erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.
             </p>
           </header>
 
           <section className="grid gap-4 md:grid-cols-3" data-tour-id="billing-packs">
-            <div className="rounded-2xl border border-white/10 bg-neutral-900/80 p-5 shadow-lg">
-              <div className="text-xs uppercase tracking-[0.35em] text-violet-300">Schnellstart</div>
-              <div className="mt-2 text-xl font-semibold">One-Site App</div>
-              <p className="mt-1 text-sm text-neutral-400">Einmalige App mit einer Seite – ideal für schnelle Demos.</p>
-              <button
-                onClick={() => checkout(ONE_SITE_PRICE)}
-                disabled={loading === ONE_SITE_PRICE}
-                className="mt-4 w-full rounded-xl bg-violet-600 px-4 py-2 font-semibold hover:bg-violet-500 disabled:opacity-50"
-              >
-                {loading === ONE_SITE_PRICE ? 'Weiter…' : '20 € zahlen'}
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-neutral-900/80 p-5 shadow-lg">
-              <div className="text-xs uppercase tracking-[0.35em] text-cyan-300">Flexibel</div>
-              <div className="mt-2 text-xl font-semibold">10 Coins</div>
-              <p className="mt-1 text-sm text-neutral-400">Perfekt, um einzelne Seiten oder Bilder nachzukaufen.</p>
-              <button
-                onClick={() => checkout(COINS_10_PRICE)}
-                disabled={loading === COINS_10_PRICE}
-                className="mt-4 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 font-semibold hover:bg-white/15 disabled:opacity-50"
-              >
-                {loading === COINS_10_PRICE ? 'Weiter…' : 'Kaufen'}
-              </button>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-neutral-900/80 p-5 shadow-lg">
-              <div className="text-xs uppercase tracking-[0.35em] text-amber-300">Beliebt</div>
-              <div className="mt-2 text-xl font-semibold">50 Coins</div>
-              <p className="mt-1 text-sm text-neutral-400">Mehr Features zum rabattierten Paketpreis.</p>
-              <button
-                onClick={() => checkout(COINS_50_PRICE)}
-                disabled={loading === COINS_50_PRICE}
-                className="mt-4 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 font-semibold hover:bg-white/15 disabled:opacity-50"
-              >
-                {loading === COINS_50_PRICE ? 'Weiter…' : 'Kaufen'}
-              </button>
-            </div>
+            {COIN_BUNDLES.map((bundle) => (
+              <div key={bundle.key} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-5 shadow-lg">
+                <div className="text-xs uppercase tracking-[0.35em] text-emerald-300">{bundle.badge}</div>
+                <div className="mt-2 text-xl font-semibold">{bundle.label}</div>
+                <p className="text-sm text-neutral-400">{bundle.coins} Coins · {bundle.priceLabel}</p>
+                <p className="mt-2 text-sm text-neutral-400">{bundle.description}</p>
+                <button
+                  onClick={() => checkout(bundle.key)}
+                  disabled={loading === bundle.key}
+                  className="mt-4 w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 font-semibold hover:bg-white/15 disabled:opacity-50"
+                >
+                  {loading === bundle.key ? 'Weiter…' : 'Kaufen'}
+                </button>
+              </div>
+            ))}
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 text-sm text-neutral-300" data-tour-id="billing-steps">
             <h2 className="text-lg font-semibold text-white">So funktioniert die Aufladung</h2>
             <ol className="mt-3 space-y-2 text-neutral-300">
               <li>1. Paket auswählen und auf den Button klicken.</li>
-              <li>2. Stripe Checkout mit Test- oder Livekarte abschließen.</li>
+              <li>2. Stripe Checkout mit Karte oder PayPal abschließen.</li>
               <li>3. Sobald Stripe den Erfolg meldet, schreibt der Webhook deine Coins gut.</li>
               <li>4. Das aktuelle Guthaben siehst du direkt oben rechts neben deinem Profil.</li>
             </ol>
           </section>
 
           <div className="text-xs text-neutral-500">
-            ENV: NEXT_PUBLIC_STRIPE_PRICE_ONE_SITE, NEXT_PUBLIC_STRIPE_PRICE_COINS_10, NEXT_PUBLIC_STRIPE_PRICE_COINS_50, NEXT_PUBLIC_APP_URL, STRIPE_SECRET_KEY
+            ENV: NEXT_PUBLIC_STRIPE_PRICE_COINS_50, NEXT_PUBLIC_STRIPE_PRICE_COINS_80, NEXT_PUBLIC_STRIPE_PRICE_COINS_100, NEXT_PUBLIC_STRIPE_PRICE_COINS_150,
+            NEXT_PUBLIC_STRIPE_PRICE_COINS_300, NEXT_PUBLIC_APP_URL, STRIPE_SECRET_KEY
           </div>
         </div>
       </main>
