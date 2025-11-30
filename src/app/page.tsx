@@ -135,30 +135,140 @@ const adSlotsRight = [
   },
 ];
 
-const pricingPlans = [
-  {
-    id: 'one-site',
-    badge: 'Schnellstart',
-    title: 'One-Site App',
-    price: '20 € einmalig',
-    description: 'Ideal für Demos, Ideenpitches oder eine einzelne Landingpage inklusive AI-Editor-Zugriff.',
-    features: ['Eine komplette Seite inkl. Komponenten', 'Bereit zum Teilen über QR & Vorschau', 'Upgrade jederzeit möglich'],
-  },
-  {
-    id: 'coins-10',
-    badge: 'Flexibel',
-    title: '10 Coins',
-    price: 'Guthaben für KI',
-    description: 'Perfekt, um einzelne Seiten, Bildgenerationen oder Textbausteine nachzuladen.',
-    features: ['Reicht für mehrere KI-Läufe', 'Ideal für Soloprojekte', 'Keine Mindestlaufzeit'],
-  },
+const coinPricingCards = [
   {
     id: 'coins-50',
-    badge: 'Beliebt',
+    badge: 'Einsteiger',
     title: '50 Coins',
-    price: 'Team-Ready',
-    description: 'Für Teams oder komplexere Apps mit vielen Seiten – spart gegenüber Einzelkäufen.',
-    features: ['Mehr Volumen zum Paketpreis', 'Gemeinsam nutzbar im Workspace', 'Bevorzugter Support bei Fragen'],
+    price: '6,99 €',
+    description: 'Perfekt, um einzelne Bausteine, Seiten oder KI-Läufe zu testen.',
+    highlights: ['Bis zu 50 Komponenten oder Seiten', 'Ideal für Solo-Prototypen', 'Checkout via Karte oder PayPal'],
+  },
+  {
+    id: 'coins-80',
+    badge: 'Beliebt',
+    title: '80 Coins',
+    price: '8,99 €',
+    description: 'Für kleine Projekte, die jede Woche neue Ideen ausprobieren.',
+    highlights: ['Mehr Seiten für weniger Euro', 'Templates & KI beliebig kombinieren', 'Coins verfallen nicht'],
+  },
+  {
+    id: 'coins-100',
+    badge: 'Teams',
+    title: '100 Coins',
+    price: '9,49 €',
+    description: 'Creator-Paket für wiederkehrende Sprints und Tests.',
+    highlights: ['Reicht für viele Vorlagen-Imports', 'Coins teilbar im Workspace', 'Support bei Fragen'],
+  },
+  {
+    id: 'coins-150',
+    badge: 'Agenturen',
+    title: '150 Coins',
+    price: '13,99 €',
+    description: 'Für Launch-Phasen mit mehr Seiten, KI und Assets.',
+    highlights: ['Attraktiver Paketpreis je Coin', 'Luft für mehrere Projekte', 'Priorisierter Support'],
+  },
+  {
+    id: 'coins-300',
+    badge: 'Scale',
+    title: '300 Coins',
+    price: '26,99 €',
+    description: 'Wenn mehrere Teams parallel an Templates & KI arbeiten.',
+    highlights: ['Günstigster Coin-Preis pro Einheit', 'Perfekt für Agenturen', 'Sofort nach Kauf verfügbar'],
+  },
+];
+
+type SubscriptionPlanId = 'free' | 'starter' | 'pro' | 'business';
+
+const subscriptionPlans: Array<{
+  id: SubscriptionPlanId;
+  badge: string;
+  title: string;
+  price: string;
+  description: string;
+  highlights: string[];
+}> = [
+  {
+    id: 'free',
+    badge: 'Kostenlos',
+    title: 'Ohne Abo',
+    price: '0 € pro Monat',
+    description: 'Starte mit 30 Start-Coins und zahle nur, wenn du mehr benötigst.',
+    highlights: ['1 Projekt verwalten', 'Basis-Bausteine & Vorlagen', 'Community-Support'],
+  },
+  {
+    id: 'starter',
+    badge: 'Neu',
+    title: 'Spar Abo',
+    price: '9,99 € pro Monat',
+    description: 'Regelmäßige Coin-Aufladung für Solo-Maker:innen und kleine Teams.',
+    highlights: ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Templates & KI-Tools'],
+  },
+  {
+    id: 'pro',
+    badge: 'Beliebt',
+    title: 'Standard Abo',
+    price: '19,99 € pro Monat',
+    description: 'Für Teams, die parallel mehrere Konzepte testen und launchen.',
+    highlights: ['150 Coins pro Monat inklusive', 'Bis zu 6 parallele Projekte', 'Priorisierte QR- & Export-Links'],
+  },
+  {
+    id: 'business',
+    badge: 'Premium',
+    title: 'Premium Abo',
+    price: '59,99 € pro Monat',
+    description: 'Agenturen & Corporates mit individuellen Coin- und Support-Bedürfnissen.',
+    highlights: ['Individuelle Coin-Budgets', 'Unbegrenzte Projekte', 'Bevorzugter Support & Workshops'],
+  },
+];
+
+const subscriptionPlanOrder: SubscriptionPlanId[] = ['free', 'starter', 'pro', 'business'];
+
+const planFeatureRows: Array<{ feature: string; values: Record<SubscriptionPlanId, string> }> = [
+  {
+    feature: 'Coins pro Monat',
+    values: {
+      free: '0 (nur Startguthaben)',
+      starter: '80 Coins',
+      pro: '150 Coins',
+      business: 'Individuell vereinbar',
+    },
+  },
+  {
+    feature: 'Aktive Projekte',
+    values: {
+      free: '1 Projekt',
+      starter: '3 Projekte',
+      pro: '6 Projekte',
+      business: 'Unbegrenzt',
+    },
+  },
+  {
+    feature: 'Vorlagen & Bausteine',
+    values: {
+      free: 'Basis-Bibliothek',
+      starter: 'Alle Templates',
+      pro: 'Alle + KI-Varianten',
+      business: 'Alle + Custom Libraries',
+    },
+  },
+  {
+    feature: 'Smartphone-Vorschau & QR',
+    values: {
+      free: '✓ (mit Branding)',
+      starter: '✓',
+      pro: '✓',
+      business: '✓ White-Label',
+    },
+  },
+  {
+    feature: 'Export & Team-Funktionen',
+    values: {
+      free: 'Öffentliche Vorschau',
+      starter: 'QR-Share & History',
+      pro: 'Export & Rollen',
+      business: 'Custom Domains & SLAs',
+    },
   },
 ];
 
@@ -316,32 +426,99 @@ export default function HomePage() {
         <section id="preise" className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
           <header className="space-y-3 text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Preise & Guthaben</p>
-            <h2 className="text-3xl font-semibold">Transparentes Guthaben statt Abo-Zwang</h2>
+            <h2 className="text-3xl font-semibold">Coins für jede Aktion, Abos für planbare Budgets</h2>
             <p className="text-base text-neutral-300">
-              Lade Coins genau dann auf, wenn du KI-Features brauchst – oder buche eine One-Site-App als fertige Demo. Bezahlt wird sicher über Stripe,
-              das Guthaben landet sofort neben deinem Profilbild.
+              Jeder Baustein, jede Vorlage und jede KI-Funktion verbraucht Coins. Lade ein Paket auf oder sichere dir monatliche Kontingente über eines der Abos. Alles läuft
+              über Stripe – per Kreditkarte oder PayPal.
             </p>
           </header>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {pricingPlans.map((plan) => (
-              <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
-                <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
-                <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
-                <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
-                <ul className="mt-4 space-y-2 text-sm text-neutral-200">
-                  {plan.features.map((feature) => (
-                    <li key={feature}>✓ {feature}</li>
-                  ))}
-                </ul>
-                <Link
-                  href="/tools/billing"
-                  className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
-                >
-                  Zu Coins & Billing
-                </Link>
+          <div className="mt-8 space-y-10">
+            <div>
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-2xl font-semibold">Coin-Pakete</h3>
+                <p className="text-sm text-neutral-400">Sofort verfügbar nach Kauf – perfekt für spontane KI-Läufe oder zusätzliche Bausteine.</p>
               </div>
-            ))}
+              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {coinPricingCards.map((plan) => (
+                  <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
+                    <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
+                    <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
+                    <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
+                    <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
+                    <ul className="mt-4 space-y-2 text-sm text-neutral-200">
+                      {plan.highlights.map((highlight) => (
+                        <li key={highlight}>✓ {highlight}</li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/tools/billing"
+                      className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
+                    >
+                      Coins kaufen
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-2xl font-semibold">Abomodelle</h3>
+                <p className="text-sm text-neutral-400">Plane feste Budgets, sichere dir monatliche Coins und zusätzliche Funktionen.</p>
+              </div>
+              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {subscriptionPlans.map((plan) => (
+                  <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
+                    <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
+                    <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
+                    <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
+                    <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
+                    <ul className="mt-4 space-y-2 text-sm text-neutral-200">
+                      {plan.highlights.map((highlight) => (
+                        <li key={highlight}>✓ {highlight}</li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/tools/billing"
+                      className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
+                    >
+                      Abo wählen
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/5">
+                <table className="w-full text-sm text-neutral-200">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-[0.3em] text-neutral-400">
+                      <th className="px-4 py-3">Funktion</th>
+                      {subscriptionPlanOrder.map((planId) => {
+                        const plan = subscriptionPlans.find((entry) => entry.id === planId);
+                        if (!plan) return null;
+                        return (
+                          <th key={plan.id} className="px-4 py-3 text-center">
+                            {plan.title}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {planFeatureRows.map((row) => (
+                      <tr key={row.feature} className="border-t border-white/10">
+                        <td className="px-4 py-4 font-semibold text-white">{row.feature}</td>
+                        {subscriptionPlanOrder.map((planId) => (
+                          <td key={`${row.feature}-${planId}`} className="px-4 py-4 text-center text-neutral-100">
+                            {row.values[planId]}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
