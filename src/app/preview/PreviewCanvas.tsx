@@ -17,15 +17,26 @@ import type {
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
 const FRAME = { width: 414, height: 896 } as const;
 
+const normalizeExternalUrl = (raw?: string | null): string | null => {
+  if (!raw) return null;
+  const value = raw.trim();
+  if (!value) return null;
+  if (/^(https?:|mailto:|tel:|sms:)/i.test(value)) return value;
+  if (value.startsWith('//')) return `https:${value}`;
+  if (value.startsWith('/') || value.startsWith('#')) return value;
+  return value.includes('.') ? `https://${value}` : value;
+};
+
 const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) => {
   if (!action) return;
   const target = options.target ?? options.targetPage ?? options.url;
+  const normalizedTarget = normalizeExternalUrl(target);
   switch (action) {
     case 'navigate':
-      if (target) window.open(target, '_blank', 'noopener');
+      if (normalizedTarget) window.open(normalizedTarget, '_blank', 'noopener');
       break;
     case 'url':
-      if (target) window.open(target, '_blank', 'noopener');
+      if (normalizedTarget) window.open(normalizedTarget, '_blank', 'noopener');
       break;
     case 'login':
       window.alert('🔐 Login-Demo: Hier würdest du deinen eigenen Login-Flow integrieren.');

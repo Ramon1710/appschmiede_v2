@@ -27,82 +27,10 @@ type CanvasProps = {
 
 const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) => {
   if (!action) return;
-  const target = options.target ?? options.targetPage ?? options.url;
-  switch (action) {
-    case 'navigate':
-      if (target) window.open(target, '_blank', 'noopener');
-      break;
-    case 'url':
-      if (target) window.open(target, '_blank', 'noopener');
-      break;
-    case 'login':
-      window.alert('🔐 Login-Demo: Hier würdest du deinen eigenen Login-Flow integrieren.');
-      break;
-    case 'register':
-      window.alert('📝 Registrierung-Demo: Binde hier deinen echten Registrierungsprozess ein.');
-      break;
-    case 'reset-password':
-      window.alert('🔑 Passwort-zurücksetzen-Demo: Leite hier auf deine echte Reset-Logik weiter.');
-      break;
-    case 'logout':
-      window.alert('🚪 Logout-Aktion: Hier könntest du deinen Auth-Flow einbinden.');
-      break;
-    case 'chat':
-      if (target) window.open(`sms:${target}`, '_blank');
-      break;
-    case 'call':
-      if (target || options.phoneNumber) window.open(`tel:${target ?? options.phoneNumber}`, '_blank');
-      break;
-    case 'email':
-      if (target || options.emailAddress) window.open(`mailto:${target ?? options.emailAddress}`, '_blank');
-      break;
-    case 'upload-photo': {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.click();
-      break;
-    }
-    case 'record-audio': {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const recorder = new MediaRecorder(stream);
-        const chunks: BlobPart[] = [];
-        recorder.ondataavailable = (event) => {
-          if (event.data.size > 0) chunks.push(event.data);
-        };
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: 'audio/webm' });
-          const urlObject = URL.createObjectURL(blob);
-          const anchor = document.createElement('a');
-          anchor.href = urlObject;
-          anchor.download = `aufnahme-${Date.now()}.webm`;
-          anchor.click();
-          URL.revokeObjectURL(urlObject);
-          stream.getTracks().forEach((track) => track.stop());
-        };
-        recorder.start();
-        window.alert('🎤 Aufnahme gestartet – sie stoppt automatisch nach 5 Sekunden.');
-        setTimeout(() => recorder.stop(), 5000);
-      } catch (error) {
-        console.error('Audio recording failed', error);
-        window.alert('Konnte keine Audioaufnahme starten. Bitte Mikrofonrechte prüfen.');
-      }
-      break;
-    }
-    case 'toggle-theme':
-      document.documentElement.classList.toggle('dark');
-      break;
-    case 'support-ticket':
-      window.open(`mailto:${options.supportTarget ?? 'support@appschmiede.dev'}`, '_blank');
-      break;
-    default:
-      console.log('Unknown action triggered', action);
-  }
+  console.debug('runAction ausgeführt (Editor-Modus, keine Aktion):', action, options);
 };
 
 const BOUNDS = { w: 414, h: 896 } as const;
-const INTERACTIVE_NODE_SELECTOR = 'button, input, textarea, select, a, label, [role="button"], [contenteditable="true"], [data-prevent-drag="true"]';
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
@@ -1239,14 +1167,8 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
   const resizing = useRef<null | { id: string; pointerId: number; dir: ResizeDir; startX: number; startY: number; start: { x: number; y: number; w: number; h: number }; zoom: number }>(null);
   const clampedZoom = Math.max(0.5, zoom);
 
-  const isInteractiveTarget = (event: React.PointerEvent): boolean => {
-    if (!(event.target instanceof Element)) return false;
-    return Boolean(event.target.closest(INTERACTIVE_NODE_SELECTOR));
-  };
-
   const beginDrag = (event: React.PointerEvent<HTMLDivElement>, id: string) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    if (isInteractiveTarget(event)) return;
     event.preventDefault();
     dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, zoom: clampedZoom };
     event.currentTarget.setPointerCapture?.(event.pointerId);

@@ -122,6 +122,14 @@ const CANVAS_ZOOM_MAX = 1.4;
 const CANVAS_ZOOM_STEP = 0.05;
 const clampZoomValue = (value: number) => Math.min(CANVAS_ZOOM_MAX, Math.max(CANVAS_ZOOM_MIN, value));
 const UNDO_STACK_LIMIT = 10;
+const CANVAS_FRAME = { width: 414, height: 896 } as const;
+const MIN_NODE_WIDTH = 40;
+const MIN_NODE_HEIGHT = 32;
+const clampToRange = (value: number, min: number, max: number) => {
+  if (Number.isNaN(value)) return min;
+  if (max < min) return min;
+  return Math.min(max, Math.max(min, value));
+};
 
 const slugify = (value: string): string =>
   (value || '')
@@ -1020,9 +1028,16 @@ export default function EditorShell({ initialPageId }: Props) {
       ...prev,
       tree: {
         ...prev.tree,
-        children: (prev.tree.children ?? []).map((n) =>
-          n.id === id ? { ...n, x: (n.x ?? 0) + dx, y: (n.y ?? 0) + dy } : n
-        ),
+        children: (prev.tree.children ?? []).map((n) => {
+          if (n.id !== id) return n;
+          const width = Math.max(MIN_NODE_WIDTH, n.w ?? MIN_NODE_WIDTH);
+          const height = Math.max(MIN_NODE_HEIGHT, n.h ?? MIN_NODE_HEIGHT);
+          const maxX = Math.max(0, CANVAS_FRAME.width - width);
+          const maxY = Math.max(0, CANVAS_FRAME.height - height);
+          const nextX = clampToRange((n.x ?? 0) + dx, 0, maxX);
+          const nextY = clampToRange((n.y ?? 0) + dy, 0, maxY);
+          return { ...n, x: nextX, y: nextY };
+        }),
       },
     }));
   }, [applyTreeUpdate]);
@@ -1076,12 +1091,23 @@ export default function EditorShell({ initialPageId }: Props) {
             if (n.id !== id) return n;
             const nextProps = patch.props ? { ...(n.props ?? {}), ...patch.props } : n.props;
             const nextStyle = patch.style ? { ...(n.style ?? {}), ...patch.style } : n.style;
-            return {
+            const layoutChanged = 'x' in patch || 'y' in patch || 'w' in patch || 'h' in patch;
+            let merged: EditorNode = {
               ...n,
               ...patch,
               props: nextProps,
               style: nextStyle,
             };
+            if (layoutChanged) {
+              const width = Math.max(MIN_NODE_WIDTH, merged.w ?? MIN_NODE_WIDTH);
+              const height = Math.max(MIN_NODE_HEIGHT, merged.h ?? MIN_NODE_HEIGHT);
+              const maxX = Math.max(0, CANVAS_FRAME.width - width);
+              const maxY = Math.max(0, CANVAS_FRAME.height - height);
+              const x = clampToRange(merged.x ?? 0, 0, maxX);
+              const y = clampToRange(merged.y ?? 0, 0, maxY);
+              merged = { ...merged, x, y, w: width, h: height };
+            }
+            return merged;
           }),
         },
       }));
@@ -1796,15 +1822,15 @@ export default function EditorShell({ initialPageId }: Props) {
   const canUndo = undoDepth > 0;
   const canResetPage = Boolean(currentPageId && currentPageMeta);
   const HistoryControls = ({ className = '' }: { className?: string }) => (
-    <div className={`flex flex-wrap items-center justify-center gap-2 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <button
         type="button"
         onClick={handleUndo}
         disabled={!canUndo}
-        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] font-semibold text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-[#05070f]/90 text-lg text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label={`Letzten Schritt rückgängig machen (${Math.min(undoDepth, UNDO_STACK_LIMIT)}/${UNDO_STACK_LIMIT})`}
       >
-        <span className="text-base">↺</span>
-        <span>Undo ({Math.min(undoDepth, UNDO_STACK_LIMIT)}/{UNDO_STACK_LIMIT})</span>
+        <span aria-hidden="true">↺</span>
       </button>
       <button
         type="button"
@@ -2022,7 +2048,6 @@ export default function EditorShell({ initialPageId }: Props) {
                       <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
                       <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
                     </div>
-                    <span className="text-[11px] text-neutral-400">Immer sichtbar</span>
                   </div>
                   <div className="mt-4 flex flex-1 flex-col overflow-hidden">
                     <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
@@ -2287,10 +2312,12 @@ export default function EditorShell({ initialPageId }: Props) {
               </nav>
             </div>
 
-            <div className="hidden flex-1 min-h-0 overflow-auto p-6 lg:flex">
-              <div className="relative flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
-                <ZoomControl className="absolute right-6 top-6 z-20" />
-                <HistoryControls className="absolute left-6 top-6 z-20" />
+            <div className="hidden flex-1 min-h-0 flex-col gap-4 overflow-auto p-6 lg:flex">
+              <div className="flex items-center justify-between gap-4">
+                <HistoryControls />
+                <ZoomControl />
+              </div>
+              <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
                 <Canvas
                   tree={tree}
                   selectedId={selectedId}
