@@ -14,6 +14,17 @@ import type {
   NodeProps,
 } from '@/lib/editorTypes';
 
+type CanvasProps = {
+  tree: PageTree;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onRemove: (id: string) => void;
+  onMove: (id: string, dx: number, dy: number) => void;
+  onResize: (id: string, patch: Partial<EditorNode>) => void;
+  onUpdateNode: (id: string, patch: Partial<EditorNode>) => void;
+  zoom?: number;
+};
+
 const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) => {
   if (!action) return;
   const target = options.target ?? options.targetPage ?? options.url;
@@ -1222,10 +1233,11 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
   }
 }
 
-export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, onResize, onUpdateNode }: CanvasProps) {
+export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, onResize, onUpdateNode, zoom = 1 }: CanvasProps) {
   type ResizeDir = 'nw' | 'ne' | 'sw' | 'se';
-  const dragging = useRef<null | { id: string; pointerId: number; startX: number; startY: number }>(null);
-  const resizing = useRef<null | { id: string; pointerId: number; dir: ResizeDir; startX: number; startY: number; start: { x: number; y: number; w: number; h: number } }>(null);
+  const dragging = useRef<null | { id: string; pointerId: number; startX: number; startY: number; zoom: number }>(null);
+  const resizing = useRef<null | { id: string; pointerId: number; dir: ResizeDir; startX: number; startY: number; start: { x: number; y: number; w: number; h: number }; zoom: number }>(null);
+  const clampedZoom = Math.max(0.5, zoom);
 
   const isInteractiveTarget = (event: React.PointerEvent): boolean => {
     if (!(event.target instanceof Element)) return false;
@@ -1236,7 +1248,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     if (isInteractiveTarget(event)) return;
     event.preventDefault();
-    dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
+    dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, zoom: clampedZoom };
     event.currentTarget.setPointerCapture?.(event.pointerId);
     onSelect(id);
   };
@@ -1252,6 +1264,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       startX: event.clientX,
       startY: event.clientY,
       start: { x: node.x ?? 0, y: node.y ?? 0, w: node.w ?? 120, h: node.h ?? 40 },
+      zoom: clampedZoom,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
@@ -1259,9 +1272,10 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     if (resizing.current && event.pointerId === resizing.current.pointerId) {
       event.preventDefault();
-      const { id, dir, startX, startY, start } = resizing.current;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
+      const { id, dir, startX, startY, start, zoom: resizeZoom } = resizing.current;
+      const scale = resizeZoom || 1;
+      const dx = (event.clientX - startX) / scale;
+      const dy = (event.clientY - startY) / scale;
       const minW = 40;
       const minH = 32;
       let x = start.x;
@@ -1293,12 +1307,13 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     }
     if (dragging.current && event.pointerId === dragging.current.pointerId) {
       event.preventDefault();
-      const { id, startX, startY } = dragging.current;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
+      const { id, startX, startY, zoom: dragZoom } = dragging.current;
+      const scale = dragZoom || 1;
+      const dx = (event.clientX - startX) / scale;
+      const dy = (event.clientY - startY) / scale;
       if (dx !== 0 || dy !== 0) {
         onMove(id, dx, dy);
-        dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY };
+        dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, zoom: dragZoom };
       }
     }
   };
@@ -1318,7 +1333,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
 
   return (
     <div
-      className="relative mx-auto flex h-full w-full items-start justify-center overflow-x-hidden overflow-y-auto p-6"
+      className="relative mx-auto flex h-full w-full items-start justify-center overflow-auto p-6"
       onPointerDown={(event) => {
         if (event.currentTarget === event.target) onSelect(null);
       }}
@@ -1330,12 +1345,21 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       }}
     >
       <div
-        className="relative shrink-0 overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
-        style={{ width: BOUNDS.w, height: BOUNDS.h, background: rootBackground }}
-        onPointerDown={(event) => {
-          if (event.currentTarget === event.target) onSelect(null);
+        className="relative shrink-0"
+        style={{
+          width: BOUNDS.w,
+          height: BOUNDS.h,
+          transform: `scale(${clampedZoom})`,
+          transformOrigin: 'top center',
         }}
       >
+        <div
+          className="relative h-full w-full overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
+          style={{ background: rootBackground }}
+          onPointerDown={(event) => {
+            if (event.currentTarget === event.target) onSelect(null);
+          }}
+        >
         {(tree.tree.children ?? []).map((n) => {
           const style: React.CSSProperties = {
             position: 'absolute',
@@ -1389,6 +1413,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

@@ -117,6 +117,12 @@ const clampPanelWidth = (panel: PanelSide, value: number) => {
   return Math.min(max, Math.max(min, value));
 };
 
+const CANVAS_ZOOM_MIN = 0.6;
+const CANVAS_ZOOM_MAX = 1.4;
+const CANVAS_ZOOM_STEP = 0.05;
+const clampZoomValue = (value: number) => Math.min(CANVAS_ZOOM_MAX, Math.max(CANVAS_ZOOM_MIN, value));
+const UNDO_STACK_LIMIT = 10;
+
 const slugify = (value: string): string =>
   (value || '')
     .toLowerCase()
@@ -834,8 +840,18 @@ export default function EditorShell({ initialPageId }: Props) {
   const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
   const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
-  const [templateSelectValue, setTemplateSelectValue] = useState('');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [canvasZoom, setCanvasZoom] = useState(1);
+
+  const stepZoom = (direction: 'in' | 'out') => {
+    const delta = direction === 'in' ? CANVAS_ZOOM_STEP : -CANVAS_ZOOM_STEP;
+    setCanvasZoom((prev) => clampZoomValue(Number((prev + delta).toFixed(3))));
+  };
+
+  const setZoomPercent = (percent: number) => {
+    const ratio = percent / 100;
+    setCanvasZoom(clampZoomValue(ratio));
+  };
 
   const startPanelDrag = useCallback(
     (panel: PanelSide, event: React.MouseEvent<HTMLDivElement>) => {
@@ -894,6 +910,12 @@ export default function EditorShell({ initialPageId }: Props) {
   const [exporting, setExporting] = useState<'web' | 'apk' | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const hasPages = pages.length > 0;
+  const undoStackRef = useRef<PageTree[]>([]);
+  const [undoDepth, setUndoDepth] = useState(0);
+  const clearUndoHistory = useCallback(() => {
+    undoStackRef.current = [];
+    setUndoDepth(0);
+  }, [setUndoDepth]);
 
   const triggerDownload = useCallback((blob: Blob, fileName: string) => {
     const url = URL.createObjectURL(blob);
@@ -909,9 +931,19 @@ export default function EditorShell({ initialPageId }: Props) {
   }, []);
 
   const applyTreeUpdate = useCallback(
-    (updater: (prev: PageTree) => PageTree, options?: { markDirty?: boolean }): PageTree => {
+    (
+      updater: (prev: PageTree) => PageTree,
+      options?: { markDirty?: boolean; pushHistory?: boolean }
+    ): PageTree => {
       let nextState: PageTree | undefined;
+      const shouldTrackHistory = options?.pushHistory ?? options?.markDirty !== false;
       setTree((prev) => {
+        if (shouldTrackHistory) {
+          const snapshot = sanitizePage(prev);
+          const nextHistory = [...undoStackRef.current, snapshot];
+          undoStackRef.current = nextHistory.length > UNDO_STACK_LIMIT ? nextHistory.slice(-UNDO_STACK_LIMIT) : nextHistory;
+          setUndoDepth(undoStackRef.current.length);
+        }
         const updated = sanitizePage(updater(prev));
         nextState = updated;
         latestTree.current = updated;
@@ -922,8 +954,29 @@ export default function EditorShell({ initialPageId }: Props) {
       }
       return nextState ?? latestTree.current;
     },
-    []
+    [setUndoDepth]
   );
+
+  const handleUndo = useCallback(() => {
+    if (!undoStackRef.current.length) return;
+    const history = undoStackRef.current;
+    const previous = history[history.length - 1];
+    undoStackRef.current = history.slice(0, -1);
+    setUndoDepth(undoStackRef.current.length);
+    applyTreeUpdate(() => previous, { pushHistory: false });
+    setSelectedId(null);
+  }, [applyTreeUpdate, setSelectedId, setUndoDepth]);
+
+  const resetPageToSaved = useCallback(() => {
+    if (!currentPageId) return;
+    const saved = pages.find((p) => p.id === currentPageId);
+    if (!saved) return;
+    applyTreeUpdate(() => saved, { markDirty: false, pushHistory: false });
+    pendingSyncHash.current = hashPage(saved);
+    isDirty.current = false;
+    setSelectedId(null);
+    clearUndoHistory();
+  }, [currentPageId, pages, applyTreeUpdate, clearUndoHistory, setSelectedId]);
 
   const lastProjectIdRef = useRef<string | null>(null);
 
@@ -935,21 +988,12 @@ export default function EditorShell({ initialPageId }: Props) {
     setCurrentPageId(null);
     setPages([]);
     setSelectedId(null);
-    setTemplateSelectValue('');
     setTemplateNotice(null);
     applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
     pendingSyncHash.current = null;
     isDirty.current = false;
-  }, [_projectId, applyTreeUpdate]);
-
-  const openTemplatesWindow = useCallback(() => {
-    const url = '/tools/templates';
-    if (typeof window === 'undefined') return;
-    const win = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!win) {
-      window.location.href = url;
-    }
-  }, []);
+    clearUndoHistory();
+  }, [_projectId, applyTreeUpdate, clearUndoHistory]);
 
   useEffect(() => {
     return () => {
@@ -1419,6 +1463,7 @@ export default function EditorShell({ initialPageId }: Props) {
             applyTreeUpdate(() => first, { markDirty: false });
             pendingSyncHash.current = null;
             isDirty.current = false;
+            clearUndoHistory();
           }
         } else {
           (async () => {
@@ -1446,7 +1491,7 @@ export default function EditorShell({ initialPageId }: Props) {
       }
     });
     return () => off();
-  }, [_projectId, currentPageId, applyTreeUpdate]);
+  }, [_projectId, currentPageId, applyTreeUpdate, clearUndoHistory]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1637,70 +1682,50 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [_projectId, hasPages, flushPendingSave, buildPagesSnapshot, project?.name, triggerDownload]);
 
-  const handlePageSelection = useCallback((id: string | null) => {
-    setCurrentPageId(id);
-    const sel = pages.find((p) => p.id === id);
-    if (sel) {
-      applyTreeUpdate(() => sel, { markDirty: false });
+  const handlePageSelection = useCallback(
+    (id: string | null, options?: { placeholderName?: string }) => {
+      setCurrentPageId(id);
+      setSelectedId(null);
+      clearUndoHistory();
       pendingSyncHash.current = null;
       isDirty.current = false;
-    }
-  }, [pages, applyTreeUpdate]);
+
+      if (!id) return;
+
+      const sel = pages.find((p) => p.id === id);
+      if (sel) {
+        applyTreeUpdate(() => sel, { markDirty: false });
+        return;
+      }
+
+      applyTreeUpdate(
+        () => ({
+          id,
+          name: options?.placeholderName ?? 'Neue Seite',
+          tree: {
+            id: 'root',
+            type: 'container',
+            props: { bg: DEFAULT_PAGE_BACKGROUND },
+            children: [],
+          },
+        }),
+        { markDirty: false, pushHistory: false }
+      );
+    },
+    [pages, applyTreeUpdate, clearUndoHistory]
+  );
 
   const templateControlsDisabled = !_projectId || !currentPageId;
 
   const templateContent = (
-    <>
+    <div className="space-y-4">
       <p className="text-xs text-neutral-400">
-        Ersetzt die aktuell geöffnete Seite mit einer kuratierten Vorlage.
+        Wähle eine Vorlage, um die aktuelle Seite durch ein kuratiertes Layout zu ersetzen.
       </p>
-      <div className="mt-3 space-y-2">
-        <label className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Dropdown Auswahl</label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none disabled:opacity-40"
-            value={templateSelectValue}
-            disabled={templateControlsDisabled}
-            onChange={(event) => {
-              setTemplateSelectValue(event.target.value);
-              if (event.target.value) {
-                setTemplateNotice(null);
-              }
-            }}
-          >
-            <option value="">Vorlage wählen…</option>
-            {APP_TEMPLATES.map((tpl) => (
-              <option key={tpl.id} value={tpl.template}>{tpl.title}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={templateControlsDisabled}
-            onClick={() => {
-              if (!templateSelectValue) {
-                setTemplateNotice('Bitte wähle eine Vorlage aus.');
-                return;
-              }
-              const applied = applyTemplate(templateSelectValue);
-              if (applied) {
-                setTemplateSelectValue('');
-                setTemplateNotice(null);
-              }
-            }}
-            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
-              templateControlsDisabled
-                ? 'cursor-not-allowed border-white/10 bg-white/5 text-neutral-500'
-                : 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25'
-            }`}
-          >
-            Dropdown anwenden
-          </button>
-        </div>
-        {templateNotice && (
-          <p className="text-xs text-rose-300">{templateNotice}</p>
-        )}
-      </div>
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+      {templateNotice && (
+        <p className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{templateNotice}</p>
+      )}
+      <div className="space-y-3">
         {APP_TEMPLATES.map((tpl) => (
           <button
             key={tpl.id}
@@ -1708,18 +1733,17 @@ export default function EditorShell({ initialPageId }: Props) {
             disabled={templateControlsDisabled}
             onClick={() => {
               if (templateControlsDisabled) {
-                setTemplateNotice('Bitte öffne oder lade ein Projekt, bevor du Vorlagen nutzt.');
+                setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du Vorlagen nutzt.');
                 return;
               }
               const applied = applyTemplate(tpl.template);
               if (applied) {
-                setTemplateSelectValue('');
                 setTemplateNotice(null);
               }
             }}
-            className={`group relative min-w-[13rem] rounded-2xl border px-4 py-3 text-left transition ${
+            className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
               templateControlsDisabled
-                ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500'
+                ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500 opacity-60'
                 : 'border-white/10 bg-white/5 hover:border-emerald-400/50 hover:bg-white/10'
             }`}
           >
@@ -1729,21 +1753,69 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
             <div className="mt-3 text-lg font-semibold text-white">{tpl.title}</div>
             <p className="text-sm text-neutral-300">{tpl.description}</p>
-            <span className="mt-2 inline-flex items-center text-[11px] font-semibold text-emerald-300">
+            <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-300">
               Vorlage anwenden
               <span className="ml-1 transition group-hover:translate-x-1">→</span>
             </span>
           </button>
         ))}
       </div>
+    </div>
+  );
+
+  const zoomPercent = Math.round(canvasZoom * 100);
+  const ZoomControl = ({ className = '' }: { className?: string }) => (
+    <div
+      className={`flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] text-neutral-100 shadow-xl ${className}`}
+    >
       <button
         type="button"
-        onClick={openTemplatesWindow}
-        className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
+        className="rounded-full border border-white/20 px-2 text-base leading-none text-neutral-200 transition hover:bg-white/10"
+        onClick={() => stepZoom('out')}
+        aria-label="Zoom verkleinern"
+      >−</button>
+      <input
+        type="range"
+        min={CANVAS_ZOOM_MIN * 100}
+        max={CANVAS_ZOOM_MAX * 100}
+        step={CANVAS_ZOOM_STEP * 100}
+        value={zoomPercent}
+        onChange={(event) => setZoomPercent(Number(event.target.value))}
+        className="h-1.5 w-28 accent-emerald-400"
+        aria-label="Zoomfaktor"
+      />
+      <span className="w-12 text-center font-semibold tracking-widest">{zoomPercent}%</span>
+      <button
+        type="button"
+        className="rounded-full border border-white/20 px-2 text-base leading-none text-neutral-200 transition hover:bg-white/10"
+        onClick={() => stepZoom('in')}
+        aria-label="Zoom vergrößern"
+      >+</button>
+    </div>
+  );
+  const canUndo = undoDepth > 0;
+  const canResetPage = Boolean(currentPageId && currentPageMeta);
+  const HistoryControls = ({ className = '' }: { className?: string }) => (
+    <div className={`flex flex-wrap items-center justify-center gap-2 ${className}`}>
+      <button
+        type="button"
+        onClick={handleUndo}
+        disabled={!canUndo}
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] font-semibold text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Mehr Vorlagen im eigenen Fenster öffnen
+        <span className="text-base">↺</span>
+        <span>Undo ({Math.min(undoDepth, UNDO_STACK_LIMIT)}/{UNDO_STACK_LIMIT})</span>
       </button>
-    </>
+      <button
+        type="button"
+        onClick={resetPageToSaved}
+        disabled={!canResetPage}
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] font-semibold text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <span className="text-base">⟳</span>
+        <span>Seite zurücksetzen</span>
+      </button>
+    </div>
   );
 
   const toolboxContent = (
@@ -1921,6 +1993,7 @@ export default function EditorShell({ initialPageId }: Props) {
                           setCurrentPageId(null);
                           pendingSyncHash.current = null;
                           isDirty.current = false;
+                          clearUndoHistory();
                         } catch (err) {
                           console.error('Seite konnte nicht gelöscht werden', err);
                         }
@@ -1934,7 +2007,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
                         const id = await createPage(_projectId, `Seite ${idx}`);
-                        handlePageSelection(id ?? null);
+                        handlePageSelection(id ?? null, { placeholderName: `Seite ${idx}` });
                       }}
                     >
                       + Seite
@@ -2060,7 +2133,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
                       const id = await createPage(_projectId, `Seite ${idx}`);
-                      handlePageSelection(id ?? null);
+                      handlePageSelection(id ?? null, { placeholderName: `Seite ${idx}` });
                     }}
                   >
                     + Seite
@@ -2080,6 +2153,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         setCurrentPageId(null);
                         pendingSyncHash.current = null;
                         isDirty.current = false;
+                        clearUndoHistory();
                       } catch (err) {
                         console.error('Seite konnte nicht gelöscht werden', err);
                       }
@@ -2153,6 +2227,10 @@ export default function EditorShell({ initialPageId }: Props) {
                   }`}
                   data-tour-id="editor-canvas"
                 >
+                  <div className="mb-3 flex flex-col items-center gap-2">
+                    <ZoomControl />
+                    <HistoryControls />
+                  </div>
                   <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/90 p-3 shadow-2xl">
                     <Canvas
                       tree={tree}
@@ -2162,6 +2240,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       onMove={onMove}
                       onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
                       onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                      zoom={canvasZoom}
                     />
                   </div>
                 </section>
@@ -2209,7 +2288,9 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
 
             <div className="hidden flex-1 min-h-0 overflow-auto p-6 lg:flex">
-              <div className="flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
+              <div className="relative flex flex-1 overflow-auto rounded-2xl border border-white/10 bg-[#070a13]/80 p-4 shadow-2xl" data-tour-id="editor-canvas">
+                <ZoomControl className="absolute right-6 top-6 z-20" />
+                <HistoryControls className="absolute left-6 top-6 z-20" />
                 <Canvas
                   tree={tree}
                   selectedId={selectedId}
@@ -2218,6 +2299,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   onMove={onMove}
                   onResize={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
                   onUpdateNode={(id: string, patch: Partial<EditorNode>) => updateNode(id, patch)}
+                  zoom={canvasZoom}
                 />
               </div>
             </div>
@@ -2331,11 +2413,11 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="space-y-2 pb-4">
               <h2 className="text-xl font-semibold text-neutral-100">KI-Seitengenerator</h2>
               <p className="text-sm text-neutral-400">
-                Beschreibe, was angepasst werden soll – egal ob komplette App oder nur die aktuelle Seite.
+                Beschreibe, was wir für dich bauen sollen – egal ob komplette App oder nur die aktuelle Seite.
               </p>
             </div>
             <p className="text-sm text-neutral-300">
-              Die KI aktualisiert ausschließlich die aktuell geöffnete Seite. Beschreibe kurz, was angepasst oder ergänzt werden soll – Layout, Texte, Abschnitte oder Call-to-Actions.
+              Die KI aktualisiert ausschließlich die aktuell geöffnete Seite. Beschreibe kurz, was angepasst oder ergänzt werden soll – je konkreter du bist, desto besser werden Layout, Texte, Abschnitte oder Call-to-Actions.
             </p>
             <textarea
               value={aiPrompt}
@@ -2343,7 +2425,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 setAiPrompt(event.target.value);
                 if (aiError) setAiError(null);
               }}
-              placeholder="Was soll erstellt werden?"
+              placeholder="Beschreibe, was angepasst werden soll …"
               className="h-32 w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none"
             />
             {aiError && (
