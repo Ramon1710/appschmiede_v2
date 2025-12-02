@@ -12,6 +12,7 @@ import GuidedTour from '@/components/GuidedTour';
 import GoogleAdSlot from '@/components/GoogleAdSlot';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
+import { getStoredProjectId } from '@/lib/editor-storage';
 
 const dashboardAdsLeft = [
   {
@@ -42,6 +43,7 @@ const dashboardAdsRight = [
 export default function DashboardPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -50,6 +52,13 @@ export default function DashboardPage() {
     const off = subscribeProjects(user.uid, (p) => setProjects(p));
     return () => off();
   }, [user?.uid]);
+
+  useEffect(() => {
+    const hydrate = () => setActiveProjectId(getStoredProjectId());
+    hydrate();
+    window.addEventListener('storage', hydrate);
+    return () => window.removeEventListener('storage', hydrate);
+  }, []);
 
   if (!user)
     return (
@@ -176,22 +185,46 @@ export default function DashboardPage() {
                 <div className="text-sm opacity-70">Keine Projekte gefunden. Erstelle ein neues Projekt über "Projekte".</div>
               ) : (
                 <div className="space-y-2">
-                  {projects.slice(0, 5).map((p) => (
-                    <Link
-                      key={p.id}
-                      href={`/editor?id=${p.id}`}
-                      className="flex items-center gap-3 rounded-xl border border-white/10 p-3 transition hover:bg-neutral-800"
-                    >
-                      <div className="text-2xl">📄</div>
-                      <div className="flex-1">
-                        <div className="font-medium">{p.name}</div>
-                        <div className="text-xs text-neutral-400">
-                          {p.updatedAt?.toDate ? new Date(p.updatedAt.toDate()).toLocaleDateString('de-DE') : 'Neu'}
-                        </div>
-                      </div>
-                      <div className="text-sm text-neutral-400">→</div>
-                    </Link>
-                  ))}
+                  {[...projects]
+                    .sort((a, b) => {
+                      const getTime = (value: any) => {
+                        if (!value) return 0;
+                        if (typeof value.toMillis === 'function') return value.toMillis();
+                        if (typeof value.toDate === 'function') return value.toDate().getTime();
+                        if (typeof value.seconds === 'number') return value.seconds * 1000;
+                        return Number(value) || 0;
+                      };
+                      return getTime(b.updatedAt) - getTime(a.updatedAt);
+                    })
+                    .slice(0, 3)
+                    .map((p) => {
+                      const isActive = p.id === activeProjectId;
+                      const icon = p.icon?.trim() || '📱';
+                      const dateLabel = p.updatedAt?.toDate
+                        ? new Date(p.updatedAt.toDate()).toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : 'Neu';
+                      return (
+                        <Link
+                          key={p.id}
+                          href={`/editor?id=${p.id}`}
+                          className={`flex items-center gap-3 rounded-xl border border-white/10 p-3 transition hover:bg-neutral-800 ${isActive ? 'border-cyan-400/40 bg-cyan-500/5' : ''}`}
+                        >
+                          <div className="text-2xl">{icon}</div>
+                          <div className="flex-1">
+                            <div className="font-medium">{p.name}</div>
+                            <div className="text-xs text-neutral-400">{dateLabel}</div>
+                          </div>
+                          <div className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
+                            {isActive ? 'Aktiv' : 'Weiter'}
+                          </div>
+                        </Link>
+                      );
+                    })}
                 </div>
               )}
             </section>

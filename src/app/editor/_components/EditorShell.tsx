@@ -19,6 +19,12 @@ import useUserProfile from '@/hooks/useUserProfile';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { EditorLayoutPreferences } from '@/types/user';
+import {
+  clearStoredProjectId,
+  getStoredProjectId,
+  setStoredProjectId as persistStoredProjectId,
+} from '@/lib/editor-storage';
+import { touchProject } from '@/lib/db-projects';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -166,6 +172,23 @@ const normalizeBackgroundLayers = (raw?: unknown): BackgroundLayer[] => {
 const layerToCss = (layer: BackgroundLayer) =>
   `url("${layer.url}") ${layer.positionX}% ${layer.positionY}% / ${layer.size}% no-repeat`;
 const buildLayerCss = (layers: BackgroundLayer[]) => layers.map(layerToCss).join(', ');
+const layersEqual = (a: BackgroundLayer[], b: BackgroundLayer[]) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const left = a[i];
+    const right = b[i];
+    if (!right) return false;
+    if (
+      left.url !== right.url ||
+      left.positionX !== right.positionX ||
+      left.positionY !== right.positionY ||
+      left.size !== right.size
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const slugify = (value: string): string =>
   (value || '')
@@ -773,8 +796,6 @@ const APP_TEMPLATES: AppTemplateDefinition[] = [
   },
 ];
 
-const LAST_PROJECT_KEY = 'appschmiede:last-project';
-
 export default function EditorShell({ initialPageId }: Props) {
   const searchParams = useSearchParams();
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
@@ -791,8 +812,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = window.localStorage.getItem(LAST_PROJECT_KEY);
+    const saved = getStoredProjectId();
     if (saved) {
       setStoredProjectId(saved);
     }
@@ -805,13 +825,20 @@ export default function EditorShell({ initialPageId }: Props) {
   const _projectId = derivedProjectId ?? manualProjectId ?? null;
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!_projectId) return;
-    window.localStorage.setItem(LAST_PROJECT_KEY, _projectId);
+    if (!_projectId) {
+      clearStoredProjectId();
+      return;
+    }
+    persistStoredProjectId(_projectId);
     if (storedProjectId !== _projectId) {
       setStoredProjectId(_projectId);
     }
   }, [_projectId, storedProjectId]);
+
+  useEffect(() => {
+    if (!_projectId) return;
+    void touchProject(_projectId, 'opened');
+  }, [_projectId]);
 
   const queryPageId = searchParams.get('pageId') ?? searchParams.get('p');
   const paramsPageId = typeof routeParams?.pageId === 'string' ? routeParams.pageId : null;
@@ -841,6 +868,7 @@ export default function EditorShell({ initialPageId }: Props) {
       (async () => {
         try {
           await savePage(_projectId, currentPageId, snapshot);
+          await touchProject(_projectId, 'edited');
           pendingSyncHash.current = hashPage(snapshot);
           isDirty.current = false;
         } catch (err) {
@@ -942,6 +970,7 @@ export default function EditorShell({ initialPageId }: Props) {
               return savePage(_projectId, page.id!, { ...page, tree: updatedTree });
             })
         );
+        await touchProject(_projectId, 'edited');
       } catch (error) {
         console.error('Hintergrund konnte nicht auf alle Seiten angewendet werden', error);
       }
@@ -1318,6 +1347,36 @@ export default function EditorShell({ initialPageId }: Props) {
     [applyTreeUpdate, backgroundLayers, pageBackground, pageBackgroundColor, propagateBackgroundToAllPages]
   );
 
+  useEffect(() => {
+    if (!backgroundSyncEnabled) return;
+    if (!pages.length) return;
+    const targetBackground = backgroundLayers.length ? buildLayerCss(backgroundLayers) : pageBackground;
+    const targetColor = pageBackgroundColor;
+    const needsSync = pages.some((page) => {
+      const props = page.tree.props ?? {};
+      const pageLayers = normalizeBackgroundLayers(props.bgLayers);
+      const pageBg = pageLayers.length
+        ? buildLayerCss(pageLayers)
+        : typeof props.bg === 'string' && props.bg.trim()
+          ? props.bg
+          : DEFAULT_PAGE_BACKGROUND;
+      const pageColor = typeof props.bgColor === 'string' && props.bgColor.trim() ? props.bgColor : DEFAULT_PAGE_BACKGROUND_COLOR;
+      if (pageBg !== targetBackground) return true;
+      if (pageColor !== targetColor) return true;
+      if (!layersEqual(pageLayers, backgroundLayers)) return true;
+      return false;
+    });
+    if (!needsSync) return;
+    void propagateBackgroundToAllPages({ color: targetColor, layers: backgroundLayers, background: targetBackground });
+  }, [
+    backgroundSyncEnabled,
+    pages,
+    backgroundLayers,
+    pageBackground,
+    pageBackgroundColor,
+    propagateBackgroundToAllPages,
+  ]);
+
   const updateNode = useCallback(
     (id: string, patch: Partial<EditorNode>) => {
       applyTreeUpdate((prev) => ({
@@ -1650,6 +1709,7 @@ export default function EditorShell({ initialPageId }: Props) {
       (async () => {
         try {
           await savePage(_projectId, currentPageId, payload);
+          await touchProject(_projectId, 'edited');
           pendingSyncHash.current = hashPage(payload);
           isDirty.current = false;
         } catch (err) {
@@ -1702,6 +1762,7 @@ export default function EditorShell({ initialPageId }: Props) {
     saveTimeout.current = setTimeout(async () => {
       try {
         await savePage(_projectId, currentPageId, tree);
+        await touchProject(_projectId, 'edited');
         pendingSyncHash.current = hashPage(tree);
         isDirty.current = false;
         console.log('✅ Autosave successful');
@@ -1812,6 +1873,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setSelectedId(null);
 
       await savePage(_projectId, currentPageId, { ...updatedTree, name: preservedName });
+      await touchProject(_projectId, 'edited');
       pendingSyncHash.current = hashPage(updatedTree);
       isDirty.current = false;
 
@@ -1875,6 +1937,7 @@ export default function EditorShell({ initialPageId }: Props) {
     const snapshot = latestTree.current;
     try {
       await savePage(_projectId, currentPageId, snapshot);
+      await touchProject(_projectId, 'edited');
       pendingSyncHash.current = hashPage(snapshot);
       isDirty.current = false;
     } catch (error) {
@@ -1972,6 +2035,18 @@ export default function EditorShell({ initialPageId }: Props) {
         return;
       }
 
+      const backgroundValue = backgroundLayers.length ? buildLayerCss(backgroundLayers) : pageBackground;
+      const syncedBackgroundProps = backgroundSyncEnabled
+        ? {
+            bgApplyToAll: true,
+            bgColor: pageBackgroundColor,
+            bg: backgroundValue,
+            ...(backgroundLayers.length
+              ? { bgLayers: backgroundLayers.map((layer) => ({ ...layer })) }
+              : {}),
+          }
+        : { bg: DEFAULT_PAGE_BACKGROUND };
+
       applyTreeUpdate(
         () => ({
           id,
@@ -1979,14 +2054,22 @@ export default function EditorShell({ initialPageId }: Props) {
           tree: {
             id: 'root',
             type: 'container',
-            props: { bg: DEFAULT_PAGE_BACKGROUND },
+            props: syncedBackgroundProps,
             children: [],
           },
         }),
         { markDirty: false, pushHistory: false }
       );
     },
-    [pages, applyTreeUpdate, clearUndoHistory]
+    [
+      pages,
+      applyTreeUpdate,
+      clearUndoHistory,
+      backgroundLayers,
+      backgroundSyncEnabled,
+      pageBackground,
+      pageBackgroundColor,
+    ]
   );
 
   const templateControlsDisabled = !_projectId || !currentPageId;

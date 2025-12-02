@@ -16,6 +16,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+export const PROJECT_ICON_CHOICES = ['📱', '🚀', '🎨', '🧱', '⚡', '💡', '🛠️', '🤖', '📊', '🧪'] as const;
+export const DEFAULT_PROJECT_ICON = PROJECT_ICON_CHOICES[0];
+
 export type Project = {
   id: string;
   name: string;
@@ -24,6 +27,8 @@ export type Project = {
   members?: string[];
   createdAt?: any;
   updatedAt?: any;
+  lastOpenedAt?: any;
+  icon?: string;
 };
 
 export async function createProject(name: string, ownerId: string) {
@@ -34,6 +39,8 @@ export async function createProject(name: string, ownerId: string) {
     members: [ownerId],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    lastOpenedAt: serverTimestamp(),
+    icon: DEFAULT_PROJECT_ICON,
   });
   return ref.id;
 }
@@ -59,4 +66,26 @@ export function subscribeProjects(ownerId: string, onUpdate: (projects: Project[
     onUpdate(projects);
   });
   return unsub;
+}
+
+export async function touchProject(projectId: string, type: 'opened' | 'edited' = 'edited') {
+  const payload: Record<string, any> = {
+    updatedAt: serverTimestamp(),
+  };
+  if (type === 'opened') {
+    payload.lastOpenedAt = serverTimestamp();
+  }
+  try {
+    await updateDoc(doc(db, 'projects', projectId), payload);
+  } catch (error) {
+    console.warn('touchProject failed', error);
+  }
+}
+
+export async function updateProjectIcon(projectId: string, icon: string) {
+  const normalized = icon && icon.trim() ? icon.trim().slice(0, 2) : DEFAULT_PROJECT_ICON;
+  await updateDoc(doc(db, 'projects', projectId), {
+    icon: normalized,
+    updatedAt: serverTimestamp(),
+  });
 }

@@ -5,8 +5,16 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
 import GuidedTour from '@/components/GuidedTour';
-import type { Project } from '@/types/editor';
-import { createProject, listProjects, removeProject, renameProject, subscribeProjects } from '@/lib/db-projects';
+import type { Project } from '@/lib/db-projects';
+import {
+  PROJECT_ICON_CHOICES,
+  createProject,
+  removeProject,
+  renameProject,
+  subscribeProjects,
+  updateProjectIcon,
+} from '@/lib/db-projects';
+import { getStoredProjectId } from '@/lib/editor-storage';
 
 export default function ProjectsIndexPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
@@ -17,6 +25,8 @@ export default function ProjectsIndexPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [iconUpdatingId, setIconUpdatingId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
@@ -26,6 +36,13 @@ export default function ProjectsIndexPage() {
     const off = subscribeProjects(user.uid, (p) => setProjects(p));
     return () => off();
   }, [user?.uid]);
+
+  useEffect(() => {
+    const hydrate = () => setActiveProjectId(getStoredProjectId());
+    hydrate();
+    window.addEventListener('storage', hydrate);
+    return () => window.removeEventListener('storage', hydrate);
+  }, []);
 
   useEffect(() => {
     if (!renamingId) return;
@@ -54,6 +71,23 @@ export default function ProjectsIndexPage() {
       await removeProject(projectId);
     } catch (e: any) {
       setError(e?.message || 'Projekt konnte nicht gelöscht werden.');
+    }
+  };
+
+  const handleIconChange = async (projectId: string, icon: string) => {
+    if (iconUpdatingId === projectId) return;
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+    if (project.icon === icon) return;
+    setIconUpdatingId(projectId);
+    setError(null);
+    try {
+      await updateProjectIcon(projectId, icon);
+    } catch (err: any) {
+      console.error('Icon konnte nicht gespeichert werden', err);
+      setError(err?.message || 'Icon konnte nicht gespeichert werden.');
+    } finally {
+      setIconUpdatingId((prev) => (prev === projectId ? null : prev));
     }
   };
 
@@ -161,9 +195,14 @@ export default function ProjectsIndexPage() {
               <div className="space-y-2">
                 {projects.map((p) => {
                   const isEditing = renamingId === p.id;
+                  const isActive = p.id === activeProjectId;
+                  const icon = p.icon?.trim() || '📱';
                   return (
                     <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 sm:flex-row sm:items-center">
-                      <div className="flex-1">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-2xl ${isActive ? 'ring-2 ring-cyan-400/60' : ''}`}>
+                          {icon}
+                        </div>
                         {isEditing ? (
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
@@ -202,8 +241,26 @@ export default function ProjectsIndexPage() {
                           </div>
                         ) : (
                           <div>
-                            <p className="text-base font-semibold text-white">{p.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-base font-semibold text-white">{p.name}</p>
+                              {isActive && <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-200">Aktiv</span>}
+                            </div>
                             <p className="text-xs text-neutral-400">ID: {p.id}</p>
+                            <div className="mt-2 flex flex-wrap gap-1 text-lg">
+                              {PROJECT_ICON_CHOICES.map((choice) => (
+                                <button
+                                  key={`${p.id}-${choice}`}
+                                  type="button"
+                                  onClick={() => handleIconChange(p.id, choice)}
+                                  className={`h-8 w-8 rounded-lg border border-white/10 bg-white/5 transition hover:bg-white/10 ${p.icon === choice ? 'border-cyan-400/60 bg-cyan-500/20' : ''}`}
+                                  aria-label={`Icon ${choice} wählen`}
+                                  disabled={iconUpdatingId === p.id}
+                                >
+                                  {choice}
+                                </button>
+                              ))}
+                              {iconUpdatingId === p.id && <span className="ml-2 text-xs text-neutral-400">Speichere…</span>}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -218,7 +275,7 @@ export default function ProjectsIndexPage() {
                           </button>
                         )}
                         <a
-                          href={`/editor?id=${p.id}`}
+                          href={`/editor?projectId=${encodeURIComponent(p.id)}`}
                           className="rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-semibold text-cyan-100 hover:bg-cyan-500/30"
                         >
                           Öffnen
