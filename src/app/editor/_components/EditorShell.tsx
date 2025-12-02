@@ -99,11 +99,23 @@ type ExportablePage = {
 
 type MobilePanel = 'toolbox' | 'canvas' | 'properties';
 
+type PanelSide = 'left' | 'right';
+
 const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: string; icon: string }> = [
   { id: 'toolbox', label: 'Bausteine', icon: '🧱' },
   { id: 'canvas', label: 'Vorschau', icon: '📱' },
   { id: 'properties', label: 'Style', icon: '🎨' },
 ];
+
+const PANEL_LIMITS: Record<PanelSide, { min: number; max: number }> = {
+  left: { min: 240, max: 520 },
+  right: { min: 240, max: 520 },
+};
+
+const clampPanelWidth = (panel: PanelSide, value: number) => {
+  const { min, max } = PANEL_LIMITS[panel];
+  return Math.min(max, Math.max(min, value));
+};
 
 const slugify = (value: string): string =>
   (value || '')
@@ -817,11 +829,60 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   
-  const [toolboxOpen, setToolboxOpen] = useState(true);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => clampPanelWidth('left', 384));
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => clampPanelWidth('right', 352));
+  const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
   const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateSelectValue, setTemplateSelectValue] = useState('');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+
+  const startPanelDrag = useCallback(
+    (panel: PanelSide, event: React.MouseEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      panelDragState.current = {
+        panel,
+        startX: event.clientX,
+        startWidth: panel === 'left' ? leftPanelWidth : rightPanelWidth,
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [leftPanelWidth, rightPanelWidth]
+  );
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const drag = panelDragState.current;
+      if (!drag) return;
+      event.preventDefault();
+      const delta = event.clientX - drag.startX;
+      if (drag.panel === 'left') {
+        setLeftPanelWidth(clampPanelWidth('left', drag.startWidth + delta));
+      } else {
+        setRightPanelWidth(clampPanelWidth('right', drag.startWidth - delta));
+      }
+    };
+
+    const endDrag = () => {
+      if (!panelDragState.current) return;
+      panelDragState.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('blur', endDrag);
+
+    return () => {
+      endDrag();
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', endDrag);
+      window.removeEventListener('blur', endDrag);
+    };
+  }, []);
 
   useEffect(() => {
     if (_projectId && currentPageId) {
@@ -1762,7 +1823,10 @@ export default function EditorShell({ initialPageId }: Props) {
         <Header />
         <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-          <aside className="hidden w-[24rem] flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex">
+          <aside
+            className="hidden flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex"
+            style={{ width: `${leftPanelWidth}px` }}
+          >
             <div className="flex h-full flex-col">
               <div className="border-b border-[#111]/60 bg-[#0b0b0f]/95 px-4 py-4" data-tour-id="editor-actions">
                 <div className="flex items-center justify-between">
@@ -1880,50 +1944,53 @@ export default function EditorShell({ initialPageId }: Props) {
               </div>
               <div className="flex-1 overflow-y-auto px-4 py-4">
                 <section className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-4" data-tour-id="editor-toolbox">
-                  <button
-                    type="button"
-                    onClick={() => setToolboxOpen((prev) => !prev)}
-                    className="flex w-full items-center justify-between text-left"
-                  >
+                  <div className="flex w-full items-center justify-between text-left">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
                       <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
                     </div>
-                    <span className="text-xl text-neutral-400">{toolboxOpen ? '−' : '+'}</span>
-                  </button>
-                  {toolboxOpen && (
-                    <div className="mt-4 flex flex-1 flex-col overflow-hidden">
-                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
-                        {[
-                          { id: 'components', label: 'Bausteine' },
-                          { id: 'templates', label: 'Vorlagen' },
-                        ].map((tab) => (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
-                            className={`rounded-lg border px-3 py-2 transition ${
-                              toolboxTab === tab.id
-                                ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
-                                : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
-                            }`}
-                          >
-                            {tab.label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="mt-4 flex-1 overflow-hidden">
-                        {toolboxTab === 'components' && toolboxContent}
-                        {toolboxTab === 'templates' && (
-                          <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
-                        )}
-                      </div>
+                    <span className="text-[11px] text-neutral-400">Immer sichtbar</span>
+                  </div>
+                  <div className="mt-4 flex flex-1 flex-col overflow-hidden">
+                    <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                      {[
+                        { id: 'components', label: 'Bausteine' },
+                        { id: 'templates', label: 'Vorlagen' },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
+                          className={`rounded-lg border px-3 py-2 transition ${
+                            toolboxTab === tab.id
+                              ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
+                              : 'border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10'
+                          }`}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
                     </div>
-                  )}
+                    <div className="mt-4 flex-1 overflow-hidden">
+                      {toolboxTab === 'components' && toolboxContent}
+                      {toolboxTab === 'templates' && (
+                        <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
+                      )}
+                    </div>
+                  </div>
                 </section>
               </div>
             </div>
           </aside>
+
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-hidden="true"
+            className="hidden lg:block w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors hover:bg-emerald-400/40"
+            style={{ flexShrink: 0, touchAction: 'none' }}
+            onMouseDown={(event) => startPanelDrag('left', event)}
+          />
 
           <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
             <div className="flex flex-1 flex-col lg:hidden">
@@ -2156,7 +2223,20 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
           </main>
 
-          <aside className="hidden w-[22rem] flex-shrink-0 flex-col border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex" data-tour-id="editor-properties">
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-hidden="true"
+            className="hidden lg:block w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors hover:bg-emerald-400/40"
+            style={{ flexShrink: 0, touchAction: 'none' }}
+            onMouseDown={(event) => startPanelDrag('right', event)}
+          />
+
+          <aside
+            className="hidden flex-shrink-0 flex-col border-l border-[#222] bg-[#0b0b0f]/90 backdrop-blur-sm lg:flex"
+            data-tour-id="editor-properties"
+            style={{ width: `${rightPanelWidth}px` }}
+          >
             <div className="flex-1 overflow-y-auto p-4">
               <PropertiesPanel
                 node={selectedNode}
