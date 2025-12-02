@@ -356,6 +356,8 @@ export default function PropertiesPanel({
     [isTimeTrackingContainer, node?.props?.timeTracking?.entries]
   );
   const statusBoardState = useMemo(() => (isStatusBoardContainer ? normalizeStatusBoard(node?.props?.statusBoard) : null), [isStatusBoardContainer, node?.props?.statusBoard]);
+  const isButtonSelected = node?.type === 'button';
+  const showPageBackgroundControls = !isButtonSelected;
 
   const updateNavItems = (next: NavbarItem[]) => {
     setProps({ navItems: next });
@@ -500,154 +502,156 @@ export default function PropertiesPanel({
     <div className="p-4 space-y-4 text-sm bg-[#0b0b0f] h-full overflow-y-auto">
       <div className="font-semibold text-lg border-b border-[#222] pb-2">Eigenschaften</div>
 
-      <div className="space-y-2">
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seiten-Hintergrund</div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="flex-1 bg-neutral-800 rounded px-2 py-1.5 text-sm"
-            value={pageBackground}
-            onChange={(e) => onChangeBackground(e.target.value)}
-          />
-          <input
-            type="color"
-            className="h-10 w-12 bg-neutral-800 rounded cursor-pointer border border-neutral-700"
-            value={backgroundIsColor ? pageBackground : FALLBACK_COLOR}
-            onChange={(e) => onChangeBackground(e.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
-            onClick={askForPageGradient}
-          >KI Hintergrund</button>
-          <button
-            type="button"
-            className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
-            onClick={() => backgroundFileInput.current?.click()}
-          >Eigenes Bild</button>
-          <button
-            type="button"
-            className="rounded border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
-            onClick={onResetBackground}
-          >Zurücksetzen</button>
-        </div>
-        <input
-          type="file"
-          accept="image/*"
-          ref={backgroundFileInput}
-          className="hidden"
-          onChange={handleBackgroundFile}
-        />
-        {hasImageBackground && (
-          <div className="space-y-4 rounded-lg border border-white/10 bg-black/20 p-3">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
-                <span>Bildgröße</span>
-                <span>{backgroundSizeToken ?? 'cover'}</span>
-              </div>
-              <input
-                type="range"
-                min={50}
-                max={200}
-                step={5}
-                value={imageScalePercent}
-                onChange={(event) => handleBackgroundScaleChange(Number(event.target.value))}
-                className="w-full accent-emerald-400"
-              />
-              <div className="flex justify-between text-[11px] text-neutral-500">
-                <span>50%</span>
-                <span>{imageScalePercent}%</span>
-                <span>200%</span>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <button
-                  type="button"
-                  className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => updateBackgroundSizeToken('cover')}
-                >Cover</button>
-                <button
-                  type="button"
-                  className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => updateBackgroundSizeToken('contain')}
-                >Contain</button>
-                <button
-                  type="button"
-                  className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => updateBackgroundSizeToken('100%')}
-                >100%</button>
-              </div>
-            </div>
-
-            <div className="space-y-3 border-t border-white/10 pt-3">
-              <div className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Bildposition</div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                  <span>Horizontal</span>
-                  <span>{Math.round(backgroundPosXPercent)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={backgroundPosXPercent}
-                  onChange={(event) => handleBackgroundPositionChange('x', Number(event.target.value))}
-                  className="w-full accent-cyan-400"
-                />
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                  <span>Vertikal</span>
-                  <span>{Math.round(backgroundPosYPercent)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={backgroundPosYPercent}
-                  onChange={(event) => handleBackgroundPositionChange('y', Number(event.target.value))}
-                  className="w-full accent-cyan-400"
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(0, 0)}
-                >Links oben</button>
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(50, 50)}
-                >Mitte</button>
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(100, 100)}
-                >Rechts unten</button>
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(0, 50)}
-                >Links Mitte</button>
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(50, 0)}
-                >Oben Mitte</button>
-                <button
-                  type="button"
-                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                  onClick={() => applyPositionPreset(100, 50)}
-                >Rechts Mitte</button>
-              </div>
-            </div>
+      {showPageBackgroundControls && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seiten-Hintergrund</div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              className="flex-1 bg-neutral-800 rounded px-2 py-1.5 text-sm"
+              value={pageBackground}
+              onChange={(e) => onChangeBackground(e.target.value)}
+            />
+            <input
+              type="color"
+              className="h-10 w-12 bg-neutral-800 rounded cursor-pointer border border-neutral-700"
+              value={backgroundIsColor ? pageBackground : FALLBACK_COLOR}
+              onChange={(e) => onChangeBackground(e.target.value)}
+            />
           </div>
-        )}
-      </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
+              onClick={askForPageGradient}
+            >KI Hintergrund</button>
+            <button
+              type="button"
+              className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
+              onClick={() => backgroundFileInput.current?.click()}
+            >Eigenes Bild</button>
+            <button
+              type="button"
+              className="rounded border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
+              onClick={onResetBackground}
+            >Zurücksetzen</button>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={backgroundFileInput}
+            className="hidden"
+            onChange={handleBackgroundFile}
+          />
+          {hasImageBackground && (
+            <div className="space-y-4 rounded-lg border border-white/10 bg-black/20 p-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+                  <span>Bildgröße</span>
+                  <span>{backgroundSizeToken ?? 'cover'}</span>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={200}
+                  step={5}
+                  value={imageScalePercent}
+                  onChange={(event) => handleBackgroundScaleChange(Number(event.target.value))}
+                  className="w-full accent-emerald-400"
+                />
+                <div className="flex justify-between text-[11px] text-neutral-500">
+                  <span>50%</span>
+                  <span>{imageScalePercent}%</span>
+                  <span>200%</span>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => updateBackgroundSizeToken('cover')}
+                  >Cover</button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => updateBackgroundSizeToken('contain')}
+                  >Contain</button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => updateBackgroundSizeToken('100%')}
+                  >100%</button>
+                </div>
+              </div>
+
+              <div className="space-y-3 border-t border-white/10 pt-3">
+                <div className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Bildposition</div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                    <span>Horizontal</span>
+                    <span>{Math.round(backgroundPosXPercent)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={backgroundPosXPercent}
+                    onChange={(event) => handleBackgroundPositionChange('x', Number(event.target.value))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                    <span>Vertikal</span>
+                    <span>{Math.round(backgroundPosYPercent)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={backgroundPosYPercent}
+                    onChange={(event) => handleBackgroundPositionChange('y', Number(event.target.value))}
+                    className="w-full accent-cyan-400"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(0, 0)}
+                  >Links oben</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(50, 50)}
+                  >Mitte</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(100, 100)}
+                  >Rechts unten</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(0, 50)}
+                  >Links Mitte</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(50, 0)}
+                  >Oben Mitte</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                    onClick={() => applyPositionPreset(100, 50)}
+                  >Rechts Mitte</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {!node && (
         <div className="flex flex-col items-center justify-center h-64 text-neutral-400 text-center">
