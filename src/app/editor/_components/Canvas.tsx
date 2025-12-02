@@ -31,6 +31,8 @@ const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) 
 };
 
 const BOUNDS = { w: 414, h: 896 } as const;
+const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
+const DEFAULT_PAGE_BACKGROUND_COLOR = '#05070f';
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
@@ -1249,9 +1251,15 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     }
   };
 
-  const rootBackground = typeof tree.tree.props?.bg === 'string' && tree.tree.props.bg.trim() !== ''
+  const rawBackground = typeof tree.tree.props?.bg === 'string' && tree.tree.props.bg.trim() !== ''
     ? tree.tree.props.bg
-    : 'linear-gradient(140deg,#0b0b0f,#111827)';
+    : DEFAULT_PAGE_BACKGROUND;
+  const rootBackgroundColor = typeof tree.tree.props?.bgColor === 'string' && tree.tree.props.bgColor.trim() !== ''
+    ? tree.tree.props.bgColor
+    : DEFAULT_PAGE_BACKGROUND_COLOR;
+  const rootBackground = rawBackground
+    ? `${rawBackground} ${rootBackgroundColor}`
+    : rootBackgroundColor;
 
   return (
     <div
