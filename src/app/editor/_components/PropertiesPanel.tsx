@@ -213,6 +213,7 @@ export default function PropertiesPanel({
   const backgroundFileInput = useRef<HTMLInputElement | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [backgroundSectionOpen, setBackgroundSectionOpen] = useState(true);
 
   const setFrame = (k: 'x' | 'y' | 'w' | 'h', v: number) =>
     onUpdate({ [k]: Number.isFinite(v) ? v : 0 } as Partial<EditorNode>);
@@ -504,7 +505,16 @@ export default function PropertiesPanel({
 
       {showPageBackgroundControls && (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Seiten-Hintergrund</div>
+          <button
+            type="button"
+            className="w-full flex items-center justify-between text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            onClick={() => setBackgroundSectionOpen((prev) => !prev)}
+          >
+            <span>Seiten-Hintergrund</span>
+            <span className="text-[10px] text-neutral-500">{backgroundSectionOpen ? '−' : '+'}</span>
+          </button>
+          {backgroundSectionOpen && (
+          <>
           <div className="flex gap-2">
             <input
               type="text"
@@ -649,6 +659,8 @@ export default function PropertiesPanel({
                 </div>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
       )}
