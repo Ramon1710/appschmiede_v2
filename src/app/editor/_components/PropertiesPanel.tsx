@@ -14,11 +14,34 @@ const createStatusId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `status_${Math.random().toString(36).slice(2)}`;
 
 const STATUS_COLOR_CYCLE = ['#22c55e', '#facc15', '#f97316', '#ef4444', '#a855f7', '#0ea5e9'];
+const IMAGE_SLASH_DELIMITER = ' / ';
+const IMAGE_NO_REPEAT = 'no-repeat';
 const STATUS_PRESETS: Array<Omit<StatusOption, 'id'>> = [
   { label: 'Verfügbar', color: '#22c55e', description: 'Direkt einsatzbereit' },
   { label: 'Gebucht', color: '#f97316', description: 'Für Kund:innen reserviert' },
   { label: 'Offen', color: '#0ea5e9', description: 'Wartet auf Bestätigung' },
 ];
+
+type BackgroundImageMeta = {
+  token: string;
+  tokenStart: number;
+  tokenEnd: number;
+};
+
+const extractBackgroundImageMeta = (input: string): BackgroundImageMeta | null => {
+  if (!input.includes('url(')) return null;
+  const lower = input.toLowerCase();
+  const noRepeatIndex = lower.lastIndexOf(IMAGE_NO_REPEAT);
+  if (noRepeatIndex === -1) return null;
+  const slashIndex = lower.lastIndexOf(IMAGE_SLASH_DELIMITER, noRepeatIndex);
+  if (slashIndex === -1) return null;
+  const tokenStart = slashIndex + IMAGE_SLASH_DELIMITER.length;
+  if (tokenStart >= noRepeatIndex) return null;
+  const rawToken = input.slice(tokenStart, noRepeatIndex);
+  const token = rawToken.trim();
+  if (!token) return null;
+  return { token, tokenStart, tokenEnd: noRepeatIndex };
+};
 
 type StatusBoardState = {
   title: string;
@@ -217,14 +240,17 @@ export default function PropertiesPanel({
 
   const updateBackgroundSizeToken = (token: string) => {
     if (!hasImageBackground) return;
-    const replaced = pageBackground.replace(/(\/\s*)([^ ]+)(\s+no-repeat)/i, `$1${token}$3`);
-    if (replaced !== pageBackground) {
-      onChangeBackground(replaced);
+    if (backgroundImageMeta) {
+      const prefix = pageBackground.slice(0, backgroundImageMeta.tokenStart);
+      const suffixRaw = pageBackground.slice(backgroundImageMeta.tokenEnd);
+      const suffix = suffixRaw.startsWith(' ') ? suffixRaw : ` ${suffixRaw}`;
+      onChangeBackground(`${prefix}${token}${suffix}`);
       return;
     }
     const urlMatch = pageBackground.match(/url\([^)]*\)/i);
     const urlPart = urlMatch ? urlMatch[0] : '';
-    onChangeBackground(`${urlPart} center / ${token} no-repeat`);
+    const fallback = urlPart ? `${urlPart} center / ${token} no-repeat` : `${token} no-repeat`;
+    onChangeBackground(fallback.trim());
   };
 
   const handleBackgroundScaleChange = (value: number) => {
@@ -248,13 +274,14 @@ export default function PropertiesPanel({
 
   const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
   const hasImageBackground = pageBackground.includes('url(');
-  const backgroundSizeMatch = hasImageBackground ? pageBackground.match(/\/\s*([^ ]+)\s+no-repeat/i) : null;
-  const backgroundSizeToken = backgroundSizeMatch?.[1] ?? null;
+  const backgroundImageMeta = useMemo(() => (hasImageBackground ? extractBackgroundImageMeta(pageBackground) : null), [hasImageBackground, pageBackground]);
+  const backgroundSizeToken = backgroundImageMeta?.token ?? null;
   const imageScalePercent = useMemo(() => {
     if (!hasImageBackground) return 100;
     if (!backgroundSizeToken) return 100;
-    if (backgroundSizeToken.endsWith('%')) {
-      const value = Number.parseFloat(backgroundSizeToken.replace('%', ''));
+    const normalized = backgroundSizeToken.trim().toLowerCase();
+    if (normalized.endsWith('%')) {
+      const value = Number.parseFloat(normalized.replace('%', ''));
       if (Number.isFinite(value)) {
         return Math.min(200, Math.max(50, value));
       }
