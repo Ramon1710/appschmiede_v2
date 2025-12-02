@@ -507,14 +507,16 @@ export default function PropertiesPanel({
         <div className="space-y-2">
           <button
             type="button"
-            className="w-full flex items-center justify-between text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            className="w-full flex items-center justify-between rounded border border-white/5 bg-white/5 px-3 py-2 text-xs font-semibold text-gray-300 uppercase tracking-widest transition hover:bg-white/10 focus:outline-none focus:ring-1 focus:ring-white/20"
             onClick={() => setBackgroundSectionOpen((prev) => !prev)}
+            aria-expanded={backgroundSectionOpen}
+            aria-controls="page-background-controls"
           >
-            <span>Seiten-Hintergrund</span>
-            <span className="text-[10px] text-neutral-500">{backgroundSectionOpen ? '−' : '+'}</span>
+            <span className="text-left">Seiten-Hintergrund</span>
+            <span className="text-[11px] text-neutral-400">{backgroundSectionOpen ? '▲' : '▼'}</span>
           </button>
           {backgroundSectionOpen && (
-          <>
+          <div id="page-background-controls" className="space-y-2">
           <div className="flex gap-2">
             <input
               type="text"
@@ -660,7 +662,12 @@ export default function PropertiesPanel({
               </div>
             </div>
           )}
-          </>
+          </div>
+          )}
+          {!backgroundSectionOpen && (
+            <div className="rounded border border-dashed border-white/10 bg-black/10 px-3 py-2 text-[11px] text-neutral-400">
+              Aktueller Wert: <span className="font-semibold text-neutral-200">{pageBackground.slice(0, 40)}{pageBackground.length > 40 ? '…' : ''}</span>
+            </div>
           )}
         </div>
       )}
