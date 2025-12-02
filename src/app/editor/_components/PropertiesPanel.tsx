@@ -143,6 +143,7 @@ export default function PropertiesPanel({
   onResetBackground,
 }: PropertiesPanelProps) {
   const imageFileInput = useRef<HTMLInputElement | null>(null);
+  const backgroundFileInput = useRef<HTMLInputElement | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
 
@@ -198,6 +199,20 @@ export default function PropertiesPanel({
     const description = window.prompt('Wie soll der Seitenhintergrund aussehen?');
     if (!description) return;
     onGenerateBackground(description);
+  };
+
+  const handleBackgroundFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        const dataUrl = reader.result;
+        onChangeBackground(`url("${dataUrl}") center / cover no-repeat`);
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
   };
 
   const handleImageFile = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -383,7 +398,7 @@ export default function PropertiesPanel({
             onChange={(e) => onChangeBackground(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
@@ -391,10 +406,22 @@ export default function PropertiesPanel({
           >KI Hintergrund</button>
           <button
             type="button"
+            className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
+            onClick={() => backgroundFileInput.current?.click()}
+          >Eigenes Bild</button>
+          <button
+            type="button"
             className="rounded border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
             onClick={onResetBackground}
           >Zurücksetzen</button>
         </div>
+        <input
+          type="file"
+          accept="image/*"
+          ref={backgroundFileInput}
+          className="hidden"
+          onChange={handleBackgroundFile}
+        />
       </div>
 
       {!node && (

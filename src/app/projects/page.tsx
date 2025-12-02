@@ -1,6 +1,6 @@
 // src/app/projects/page.tsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
@@ -14,6 +14,10 @@ export default function ProjectsIndexPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -22,6 +26,12 @@ export default function ProjectsIndexPage() {
     const off = subscribeProjects(user.uid, (p) => setProjects(p));
     return () => off();
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!renamingId) return;
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [renamingId]);
 
   const onCreate = async () => {
     if (!user?.uid || !name.trim()) return;
@@ -44,6 +54,42 @@ export default function ProjectsIndexPage() {
       await removeProject(projectId);
     } catch (e: any) {
       setError(e?.message || 'Projekt konnte nicht gelöscht werden.');
+    }
+  };
+
+  const beginRename = (project: Project) => {
+    setError(null);
+    setRenamingId(project.id);
+    setRenameValue(project.name);
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
+    setRenameValue('');
+    setRenaming(false);
+  };
+
+  const submitRename = async () => {
+    if (!renamingId) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      setError('Bitte gib einen Projektnamen ein.');
+      return;
+    }
+    const project = projects.find((p) => p.id === renamingId);
+    if (project && project.name === trimmed) {
+      cancelRename();
+      return;
+    }
+    setRenaming(true);
+    setError(null);
+    try {
+      await renameProject(renamingId, trimmed);
+      cancelRename();
+    } catch (e: any) {
+      setError(e?.message || 'Projekt konnte nicht umbenannt werden.');
+    } finally {
+      setRenaming(false);
     }
   };
 
@@ -113,21 +159,81 @@ export default function ProjectsIndexPage() {
               <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
             ) : (
               <div className="space-y-2">
-                {projects.map((p) => (
-                  <div key={p.id} className="flex items-center gap-2 rounded-xl border border-white/10 p-2">
-                    <input
-                      defaultValue={p.name}
-                      onBlur={(e) => renameProject(p.id, e.target.value)}
-                      className="flex-1 bg-transparent outline-none"
-                    />
-                    <a href={`/editor?id=${p.id}`} className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20">
-                      Öffnen
-                    </a>
-                    <button onClick={() => onRemove(p.id)} className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500">
-                      Löschen
-                    </button>
-                  </div>
-                ))}
+                {projects.map((p) => {
+                  const isEditing = renamingId === p.id;
+                  return (
+                    <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 sm:flex-row sm:items-center">
+                      <div className="flex-1">
+                        {isEditing ? (
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <input
+                              ref={renameInputRef}
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault();
+                                  submitRename();
+                                }
+                                if (event.key === 'Escape') {
+                                  event.preventDefault();
+                                  cancelRename();
+                                }
+                              }}
+                              className="flex-1 rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                            />
+                            <div className="flex gap-2 text-sm">
+                              <button
+                                type="button"
+                                onClick={submitRename}
+                                disabled={renaming}
+                                className="rounded-lg border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 font-semibold text-emerald-100 hover:bg-emerald-500/30 disabled:opacity-50"
+                              >
+                                Speichern
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelRename}
+                                className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 font-semibold text-neutral-200 hover:bg-white/10"
+                              >
+                                Abbrechen
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-base font-semibold text-white">{p.name}</p>
+                            <p className="text-xs text-neutral-400">ID: {p.id}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-sm">
+                        {!isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => beginRename(p)}
+                            className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 font-semibold text-neutral-200 hover:bg-white/10"
+                          >
+                            ✏️ Umbenennen
+                          </button>
+                        )}
+                        <a
+                          href={`/editor?id=${p.id}`}
+                          className="rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-semibold text-cyan-100 hover:bg-cyan-500/30"
+                        >
+                          Öffnen
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => onRemove(p.id)}
+                          className="rounded-lg border border-rose-500/40 bg-rose-500/20 px-3 py-1.5 font-semibold text-rose-100 hover:bg-rose-500/30"
+                        >
+                          Löschen
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
