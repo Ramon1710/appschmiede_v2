@@ -215,6 +215,24 @@ export default function PropertiesPanel({
     event.target.value = '';
   };
 
+  const updateBackgroundSizeToken = (token: string) => {
+    if (!hasImageBackground) return;
+    const replaced = pageBackground.replace(/(\/\s*)([^ ]+)(\s+no-repeat)/i, `$1${token}$3`);
+    if (replaced !== pageBackground) {
+      onChangeBackground(replaced);
+      return;
+    }
+    const urlMatch = pageBackground.match(/url\([^)]*\)/i);
+    const urlPart = urlMatch ? urlMatch[0] : '';
+    onChangeBackground(`${urlPart} center / ${token} no-repeat`);
+  };
+
+  const handleBackgroundScaleChange = (value: number) => {
+    if (!hasImageBackground) return;
+    const clamped = Math.min(200, Math.max(50, value));
+    updateBackgroundSizeToken(`${clamped}%`);
+  };
+
   const handleImageFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -229,6 +247,20 @@ export default function PropertiesPanel({
   };
 
   const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
+  const hasImageBackground = pageBackground.includes('url(');
+  const backgroundSizeMatch = hasImageBackground ? pageBackground.match(/\/\s*([^ ]+)\s+no-repeat/i) : null;
+  const backgroundSizeToken = backgroundSizeMatch?.[1] ?? null;
+  const imageScalePercent = useMemo(() => {
+    if (!hasImageBackground) return 100;
+    if (!backgroundSizeToken) return 100;
+    if (backgroundSizeToken.endsWith('%')) {
+      const value = Number.parseFloat(backgroundSizeToken.replace('%', ''));
+      if (Number.isFinite(value)) {
+        return Math.min(200, Math.max(50, value));
+      }
+    }
+    return 100;
+  }, [backgroundSizeToken, hasImageBackground]);
   const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
   const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
   const isStatusBoardContainer = node?.type === 'container' && node.props?.component === 'status-board';
@@ -422,6 +454,45 @@ export default function PropertiesPanel({
           className="hidden"
           onChange={handleBackgroundFile}
         />
+        {hasImageBackground && (
+          <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+              <span>Bildgröße</span>
+              <span>{backgroundSizeToken ?? 'cover'}</span>
+            </div>
+            <input
+              type="range"
+              min={50}
+              max={200}
+              step={5}
+              value={imageScalePercent}
+              onChange={(event) => handleBackgroundScaleChange(Number(event.target.value))}
+              className="w-full accent-emerald-400"
+            />
+            <div className="flex justify-between text-[11px] text-neutral-500">
+              <span>50%</span>
+              <span>{imageScalePercent}%</span>
+              <span>200%</span>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <button
+                type="button"
+                className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                onClick={() => updateBackgroundSizeToken('cover')}
+              >Cover</button>
+              <button
+                type="button"
+                className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                onClick={() => updateBackgroundSizeToken('contain')}
+              >Contain</button>
+              <button
+                type="button"
+                className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                onClick={() => updateBackgroundSizeToken('100%')}
+              >100%</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {!node && (
