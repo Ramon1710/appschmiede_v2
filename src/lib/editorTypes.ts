@@ -66,6 +66,14 @@ export type AudioNote = {
   url: string;
 };
 
+export type BackgroundLayer = {
+  id: string;
+  url: string;
+  positionX: number; // Prozent
+  positionY: number; // Prozent
+  size: number; // Prozent
+};
+
 // Welche Node-Arten erlaubt sind
 export type NodeType =
   | 'text'
@@ -113,6 +121,9 @@ export type NodeProps = {
   qrUrl?: string;
   coordinates?: string;
   originalFileName?: string;
+  bgColor?: string;
+  bgLayers?: BackgroundLayer[];
+  bgApplyToAll?: boolean;
   [key: string]: unknown;
 };
 

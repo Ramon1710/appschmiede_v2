@@ -2,72 +2,59 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem, TimeEntry, StatusOption } from '@/lib/editorTypes';
+import type { Node as EditorNode, NodeProps, NodeStyle, NavbarItem, TimeEntry, StatusOption, BackgroundLayer } from '@/lib/editorTypes';
 
 const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 const FALLBACK_COLOR = '#0f172a';
-const createNavId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `nav_${Math.random().toString(36).slice(2)}`;
-const createTimeEntryId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `time_${Math.random().toString(36).slice(2)}`;
-const createStatusId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `status_${Math.random().toString(36).slice(2)}`;
 
-const STATUS_COLOR_CYCLE = ['#22c55e', '#facc15', '#f97316', '#ef4444', '#a855f7', '#0ea5e9'];
-const IMAGE_SLASH_DELIMITER = ' / ';
-const IMAGE_NO_REPEAT = 'no-repeat';
+const createNavId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
+const createStatusId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
+const createTimeEntryId = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
+const STATUS_PRESETS: StatusOption[] = [
+  { id: createStatusId(), label: 'Neu', color: '#0EA5E9', description: 'Frisch reingekommen' },
+  { id: createStatusId(), label: 'In Arbeit', color: '#A855F7', description: 'Gerade in Bearbeitung' },
+  { id: createStatusId(), label: 'Feedback', color: '#F97316', description: 'Wartet auf Feedback' },
+  { id: createStatusId(), label: 'Freigegeben', color: '#22C55E', description: 'Bereit zum Launch' },
+];
+
+const STATUS_COLOR_CYCLE = ['#0EA5E9', '#A855F7', '#F97316', '#22C55E', '#14B8A6', '#FACC15'];
+
+const POSITION_KEYWORDS_X = {
+  left: 0,
+  center: 50,
+  right: 100,
+} as const;
+
+const POSITION_KEYWORDS_Y = {
+  top: 0,
+  center: 50,
+  bottom: 100,
+} as const;
+
 const POSITION_DEFAULT = 'center';
 const SIZE_DEFAULT = 'cover';
-const PERCENT_TOLERANCE = 1;
-const POSITION_KEYWORDS_X: Record<string, number> = { left: 0, center: 50, right: 100 };
-const POSITION_KEYWORDS_Y: Record<string, number> = { top: 0, center: 50, bottom: 100 };
-const STATUS_PRESETS: Array<Omit<StatusOption, 'id'>> = [
-  { label: 'Verfügbar', color: '#22c55e', description: 'Direkt einsatzbereit' },
-  { label: 'Gebucht', color: '#f97316', description: 'Für Kund:innen reserviert' },
-  { label: 'Offen', color: '#0ea5e9', description: 'Wartet auf Bestätigung' },
-];
-type ParsedBackgroundImage = {
-  url: string;
-  positionX: string;
-  positionY: string;
-  size: string;
-};
-
-const parseBackgroundImage = (input: string): ParsedBackgroundImage | null => {
-  if (!input.includes('url(')) return null;
-  const urlMatch = input.match(/url\([^)]*\)/i);
-  if (!urlMatch || typeof urlMatch.index !== 'number') return null;
-  const url = urlMatch[0];
-  const afterUrl = input.slice(urlMatch.index + url.length).trimStart();
-  const slashIndex = afterUrl.indexOf(IMAGE_SLASH_DELIMITER);
-  if (slashIndex === -1) return null;
-  const positionSegment = afterUrl.slice(0, slashIndex).trim();
-  const rest = afterUrl.slice(slashIndex + IMAGE_SLASH_DELIMITER.length).trim();
-  const lowerRest = rest.toLowerCase();
-  const repeatIndex = lowerRest.lastIndexOf(IMAGE_NO_REPEAT);
-  if (repeatIndex === -1) return null;
-  const sizeSegment = rest.slice(0, repeatIndex).trim() || SIZE_DEFAULT;
-  const tokens = positionSegment.split(/\s+/).filter(Boolean);
-  const positionX = tokens[0] ?? POSITION_DEFAULT;
-  const positionY = tokens[1] ?? POSITION_DEFAULT;
-  return { url: url.trim(), positionX, positionY, size: sizeSegment };
-};
-
-const buildBackgroundImage = ({ url, positionX, positionY, size }: ParsedBackgroundImage): string => {
-  const normalizedPositionX = positionX || POSITION_DEFAULT;
-  const normalizedPositionY = positionY || POSITION_DEFAULT;
-  const normalizedSize = size || SIZE_DEFAULT;
-  return `${url} ${normalizedPositionX} ${normalizedPositionY} ${IMAGE_SLASH_DELIMITER}${normalizedSize} ${IMAGE_NO_REPEAT}`.replace(/\s+/g, ' ').trim();
-};
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
+const clampLayerSize = (value: number) => Math.min(300, Math.max(20, value));
 
 const tokenToPercent = (token: string | undefined, axis: 'x' | 'y'): number => {
   if (!token) return 50;
   const normalized = token.trim().toLowerCase();
   const map = axis === 'x' ? POSITION_KEYWORDS_X : POSITION_KEYWORDS_Y;
   if (normalized in map) {
-    return map[normalized];
+    return map[normalized as keyof typeof map];
   }
   if (normalized.endsWith('%')) {
     const value = Number.parseFloat(normalized.replace('%', ''));
@@ -75,6 +62,8 @@ const tokenToPercent = (token: string | undefined, axis: 'x' | 'y'): number => {
   }
   return 50;
 };
+
+const PERCENT_TOLERANCE = 5;
 
 const percentToToken = (value: number, axis: 'x' | 'y'): string => {
   const map = axis === 'x' ? POSITION_KEYWORDS_X : POSITION_KEYWORDS_Y;
@@ -192,48 +181,166 @@ const fromDateTimeLocal = (value: string) => {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 };
 
+type ParsedBackgroundImage = {
+  url: string;
+  positionX: string;
+  positionY: string;
+  size: string;
+};
+
+const sanitizeBackgroundUrl = (token: string): string => {
+  const trimmed = token.trim();
+  if (trimmed.startsWith('url(')) {
+    return trimmed;
+  }
+  const escaped = trimmed.replace(/"/g, '\\"');
+  return `url("${escaped}")`;
+};
+
+const buildBackgroundImage = ({ url, positionX, positionY, size }: ParsedBackgroundImage) => {
+  const safeUrl = sanitizeBackgroundUrl(url);
+  const safeX = positionX?.trim() || POSITION_DEFAULT;
+  const safeY = positionY?.trim() || POSITION_DEFAULT;
+  const safeSize = size?.trim() || SIZE_DEFAULT;
+  return `${safeUrl} ${safeX} ${safeY} / ${safeSize} no-repeat`;
+};
+
+const parseBackgroundImage = (value?: string): ParsedBackgroundImage | null => {
+  if (!value) return null;
+  const urlMatch = value.match(/url\([^)]*\)/i);
+  if (!urlMatch) return null;
+  const url = urlMatch[0];
+  const rest = value.slice((urlMatch.index ?? 0) + urlMatch[0].length).trim();
+  let positionX: string = POSITION_DEFAULT;
+  let positionY: string = POSITION_DEFAULT;
+  let size: string = SIZE_DEFAULT;
+
+  if (rest) {
+    const [positionPart, sizePart] = rest.split('/');
+    if (positionPart) {
+      const tokens = positionPart.trim().split(/\s+/).filter(Boolean);
+      if (tokens.length === 1) {
+        positionX = tokens[0];
+        positionY = tokens[0];
+      } else if (tokens.length >= 2) {
+        positionX = tokens[0];
+        positionY = tokens[1];
+      }
+    }
+    if (sizePart) {
+      const sizeToken = sizePart.trim().split(/\s+/)[0];
+      if (sizeToken) {
+        size = sizeToken;
+      }
+    }
+  }
+
+  return { url, positionX, positionY, size };
+};
+
 interface PropertiesPanelProps {
   node: EditorNode | null;
   onUpdate: (patch: Partial<EditorNode>) => void;
-  pageBackground: string;
+  onGenerateBackground: (prompt: string) => void;
   onChangeBackground: (value: string) => void;
-  onGenerateBackground: (description: string) => void;
   onResetBackground: () => void;
+  pageBackground: string;
+  pageBackgroundColor: string;
+  onChangeBackgroundColor: (color: string) => void;
+  backgroundLayers: BackgroundLayer[];
+  onChangeBackgroundLayers: (layers: BackgroundLayer[]) => void;
+  backgroundSyncEnabled: boolean;
+  onToggleBackgroundSync: (value: boolean) => void;
 }
 
 export default function PropertiesPanel({
   node,
   onUpdate,
-  pageBackground,
-  onChangeBackground,
   onGenerateBackground,
+  onChangeBackground,
   onResetBackground,
+  pageBackground,
+  pageBackgroundColor,
+  onChangeBackgroundColor,
+  backgroundLayers,
+  onChangeBackgroundLayers,
+  backgroundSyncEnabled,
+  onToggleBackgroundSync,
 }: PropertiesPanelProps) {
   const imageFileInput = useRef<HTMLInputElement | null>(null);
   const backgroundFileInput = useRef<HTMLInputElement | null>(null);
+  const backgroundLayerInput = useRef<HTMLInputElement | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [backgroundSectionOpen, setBackgroundSectionOpen] = useState(true);
+  const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
+  const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
+  const isStatusBoardContainer = node?.type === 'container' && node.props?.component === 'status-board';
+  const isButtonSelected = node?.type === 'button';
+  const showPageBackgroundControls = !isButtonSelected;
+  const normalizedBackgroundColor = HEX_COLOR_REGEX.test(pageBackgroundColor.trim())
+    ? pageBackgroundColor.trim()
+    : FALLBACK_COLOR;
+  const parsedLegacyBackground = useMemo(() => parseBackgroundImage(pageBackground), [pageBackground]);
+  const hasLegacyImageBackground = Boolean(parsedLegacyBackground);
+  const backgroundSizeToken = parsedLegacyBackground?.size ?? SIZE_DEFAULT;
+  const backgroundPosXPercent = parsedLegacyBackground
+    ? tokenToPercent(parsedLegacyBackground.positionX, 'x')
+    : 50;
+  const backgroundPosYPercent = parsedLegacyBackground
+    ? tokenToPercent(parsedLegacyBackground.positionY, 'y')
+    : 50;
+  const sizeNumeric = Number.parseFloat(backgroundSizeToken);
+  const imageScalePercent = Number.isFinite(sizeNumeric) ? Math.min(200, Math.max(50, sizeNumeric)) : 100;
 
-  const setFrame = (k: 'x' | 'y' | 'w' | 'h', v: number) =>
-    onUpdate({ [k]: Number.isFinite(v) ? v : 0 } as Partial<EditorNode>);
+  const navItems = useMemo(
+    () => (isNavbarContainer ? normalizeNavItems(node?.props?.navItems) : []),
+    [isNavbarContainer, node?.props?.navItems]
+  );
+  const timeEntries = useMemo(
+    () => (isTimeTrackingContainer ? normalizeTimeEntries(node?.props?.timeTracking?.entries) : []),
+    [isTimeTrackingContainer, node?.props?.timeTracking?.entries]
+  );
+  const statusBoardState = useMemo(
+    () => (isStatusBoardContainer ? normalizeStatusBoard(node?.props?.statusBoard) : null),
+    [isStatusBoardContainer, node?.props?.statusBoard]
+  );
 
-  const setProps = (patch: NodeProps) =>
-    onUpdate({ props: { ...(node?.props ?? {}), ...patch } });
+  const setFrame = (key: 'x' | 'y' | 'w' | 'h', value: number) => {
+    if (!node) return;
+    if (!Number.isFinite(value)) return;
+    onUpdate({ [key]: Math.round(value) } as Partial<EditorNode>);
+  };
 
-  const setStyle = (patch: NodeStyle) =>
-    onUpdate({ style: { ...(node?.style ?? {}), ...patch } });
+  const setStyle = (patch: Partial<NodeStyle>) => {
+    if (!node) return;
+    const nextStyle: NodeStyle = { ...(node.style ?? {}), ...patch };
+    onUpdate({ style: nextStyle });
+  };
+
+  const setProps = (patch: Partial<NodeProps>) => {
+    if (!node) return;
+    const nextProps: NodeProps = { ...(node.props ?? {}), ...patch };
+    onUpdate({ props: nextProps });
+  };
+
+  const handleImageFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setProps({ src: reader.result, originalFileName: file.name });
+      }
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
 
   const promptContainerGradient = () => {
-    const description = window.prompt('Beschreibe den Hintergrund. Beispiel: "dunkler Weltraum mit violetten Akzenten"');
-    if (!description) return;
-    const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
-    const hash = [...description].reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const first = colors[hash % colors.length];
-    const second = colors[(hash + 3) % colors.length];
-    const third = colors[(hash + 5) % colors.length];
-    const gradient = `linear-gradient(140deg, ${first}, ${second}, ${third})`;
-    setProps({ bg: gradient });
+    const background = window.prompt('Beschreibe den gewünschten Container-Hintergrund oder gib CSS ein.');
+    if (!background) return;
+    setProps({ bg: background });
   };
 
   const promptImage = async () => {
@@ -278,7 +385,12 @@ export default function PropertiesPanel({
         const dataUrl = reader.result;
         const url = `url("${dataUrl}")`;
         onChangeBackground(
-          buildBackgroundImage({ url, positionX: POSITION_DEFAULT, positionY: POSITION_DEFAULT, size: SIZE_DEFAULT })
+          buildBackgroundImage({
+            url,
+            positionX: POSITION_DEFAULT,
+            positionY: POSITION_DEFAULT,
+            size: SIZE_DEFAULT,
+          })
         );
       }
     };
@@ -286,79 +398,108 @@ export default function PropertiesPanel({
     event.target.value = '';
   };
 
-  const updateBackgroundSizeToken = (token: string) => {
-    if (!parsedBackgroundImage) return;
-    onChangeBackground(buildBackgroundImage({ ...parsedBackgroundImage, size: token }));
+  const updateLegacyBackground = (patch: Partial<ParsedBackgroundImage>) => {
+    if (!parsedLegacyBackground) return;
+    const next: ParsedBackgroundImage = {
+      url: parsedLegacyBackground.url,
+      positionX: parsedLegacyBackground.positionX,
+      positionY: parsedLegacyBackground.positionY,
+      size: parsedLegacyBackground.size,
+      ...patch,
+    };
+    onChangeBackground(buildBackgroundImage(next));
   };
 
   const handleBackgroundScaleChange = (value: number) => {
-    if (!parsedBackgroundImage) return;
+    if (!parsedLegacyBackground) return;
     const clamped = Math.min(200, Math.max(50, value));
-    updateBackgroundSizeToken(`${clamped}%`);
+    updateLegacyBackground({ size: `${clamped}%` });
+  };
+
+  const updateBackgroundSizeToken = (token: string) => {
+    if (!parsedLegacyBackground) return;
+    updateLegacyBackground({ size: token });
   };
 
   const handleBackgroundPositionChange = (axis: 'x' | 'y', value: number) => {
-    if (!parsedBackgroundImage) return;
-    const next = {
-      ...parsedBackgroundImage,
-      positionX: axis === 'x' ? percentToToken(value, 'x') : parsedBackgroundImage.positionX,
-      positionY: axis === 'y' ? percentToToken(value, 'y') : parsedBackgroundImage.positionY,
-    };
-    onChangeBackground(buildBackgroundImage(next));
+    if (!parsedLegacyBackground) return;
+    const token = percentToToken(value, axis);
+    updateLegacyBackground(axis === 'x' ? { positionX: token } : { positionY: token });
   };
 
   const applyPositionPreset = (xPercent: number, yPercent: number) => {
-    if (!parsedBackgroundImage) return;
-    const next = {
-      ...parsedBackgroundImage,
+    if (!parsedLegacyBackground) return;
+    updateLegacyBackground({
       positionX: percentToToken(xPercent, 'x'),
       positionY: percentToToken(yPercent, 'y'),
-    };
-    onChangeBackground(buildBackgroundImage(next));
+    });
   };
 
-  const handleImageFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const addBackgroundLayer = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    const layer: BackgroundLayer = {
+      id:
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
+      url: trimmed,
+      positionX: 50,
+      positionY: 50,
+      size: 100,
+    };
+    onChangeBackgroundLayers([...backgroundLayers, layer]);
+  };
+
+  const handleBackgroundLayerFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setProps({ src: reader.result, originalFileName: file.name });
+        addBackgroundLayer(reader.result);
       }
     };
     reader.readAsDataURL(file);
     event.target.value = '';
   };
 
-  const backgroundIsColor = HEX_COLOR_REGEX.test(pageBackground.trim());
-  const parsedBackgroundImage = useMemo(() => parseBackgroundImage(pageBackground), [pageBackground]);
-  const hasImageBackground = Boolean(parsedBackgroundImage);
-  const backgroundSizeToken = parsedBackgroundImage?.size ?? null;
-  const backgroundPosXPercent = useMemo(() => tokenToPercent(parsedBackgroundImage?.positionX, 'x'), [parsedBackgroundImage?.positionX]);
-  const backgroundPosYPercent = useMemo(() => tokenToPercent(parsedBackgroundImage?.positionY, 'y'), [parsedBackgroundImage?.positionY]);
-  const imageScalePercent = useMemo(() => {
-    if (!hasImageBackground) return 100;
-    if (!backgroundSizeToken) return 100;
-    const normalized = backgroundSizeToken.trim().toLowerCase();
-    if (normalized.endsWith('%')) {
-      const value = Number.parseFloat(normalized.replace('%', ''));
-      if (Number.isFinite(value)) {
-        return Math.min(200, Math.max(50, value));
-      }
-    }
-    return 100;
-  }, [backgroundSizeToken, hasImageBackground]);
-  const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
-  const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
-  const isStatusBoardContainer = node?.type === 'container' && node.props?.component === 'status-board';
-  const navItems = useMemo(() => (isNavbarContainer ? normalizeNavItems(node?.props?.navItems) : []), [isNavbarContainer, node?.props?.navItems]);
-  const timeEntries = useMemo(
-    () => (isTimeTrackingContainer ? normalizeTimeEntries(node?.props?.timeTracking?.entries) : []),
-    [isTimeTrackingContainer, node?.props?.timeTracking?.entries]
-  );
-  const statusBoardState = useMemo(() => (isStatusBoardContainer ? normalizeStatusBoard(node?.props?.statusBoard) : null), [isStatusBoardContainer, node?.props?.statusBoard]);
-  const isButtonSelected = node?.type === 'button';
-  const showPageBackgroundControls = !isButtonSelected;
+  const handleAddLayerFromUrl = () => {
+    const url = window.prompt('Bild-URL für den Layer eingeben');
+    if (!url) return;
+    addBackgroundLayer(url);
+  };
+
+  const updateBackgroundLayer = (id: string, patch: Partial<BackgroundLayer>) => {
+    onChangeBackgroundLayers(
+      backgroundLayers.map((layer) =>
+        layer.id === id
+          ? {
+              ...layer,
+              ...patch,
+              positionX: typeof patch.positionX === 'number' ? clampPercent(patch.positionX) : layer.positionX,
+              positionY: typeof patch.positionY === 'number' ? clampPercent(patch.positionY) : layer.positionY,
+              size: typeof patch.size === 'number' ? clampLayerSize(patch.size) : layer.size,
+            }
+          : layer
+      )
+    );
+  };
+
+  const moveBackgroundLayer = (id: string, direction: 'up' | 'down') => {
+    const index = backgroundLayers.findIndex((layer) => layer.id === id);
+    if (index === -1) return;
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= backgroundLayers.length) return;
+    const next = [...backgroundLayers];
+    const [layer] = next.splice(index, 1);
+    next.splice(target, 0, layer);
+    onChangeBackgroundLayers(next);
+  };
+
+  const removeBackgroundLayer = (id: string) => {
+    onChangeBackgroundLayers(backgroundLayers.filter((layer) => layer.id !== id));
+  };
 
   const updateNavItems = (next: NavbarItem[]) => {
     setProps({ navItems: next });
@@ -516,157 +657,312 @@ export default function PropertiesPanel({
             <span className="text-[11px] text-neutral-400">{backgroundSectionOpen ? '▲' : '▼'}</span>
           </button>
           {backgroundSectionOpen && (
-          <div id="page-background-controls" className="space-y-2">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="flex-1 bg-neutral-800 rounded px-2 py-1.5 text-sm"
-              value={pageBackground}
-              onChange={(e) => onChangeBackground(e.target.value)}
-            />
-            <input
-              type="color"
-              className="h-10 w-12 bg-neutral-800 rounded cursor-pointer border border-neutral-700"
-              value={backgroundIsColor ? pageBackground : FALLBACK_COLOR}
-              onChange={(e) => onChangeBackground(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
-              onClick={askForPageGradient}
-            >KI Hintergrund</button>
-            <button
-              type="button"
-              className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-200 hover:bg-white/10"
-              onClick={() => backgroundFileInput.current?.click()}
-            >Eigenes Bild</button>
-            <button
-              type="button"
-              className="rounded border border-white/10 px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/10"
-              onClick={onResetBackground}
-            >Zurücksetzen</button>
-          </div>
-          <input
-            type="file"
-            accept="image/*"
-            ref={backgroundFileInput}
-            className="hidden"
-            onChange={handleBackgroundFile}
-          />
-          {hasImageBackground && (
-            <div className="space-y-4 rounded-lg border border-white/10 bg-black/20 p-3">
+            <div id="page-background-controls" className="space-y-4 rounded-lg border border-white/10 bg-black/20 p-3">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
-                  <span>Bildgröße</span>
-                  <span>{backgroundSizeToken ?? 'cover'}</span>
+                  <span>Basisfarbe</span>
+                  <span className="text-[10px] text-neutral-500">wird unter allen Ebenen angezeigt</span>
                 </div>
-                <input
-                  type="range"
-                  min={50}
-                  max={200}
-                  step={5}
-                  value={imageScalePercent}
-                  onChange={(event) => handleBackgroundScaleChange(Number(event.target.value))}
-                  className="w-full accent-emerald-400"
-                />
-                <div className="flex justify-between text-[11px] text-neutral-500">
-                  <span>50%</span>
-                  <span>{imageScalePercent}%</span>
-                  <span>200%</span>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <button
-                    type="button"
-                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => updateBackgroundSizeToken('cover')}
-                  >Cover</button>
-                  <button
-                    type="button"
-                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => updateBackgroundSizeToken('contain')}
-                  >Contain</button>
-                  <button
-                    type="button"
-                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => updateBackgroundSizeToken('100%')}
-                  >100%</button>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    className="h-10 w-12 cursor-pointer rounded border border-neutral-700 bg-neutral-800"
+                    value={normalizedBackgroundColor}
+                    onChange={(e) => onChangeBackgroundColor(e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="flex-1 rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                    value={pageBackgroundColor}
+                    placeholder="#05070f"
+                    onChange={(e) => onChangeBackgroundColor(e.target.value)}
+                  />
                 </div>
               </div>
 
+              <label className="flex items-center gap-2 rounded border border-white/10 bg-white/5 px-3 py-2 text-xs text-neutral-200">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-emerald-400"
+                  checked={backgroundSyncEnabled}
+                  onChange={(event) => onToggleBackgroundSync(event.target.checked)}
+                />
+                <span>Hintergrund auf alle Seiten anwenden</span>
+              </label>
+
+              <div className="space-y-2 border-t border-white/10 pt-3">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+                  <span>Verlauf &amp; CSS</span>
+                  <span className="text-[10px] text-neutral-500">{pageBackground.length ? `${pageBackground.length} Zeichen` : 'leer'}</span>
+                </div>
+                <textarea
+                  className="min-h-[60px] w-full rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                  value={pageBackground}
+                  onChange={(e) => onChangeBackground(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 transition hover:bg-white/10"
+                    onClick={askForPageGradient}
+                  >KI Verlauf</button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 transition hover:bg-white/10"
+                    onClick={() => backgroundFileInput.current?.click()}
+                  >Einzelnes Bild</button>
+                  <button
+                    type="button"
+                    className="rounded border border-white/10 px-3 py-1.5 font-semibold text-neutral-200 transition hover:bg-white/10"
+                    onClick={onResetBackground}
+                  >Zurücksetzen</button>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={backgroundFileInput}
+                  className="hidden"
+                  onChange={handleBackgroundFile}
+                />
+              </div>
+
+              {hasLegacyImageBackground && (
+                <div className="space-y-4 rounded-lg border border-white/10 bg-black/10 p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+                      <span>Bildgröße</span>
+                      <span>{backgroundSizeToken ?? 'cover'}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={50}
+                      max={200}
+                      step={5}
+                      value={imageScalePercent}
+                      onChange={(event) => handleBackgroundScaleChange(Number(event.target.value))}
+                      className="w-full accent-emerald-400"
+                    />
+                    <div className="flex justify-between text-[11px] text-neutral-500">
+                      <span>50%</span>
+                      <span>{imageScalePercent}%</span>
+                      <span>200%</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <button
+                        type="button"
+                        className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => updateBackgroundSizeToken('cover')}
+                      >Cover</button>
+                      <button
+                        type="button"
+                        className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => updateBackgroundSizeToken('contain')}
+                      >Contain</button>
+                      <button
+                        type="button"
+                        className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => updateBackgroundSizeToken('100%')}
+                      >100%</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 border-t border-white/10 pt-3">
+                    <div className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Legacy-Bildposition</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                        <span>Horizontal</span>
+                        <span>{Math.round(backgroundPosXPercent)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={backgroundPosXPercent}
+                        onChange={(event) => handleBackgroundPositionChange('x', Number(event.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                        <span>Vertikal</span>
+                        <span>{Math.round(backgroundPosYPercent)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={backgroundPosYPercent}
+                        onChange={(event) => handleBackgroundPositionChange('y', Number(event.target.value))}
+                        className="w-full accent-cyan-400"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(0, 0)}
+                      >Links oben</button>
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(50, 50)}
+                      >Mitte</button>
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(100, 100)}
+                      >Rechts unten</button>
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(0, 50)}
+                      >Links Mitte</button>
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(50, 0)}
+                      >Oben Mitte</button>
+                      <button
+                        type="button"
+                        className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                        onClick={() => applyPositionPreset(100, 50)}
+                      >Rechts Mitte</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3 border-t border-white/10 pt-3">
-                <div className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Bildposition</div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                    <span>Horizontal</span>
-                    <span>{Math.round(backgroundPosXPercent)}%</span>
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+                  <span>Bild-Layer</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-neutral-100 hover:bg-white/10"
+                      onClick={() => backgroundLayerInput.current?.click()}
+                    >+ Upload</button>
+                    <button
+                      type="button"
+                      className="rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-neutral-100 hover:bg-white/10"
+                      onClick={handleAddLayerFromUrl}
+                    >+ URL</button>
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={backgroundPosXPercent}
-                    onChange={(event) => handleBackgroundPositionChange('x', Number(event.target.value))}
-                    className="w-full accent-cyan-400"
-                  />
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                    <span>Vertikal</span>
-                    <span>{Math.round(backgroundPosYPercent)}%</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={backgroundLayerInput}
+                  className="hidden"
+                  onChange={handleBackgroundLayerFile}
+                />
+                {backgroundLayers.length === 0 ? (
+                  <div className="rounded border border-dashed border-white/10 bg-white/5 px-3 py-2 text-[11px] text-neutral-400">
+                    Noch keine Ebenen – kombiniere mehrere Bilder, um Reflexe oder Muster zu stapeln.
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={backgroundPosYPercent}
-                    onChange={(event) => handleBackgroundPositionChange('y', Number(event.target.value))}
-                    className="w-full accent-cyan-400"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(0, 0)}
-                  >Links oben</button>
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(50, 50)}
-                  >Mitte</button>
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(100, 100)}
-                  >Rechts unten</button>
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(0, 50)}
-                  >Links Mitte</button>
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(50, 0)}
-                  >Oben Mitte</button>
-                  <button
-                    type="button"
-                    className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
-                    onClick={() => applyPositionPreset(100, 50)}
-                  >Rechts Mitte</button>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {backgroundLayers.map((layer, index) => (
+                      <div key={layer.id} className="space-y-2 rounded-lg border border-white/10 bg-[#050912]/70 p-3">
+                        <div className="flex items-center justify-between text-xs text-neutral-300">
+                          <span>Ebene {index + 1}</span>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              className="rounded border border-white/10 px-2 py-1 text-[11px] text-neutral-200 transition hover:bg-white/10 disabled:opacity-40"
+                              disabled={index === 0}
+                              onClick={() => moveBackgroundLayer(layer.id, 'up')}
+                            >↑</button>
+                            <button
+                              type="button"
+                              className="rounded border border-white/10 px-2 py-1 text-[11px] text-neutral-200 transition hover:bg-white/10 disabled:opacity-40"
+                              disabled={index === backgroundLayers.length - 1}
+                              onClick={() => moveBackgroundLayer(layer.id, 'down')}
+                            >↓</button>
+                            <button
+                              type="button"
+                              className="rounded border border-rose-400/40 px-2 py-1 text-[11px] text-rose-200 transition hover:bg-rose-500/20"
+                              onClick={() => removeBackgroundLayer(layer.id)}
+                            >Entfernen</button>
+                          </div>
+                        </div>
+                        <div
+                          className="h-24 rounded-md border border-white/10 bg-neutral-900"
+                          style={{
+                            backgroundImage: `url(${layer.url})`,
+                            backgroundSize: `${layer.size}%`,
+                            backgroundPosition: `${layer.positionX}% ${layer.positionY}%`,
+                            backgroundRepeat: 'no-repeat',
+                          }}
+                        />
+                        <div className="space-y-1 text-[11px] text-neutral-400">
+                          <label className="uppercase tracking-[0.2em]">Bildquelle</label>
+                          <input
+                            type="text"
+                            className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100"
+                            value={layer.url}
+                            onChange={(event) => updateBackgroundLayer(layer.id, { url: event.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2 border-t border-white/10 pt-2">
+                          <div className="space-y-1 text-[11px] text-neutral-400">
+                            <div className="flex items-center justify-between">
+                              <span>Horizontal</span>
+                              <span>{layer.positionX}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={layer.positionX}
+                              onChange={(event) => updateBackgroundLayer(layer.id, { positionX: Number(event.target.value) })}
+                              className="w-full accent-cyan-400"
+                            />
+                          </div>
+                          <div className="space-y-1 text-[11px] text-neutral-400">
+                            <div className="flex items-center justify-between">
+                              <span>Vertikal</span>
+                              <span>{layer.positionY}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={layer.positionY}
+                              onChange={(event) => updateBackgroundLayer(layer.id, { positionY: Number(event.target.value) })}
+                              className="w-full accent-cyan-400"
+                            />
+                          </div>
+                          <div className="space-y-1 text-[11px] text-neutral-400">
+                            <div className="flex items-center justify-between">
+                              <span>Skalierung</span>
+                              <span>{layer.size}%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min={20}
+                              max={300}
+                              step={5}
+                              value={layer.size}
+                              onChange={(event) => updateBackgroundLayer(layer.id, { size: Number(event.target.value) })}
+                              className="w-full accent-emerald-400"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
-          </div>
-          )}
           {!backgroundSectionOpen && (
-            <div className="rounded border border-dashed border-white/10 bg-black/10 px-3 py-2 text-[11px] text-neutral-400">
-              Aktueller Wert: <span className="font-semibold text-neutral-200">{pageBackground.slice(0, 40)}{pageBackground.length > 40 ? '…' : ''}</span>
+            <div className="space-y-1 rounded border border-dashed border-white/10 bg-black/10 px-3 py-2 text-[11px] text-neutral-400">
+              <div>CSS: <span className="font-semibold text-neutral-200">{pageBackground.slice(0, 40)}{pageBackground.length > 40 ? '…' : ''}</span></div>
+              <div>Farbe: <span className="font-semibold text-neutral-200">{normalizedBackgroundColor}</span></div>
             </div>
           )}
         </div>

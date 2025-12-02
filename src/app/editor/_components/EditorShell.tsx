@@ -9,12 +9,16 @@ import CategorizedToolbox from './CategorizedToolbox';
 import QRCodeButton from '../_extensions/QRCodeButton';
 import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
-import type { PageTree, Node as EditorNode, NodeType, NodeProps } from '@/lib/editorTypes';
+import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import JSZip from 'jszip';
+import useUserProfile from '@/hooks/useUserProfile';
+import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { EditorLayoutPreferences } from '@/types/user';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -78,6 +82,7 @@ const sanitizePage = (page: PageTree): PageTree => ({
 });
 
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
+const DEFAULT_PAGE_BACKGROUND_COLOR = '#05070f';
 
 const emptyTree: PageTree = {
   id: 'local',
@@ -117,6 +122,10 @@ const clampPanelWidth = (panel: PanelSide, value: number) => {
   return Math.min(max, Math.max(min, value));
 };
 
+const DEFAULT_LEFT_PANEL_WIDTH = clampPanelWidth('left', 384);
+const DEFAULT_RIGHT_PANEL_WIDTH = clampPanelWidth('right', 352);
+const DEFAULT_CANVAS_ZOOM = 1;
+
 const CANVAS_ZOOM_MIN = 0.6;
 const CANVAS_ZOOM_MAX = 1.4;
 const CANVAS_ZOOM_STEP = 0.05;
@@ -130,6 +139,33 @@ const clampToRange = (value: number, min: number, max: number) => {
   if (max < min) return min;
   return Math.min(max, Math.max(min, value));
 };
+const clampPercentValue = (value: number) => clampToRange(Number.isFinite(value) ? value : 50, 0, 100);
+const clampSizeValue = (value: number) => clampToRange(Number.isFinite(value) ? value : 100, 10, 300);
+const normalizeBackgroundLayers = (raw?: unknown): BackgroundLayer[] => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const url = typeof (entry as BackgroundLayer).url === 'string' ? (entry as BackgroundLayer).url : '';
+      if (!url.trim()) return null;
+      return {
+        id:
+          typeof (entry as BackgroundLayer).id === 'string'
+            ? (entry as BackgroundLayer).id
+            : typeof crypto !== 'undefined' && 'randomUUID' in crypto
+              ? crypto.randomUUID()
+              : Math.random().toString(36).slice(2),
+        url,
+        positionX: clampPercentValue((entry as BackgroundLayer).positionX ?? 50),
+        positionY: clampPercentValue((entry as BackgroundLayer).positionY ?? 50),
+        size: clampSizeValue((entry as BackgroundLayer).size ?? 100),
+      } satisfies BackgroundLayer;
+    })
+    .filter((layer): layer is BackgroundLayer => Boolean(layer));
+};
+const layerToCss = (layer: BackgroundLayer) =>
+  `url("${layer.url}") ${layer.positionX}% ${layer.positionY}% / ${layer.size}% no-repeat`;
+const buildLayerCss = (layers: BackgroundLayer[]) => layers.map(layerToCss).join(', ');
 
 const slugify = (value: string): string =>
   (value || '')
@@ -749,6 +785,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const latestTree = useRef<PageTree>(sanitizePage(emptyTree));
   const pendingSyncHash = useRef<string | null>(null);
   const { user, loading } = useAuth();
+  const { profile, loading: profileLoading } = useUserProfile(user?.uid);
 
   // Unterstütze sowohl ?projectId= als auch ?id=
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
@@ -823,6 +860,35 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [user?.uid]);
 
   useEffect(() => {
+    if (!user?.uid) {
+      setLayoutInitialized(false);
+      lastSavedLayoutRef.current = null;
+      return;
+    }
+    if (profileLoading) return;
+    const prefs = profile?.editorLayout ?? null;
+    if (prefs) {
+      if (typeof prefs.leftPanelWidth === 'number') {
+        setLeftPanelWidth(clampPanelWidth('left', prefs.leftPanelWidth));
+      }
+      if (typeof prefs.rightPanelWidth === 'number') {
+        setRightPanelWidth(clampPanelWidth('right', prefs.rightPanelWidth));
+      }
+      if (typeof prefs.canvasZoom === 'number') {
+        setCanvasZoom(clampZoomValue(prefs.canvasZoom));
+      }
+      lastSavedLayoutRef.current = {
+        leftPanelWidth: typeof prefs.leftPanelWidth === 'number' ? clampPanelWidth('left', prefs.leftPanelWidth) : undefined,
+        rightPanelWidth: typeof prefs.rightPanelWidth === 'number' ? clampPanelWidth('right', prefs.rightPanelWidth) : undefined,
+        canvasZoom: typeof prefs.canvasZoom === 'number' ? clampZoomValue(prefs.canvasZoom) : undefined,
+      };
+    } else {
+      lastSavedLayoutRef.current = null;
+    }
+    setLayoutInitialized(true);
+  }, [user?.uid, profileLoading, profile?.editorLayout]);
+
+  useEffect(() => {
     if (derivedProjectId || manualProjectId || !projects.length) return;
     const fallbackId = projects[0]?.id;
     if (fallbackId) {
@@ -842,14 +908,57 @@ export default function EditorShell({ initialPageId }: Props) {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const propagateBackgroundToAllPages = useCallback(
+    async ({ color, layers, background }: { color: string; layers: BackgroundLayer[]; background: string }) => {
+      setPages((prev) =>
+        prev.map((page) => ({
+          ...page,
+          tree: {
+            ...page.tree,
+            props: {
+              ...(page.tree.props ?? {}),
+              bgColor: color,
+              bgLayers: layers,
+              bg: background,
+            },
+          },
+        }))
+      );
+      if (!(_projectId && pages.length)) return;
+      try {
+        await Promise.all(
+          pages
+            .filter((page) => Boolean(page.id))
+            .map((page) => {
+              const updatedTree = {
+                ...page.tree,
+                props: {
+                  ...(page.tree.props ?? {}),
+                  bgColor: color,
+                  bgLayers: layers,
+                  bg: background,
+                },
+              };
+              return savePage(_projectId, page.id!, { ...page, tree: updatedTree });
+            })
+        );
+      } catch (error) {
+        console.error('Hintergrund konnte nicht auf alle Seiten angewendet werden', error);
+      }
+    },
+    [_projectId, pages]
+  );
   
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => clampPanelWidth('left', 384));
-  const [rightPanelWidth, setRightPanelWidth] = useState(() => clampPanelWidth('right', 352));
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
   const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
   const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
-  const [canvasZoom, setCanvasZoom] = useState(1);
+  const [canvasZoom, setCanvasZoom] = useState(DEFAULT_CANVAS_ZOOM);
+  const [layoutInitialized, setLayoutInitialized] = useState(false);
+  const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedLayoutRef = useRef<EditorLayoutPreferences | null>(null);
 
   const stepZoom = (direction: 'in' | 'out') => {
     const delta = direction === 'in' ? CANVAS_ZOOM_STEP : -CANVAS_ZOOM_STEP;
@@ -860,6 +969,54 @@ export default function EditorShell({ initialPageId }: Props) {
     const ratio = percent / 100;
     setCanvasZoom(clampZoomValue(ratio));
   };
+
+  const persistLayout = useCallback(
+    async (layout: EditorLayoutPreferences) => {
+      if (!user?.uid) return;
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          editorLayout: layout,
+          updatedAt: serverTimestamp(),
+        });
+        lastSavedLayoutRef.current = layout;
+      } catch (error) {
+        console.error('Editor-Layout konnte nicht gespeichert werden', error);
+      }
+    },
+    [user?.uid]
+  );
+
+  useEffect(() => {
+    if (!user?.uid || !layoutInitialized) return;
+    const normalizedLayout: EditorLayoutPreferences = {
+      leftPanelWidth: clampPanelWidth('left', leftPanelWidth),
+      rightPanelWidth: clampPanelWidth('right', rightPanelWidth),
+      canvasZoom: Number(clampZoomValue(canvasZoom).toFixed(3)),
+    };
+    const prev = lastSavedLayoutRef.current;
+    const prevZoom = typeof prev?.canvasZoom === 'number' ? Number(prev.canvasZoom.toFixed(3)) : undefined;
+    if (
+      prev &&
+      prev.leftPanelWidth === normalizedLayout.leftPanelWidth &&
+      prev.rightPanelWidth === normalizedLayout.rightPanelWidth &&
+      prevZoom === normalizedLayout.canvasZoom
+    ) {
+      return;
+    }
+    if (layoutSaveTimeout.current) {
+      clearTimeout(layoutSaveTimeout.current);
+    }
+    layoutSaveTimeout.current = setTimeout(() => {
+      void persistLayout(normalizedLayout);
+      layoutSaveTimeout.current = null;
+    }, 800);
+    return () => {
+      if (layoutSaveTimeout.current) {
+        clearTimeout(layoutSaveTimeout.current);
+        layoutSaveTimeout.current = null;
+      }
+    };
+  }, [leftPanelWidth, rightPanelWidth, canvasZoom, user?.uid, layoutInitialized, persistLayout]);
 
   const startPanelDrag = useCallback(
     (panel: PanelSide, event: React.MouseEvent<HTMLDivElement>) => {
@@ -1051,21 +1208,78 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const settingsHref = useMemo(() => (_projectId ? `/editor/settings?projectId=${_projectId}` : null), [_projectId]);
 
+  const backgroundLayers = useMemo(() => normalizeBackgroundLayers(tree.tree.props?.bgLayers), [tree]);
+  const backgroundLayerCss = useMemo(() => (backgroundLayers.length ? buildLayerCss(backgroundLayers) : ''), [backgroundLayers]);
+  const pageBackgroundColor = useMemo(() => {
+    const raw = tree.tree.props?.bgColor;
+    return typeof raw === 'string' && raw.trim() ? raw : DEFAULT_PAGE_BACKGROUND_COLOR;
+  }, [tree]);
+  const backgroundSyncEnabled = Boolean(tree.tree.props?.bgApplyToAll);
+
   const pageBackground = useMemo(() => {
+    if (backgroundLayerCss) return backgroundLayerCss;
     const raw = tree.tree.props?.bg;
     return typeof raw === 'string' && raw.trim() ? raw : DEFAULT_PAGE_BACKGROUND;
-  }, [tree]);
+  }, [backgroundLayerCss, tree]);
 
-  const setPageBackground = useCallback((value: string) => {
-    const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND;
-    applyTreeUpdate((prev) => ({
-      ...prev,
-      tree: {
-        ...prev.tree,
-        props: { ...(prev.tree.props ?? {}), bg: next },
-      },
-    }));
-  }, [applyTreeUpdate]);
+  const setPageBackgroundColor = useCallback(
+    (value: string) => {
+      const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND_COLOR;
+      applyTreeUpdate((prev) => ({
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: { ...(prev.tree.props ?? {}), bgColor: next },
+        },
+      }));
+      if (backgroundSyncEnabled) {
+        const css = backgroundLayers.length ? buildLayerCss(backgroundLayers) : pageBackground;
+        void propagateBackgroundToAllPages({ color: next, layers: backgroundLayers, background: css });
+      }
+    },
+    [applyTreeUpdate, backgroundLayers, backgroundSyncEnabled, pageBackground, propagateBackgroundToAllPages]
+  );
+
+  const setBackgroundLayers = useCallback(
+    (layers: BackgroundLayer[]) => {
+      const sanitized = normalizeBackgroundLayers(layers);
+      const css = sanitized.length ? buildLayerCss(sanitized) : '';
+      applyTreeUpdate((prev) => ({
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: {
+            ...(prev.tree.props ?? {}),
+            bgLayers: sanitized,
+            bg: css || prev.tree.props?.bg || DEFAULT_PAGE_BACKGROUND,
+          },
+        },
+      }));
+      if (backgroundSyncEnabled) {
+        const color = pageBackgroundColor;
+        const backgroundValue = css || pageBackground;
+        void propagateBackgroundToAllPages({ color, layers: sanitized, background: backgroundValue });
+      }
+    },
+    [applyTreeUpdate, backgroundSyncEnabled, pageBackground, pageBackgroundColor, propagateBackgroundToAllPages]
+  );
+
+  const setPageBackground = useCallback(
+    (value: string) => {
+      const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND;
+      applyTreeUpdate((prev) => ({
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: { ...(prev.tree.props ?? {}), bg: next, bgLayers: [] },
+        },
+      }));
+      if (backgroundSyncEnabled) {
+        void propagateBackgroundToAllPages({ color: pageBackgroundColor, layers: [], background: next });
+      }
+    },
+    [applyTreeUpdate, backgroundSyncEnabled, pageBackgroundColor, propagateBackgroundToAllPages]
+  );
 
   const generatePageBackground = useCallback((description: string) => {
     const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
@@ -1078,8 +1292,31 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [setPageBackground]);
 
   const resetPageBackground = useCallback(() => {
+    setBackgroundLayers([]);
+    setPageBackgroundColor(DEFAULT_PAGE_BACKGROUND_COLOR);
     setPageBackground(DEFAULT_PAGE_BACKGROUND);
-  }, [setPageBackground]);
+  }, [setBackgroundLayers, setPageBackground, setPageBackgroundColor]);
+
+  const toggleBackgroundSync = useCallback(
+    (next: boolean) => {
+      applyTreeUpdate((prev) => ({
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: { ...(prev.tree.props ?? {}), bgApplyToAll: next },
+        },
+      }));
+      if (next) {
+        const backgroundValue = backgroundLayers.length ? buildLayerCss(backgroundLayers) : pageBackground;
+        void propagateBackgroundToAllPages({
+          color: pageBackgroundColor,
+          layers: backgroundLayers,
+          background: backgroundValue,
+        });
+      }
+    },
+    [applyTreeUpdate, backgroundLayers, pageBackground, pageBackgroundColor, propagateBackgroundToAllPages]
+  );
 
   const updateNode = useCallback(
     (id: string, patch: Partial<EditorNode>) => {
@@ -1708,6 +1945,17 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [_projectId, hasPages, flushPendingSave, buildPagesSnapshot, project?.name, triggerDownload]);
 
+  const openBrowserPreview = useCallback(async () => {
+    if (!_projectId) {
+      window.alert('Bitte öffne zuerst ein Projekt, um die Vorschau zu nutzen.');
+      return;
+    }
+    await flushPendingSave();
+    const base = `/preview/${_projectId}`;
+    const url = currentPageId ? `${base}?page=${currentPageId}` : base;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [_projectId, currentPageId, flushPendingSave]);
+
   const handlePageSelection = useCallback(
     (id: string | null, options?: { placeholderName?: string }) => {
       setCurrentPageId(id);
@@ -2283,6 +2531,12 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (selectedId) updateNode(selectedId, patch);
                       }}
                       pageBackground={pageBackground}
+                      pageBackgroundColor={pageBackgroundColor}
+                      onChangeBackgroundColor={setPageBackgroundColor}
+                      backgroundLayers={backgroundLayers}
+                      onChangeBackgroundLayers={setBackgroundLayers}
+                      backgroundSyncEnabled={backgroundSyncEnabled}
+                      onToggleBackgroundSync={toggleBackgroundSync}
                       onChangeBackground={setPageBackground}
                       onGenerateBackground={generatePageBackground}
                       onResetBackground={resetPageBackground}
@@ -2353,6 +2607,12 @@ export default function EditorShell({ initialPageId }: Props) {
                   if (selectedId) updateNode(selectedId, patch);
                 }}
                 pageBackground={pageBackground}
+                pageBackgroundColor={pageBackgroundColor}
+                onChangeBackgroundColor={setPageBackgroundColor}
+                backgroundLayers={backgroundLayers}
+                onChangeBackgroundLayers={setBackgroundLayers}
+                backgroundSyncEnabled={backgroundSyncEnabled}
+                onToggleBackgroundSync={toggleBackgroundSync}
                 onChangeBackground={setPageBackground}
                 onGenerateBackground={generatePageBackground}
                 onResetBackground={resetPageBackground}

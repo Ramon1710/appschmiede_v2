@@ -15,6 +15,12 @@ export interface BillingMethodInfo {
   expiresAt?: string | null;
 }
 
+export interface EditorLayoutPreferences {
+  leftPanelWidth?: number;
+  rightPanelWidth?: number;
+  canvasZoom?: number;
+}
+
 export interface AppUserProfile {
   email: string | null;
   displayName?: string | null;
@@ -32,6 +38,7 @@ export interface AppUserProfile {
   billingMethod?: BillingMethodInfo | null;
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
+  editorLayout?: EditorLayoutPreferences | null;
 }
 
 export const DEFAULT_FREE_PLAN = 'free';
