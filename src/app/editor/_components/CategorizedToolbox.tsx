@@ -15,6 +15,7 @@ type Category = {
 
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
   const [expanded, setExpanded] = useState<string[]>(['allgemein']);
+  const [searchQuery, setSearchQuery] = useState('');
   const categories: Category[] = [
     {
       name: 'Alleine Funktionen',
