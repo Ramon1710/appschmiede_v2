@@ -9,10 +9,17 @@ import type {
   TaskItem,
   TimeEntry,
   AudioNote,
+  AvatarTrait,
+  AvatarAction,
   FolderNode,
   StatusOption,
   NodeProps,
+  SupportTicket,
+  AnalyticsMetric,
+  TableConfig,
+  MapMode,
 } from '@/lib/editorTypes';
+import { buildContainerBackgroundStyle } from '@/lib/containerBackground';
 
 type CanvasProps = {
   tree: PageTree;
@@ -33,6 +40,8 @@ const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) 
 const BOUNDS = { w: 414, h: 896 } as const;
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
 const DEFAULT_PAGE_BACKGROUND_COLOR = '#05070f';
+const AI_CHAT_FALLBACK_BACKGROUND = 'linear-gradient(135deg,#0f172a,#020617,#000000)';
+const CHAT_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#0f172a,#111827,#020617)';
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
@@ -408,14 +417,6 @@ const TaskManagerWidget = ({
   );
 };
 
-type SupportTicket = {
-  id: string;
-  subject: string;
-  message: string;
-  createdAt: string;
-  channel: string;
-};
-
 const SupportWidget = ({
   tickets,
   onCreateTicket,
@@ -496,7 +497,7 @@ const CalendarWidget = ({ date, onChangeDate }: { date: Date; onChangeDate: (nex
     onChangeDate(next);
   };
   return (
-    <div className="h-full rounded-xl border border-orange-500/30 bg-[#21150b] p-3 text-xs text-neutral-100">
+    <div className="flex h-full flex-col rounded-xl border border-orange-500/30 bg-[#21150b] p-3 text-xs text-neutral-100">
       <div className="flex items-center justify-between">
         <button type="button" className="text-lg" onClick={() => goOffset(-1)} onMouseDown={(event) => event.stopPropagation()}>‹</button>
         <div className="text-sm font-semibold">{date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</div>
@@ -507,13 +508,13 @@ const CalendarWidget = ({ date, onChangeDate }: { date: Date; onChangeDate: (nex
           <div key={day} className="text-center">{day}</div>
         ))}
       </div>
-      <div className="mt-1 grid flex-1 grid-cols-7 gap-1 text-[11px]">
+      <div className="mt-1 grid flex-1 grid-cols-7 gap-1 text-[11px] min-h-0">
         {weeks.map((week, idx) => (
           <React.Fragment key={`week-${idx}`}>
             {week.map((day, dayIdx) => (
               <div
                 key={`day-${idx}-${dayIdx}`}
-                className={`flex h-10 items-center justify-center rounded ${day ? 'bg-white/5' : 'bg-white/5 text-neutral-700 opacity-40'}`}
+                className={`flex aspect-square items-center justify-center rounded ${day ? 'bg-white/5' : 'bg-white/5 text-neutral-700 opacity-40'}`}
               >
                 {day ?? ''}
               </div>
@@ -529,10 +530,58 @@ const TodoWidget = ({ items, onChange }: { items: TaskItem[]; onChange: (tasks: 
   <TaskManagerWidget title="Todo-Liste" tasks={items} onChange={onChange} />
 );
 
-const MapWidget = ({ location }: { location: string }) => {
+type MapWidgetProps = {
+  location: string;
+  mode: MapMode;
+  modeLabel?: string;
+  info?: string;
+  actionLabel?: string;
+};
+
+const MAP_MODE_VARIANTS: Record<MapMode, { badge: string; description: string; action: string; badgeClass: string; icon: string }> = {
+  static: {
+    badge: 'Standort',
+    description: 'Zeigt einen festen Standort oder Treffpunkt an.',
+    action: 'Route anzeigen',
+    badgeClass: 'bg-sky-500/20 text-sky-100',
+    icon: '📍',
+  },
+  'live-tracking': {
+    badge: 'Live-Tracking',
+    description: 'Position aktualisiert sich automatisch im Minutentakt.',
+    action: 'Tracking öffnen',
+    badgeClass: 'bg-emerald-500/20 text-emerald-100',
+    icon: '🛰️',
+  },
+  'route-recording': {
+    badge: 'Wegaufzeichnung',
+    description: 'Zeichnet den gefahrenen Weg und Zwischenstopps auf.',
+    action: 'Aufzeichnung starten',
+    badgeClass: 'bg-amber-500/20 text-amber-100',
+    icon: '🗺️',
+  },
+  geofence: {
+    badge: 'Geofence',
+    description: 'Überwacht definierte Zonen und meldet Abweichungen.',
+    action: 'Zone überwachen',
+    badgeClass: 'bg-rose-500/20 text-rose-100',
+    icon: '📦',
+  },
+};
+
+const MAP_MODE_VALUES: MapMode[] = ['static', 'live-tracking', 'route-recording', 'geofence'];
+
+const normalizeMapMode = (value?: unknown): MapMode =>
+  MAP_MODE_VALUES.includes(value as MapMode) ? (value as MapMode) : 'static';
+
+const MapWidget = ({ location, mode, modeLabel, info, actionLabel }: MapWidgetProps) => {
   const encoded = encodeURIComponent(location);
+  const variant = MAP_MODE_VARIANTS[mode] ?? MAP_MODE_VARIANTS.static;
+  const badge = typeof modeLabel === 'string' && modeLabel.trim() ? modeLabel.trim() : variant.badge;
+  const description = typeof info === 'string' && info.trim() ? info.trim() : variant.description;
+  const buttonLabel = typeof actionLabel === 'string' && actionLabel.trim() ? actionLabel.trim() : variant.action;
   return (
-    <div className="h-full overflow-hidden rounded-xl border border-cyan-500/40 bg-[#041820]">
+    <div className="relative h-full overflow-hidden rounded-xl border border-cyan-500/40 bg-[#041820]">
       <iframe
         title={`Karte für ${location}`}
         src={`https://maps.google.com/maps?q=${encoded}&z=14&output=embed`}
@@ -540,6 +589,22 @@ const MapWidget = ({ location }: { location: string }) => {
         loading="lazy"
         allowFullScreen
       />
+      <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-3 text-xs text-white">
+        <div>
+          <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.35em] ${variant.badgeClass}`}>
+            {variant.icon} {badge}
+          </span>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/55 p-3 backdrop-blur">
+          <div className="text-[11px] leading-relaxed text-slate-100">{description}</div>
+          <div className="mt-2 text-[10px] text-cyan-100/80">📍 {location}</div>
+          <button
+            type="button"
+            className="pointer-events-auto mt-3 w-full rounded-full border border-cyan-400/60 bg-cyan-500/20 py-1.5 text-[11px] font-semibold text-cyan-50 hover:bg-cyan-500/30"
+            onMouseDown={(event) => event.stopPropagation()}
+          >{buttonLabel}</button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -552,25 +617,34 @@ const VideoPlayerWidget = ({ url }: { url: string | undefined }) => {
       </div>
     );
   }
+
   const isYouTube = /youtu\.?be/.test(url);
   if (isYouTube) {
     const videoIdMatch = url.match(/[?&]v=([^&]+)/) ?? url.match(/youtu\.be\/([^?]+)/);
     const videoId = videoIdMatch ? videoIdMatch[1] : '';
+    const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
     return (
-      <div className="h-full overflow-hidden rounded-xl border border-red-500/30 bg-black">
-        <iframe
-          title="YouTube Player"
-          src={`https://www.youtube.com/embed/${videoId}`}
-          className="h-full w-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+      <div className="relative h-full overflow-hidden rounded-xl border border-red-500/30 bg-black">
+        {thumbnail ? (
+          <img src={thumbnail} alt="YouTube Vorschau" className="h-full w-full object-cover opacity-70" draggable={false} />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-red-950 via-black to-red-950" />
+        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 p-4 text-center text-xs text-neutral-100">
+          <div className="text-lg">▶️</div>
+          <div className="font-semibold">YouTube deaktiviert im Editor</div>
+          <div className="text-[11px] text-neutral-300">Nutze die Vorschau, um das Video abzuspielen.</div>
+        </div>
       </div>
     );
   }
+
   return (
-    <div className="h-full overflow-hidden rounded-xl border border-red-500/30 bg-black">
-      <video src={url} controls className="h-full w-full object-cover" />
+    <div className="grid h-full place-items-center rounded-xl border border-red-500/30 bg-[#120808] p-3 text-center text-xs text-neutral-200">
+      <div>
+        Video wird im Preview-Modus abgespielt.
+        <div className="mt-1 break-all text-[10px] text-neutral-500">{url}</div>
+      </div>
     </div>
   );
 };
@@ -740,12 +814,12 @@ const TicTacToeWidget = () => {
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-pink-500/30 bg-[#240b1f] p-3 text-neutral-100">
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid w-full max-w-[240px] grid-cols-3 gap-1">
         {board.map((cell, idx) => (
           <button
             key={idx}
             type="button"
-            className="h-12 w-12 rounded bg-white/10 text-xl font-semibold hover:bg-white/20"
+            className="aspect-square w-full rounded bg-white/10 text-xl font-semibold hover:bg-white/20"
             onClick={() => play(idx)}
             onMouseDown={(event) => event.stopPropagation()}
           >
@@ -766,43 +840,254 @@ const TicTacToeWidget = () => {
   );
 };
 
+type GridPoint = { x: number; y: number };
+type Direction = 'up' | 'down' | 'left' | 'right';
+
+const SNAKE_BOARD_SIZE = 16;
+const SNAKE_TICK_MS = 180;
+const DIRECTION_VECTORS: Record<Direction, GridPoint> = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+const OPPOSITE_DIRECTION: Record<Direction, Direction> = {
+  up: 'down',
+  down: 'up',
+  left: 'right',
+  right: 'left',
+};
+
+const createInitialSnake = (): GridPoint[] => {
+  const center = Math.floor(SNAKE_BOARD_SIZE / 2);
+  return [
+    { x: center + 1, y: center },
+    { x: center, y: center },
+    { x: center - 1, y: center },
+  ];
+};
+
+const spawnFood = (occupied: GridPoint[]): GridPoint => {
+  let attempt = 0;
+  while (attempt < 500) {
+    const candidate = {
+      x: Math.floor(Math.random() * SNAKE_BOARD_SIZE),
+      y: Math.floor(Math.random() * SNAKE_BOARD_SIZE),
+    };
+    if (!occupied.some((segment) => segment.x === candidate.x && segment.y === candidate.y)) {
+      return candidate;
+    }
+    attempt += 1;
+  }
+  return { x: 0, y: 0 };
+};
+
 const SnakeWidget = () => {
+  const [snake, setSnake] = useState<GridPoint[]>(() => createInitialSnake());
+  const [direction, setDirection] = useState<Direction>('right');
+  const [food, setFood] = useState<GridPoint>(() => spawnFood(createInitialSnake()));
+  const [isRunning, setIsRunning] = useState(false);
+  const [hasLost, setHasLost] = useState(false);
   const [score, setScore] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const intervalRef = useRef<number | null>(null);
+  const directionRef = useRef(direction);
+  const foodRef = useRef(food);
+
+  const resetGame = useCallback(() => {
+    const initialSnake = createInitialSnake();
+    const initialFood = spawnFood(initialSnake);
+    setSnake(initialSnake);
+    setDirection('right');
+    directionRef.current = 'right';
+    setFood(initialFood);
+    foodRef.current = initialFood;
+    setScore(0);
+    setHasLost(false);
+  }, []);
 
   useEffect(() => {
-    if (!playing) return;
-    const interval = window.setInterval(() => {
-      setScore((prev) => prev + Math.floor(Math.random() * 3) + 1);
-    }, 500);
-    const timeout = window.setTimeout(() => {
-      setPlaying(false);
-      window.clearInterval(interval);
-    }, 15000);
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
-    };
-  }, [playing]);
+    foodRef.current = food;
+  }, [food]);
 
-  const start = () => {
-    setScore(0);
-    setPlaying(true);
+  useEffect(() => {
+    directionRef.current = direction;
+  }, [direction]);
+
+  useEffect(() => {
+    resetGame();
+  }, [resetGame]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+    intervalRef.current = window.setInterval(() => {
+      setSnake((prev) => {
+        const vector = DIRECTION_VECTORS[directionRef.current];
+        const head = prev[0];
+        const next = { x: head.x + vector.x, y: head.y + vector.y };
+        const hitsWall =
+          next.x < 0 ||
+          next.x >= SNAKE_BOARD_SIZE ||
+          next.y < 0 ||
+          next.y >= SNAKE_BOARD_SIZE;
+        const hitsSelf = prev.some((segment) => segment.x === next.x && segment.y === next.y);
+        if (hitsWall || hitsSelf) {
+          setHasLost(true);
+          setIsRunning(false);
+          return prev;
+        }
+        const grownSnake = [next, ...prev];
+        if (next.x === foodRef.current.x && next.y === foodRef.current.y) {
+          setScore((value) => value + 10);
+          const nextFood = spawnFood(grownSnake);
+          setFood(nextFood);
+          foodRef.current = nextFood;
+          return grownSnake;
+        }
+        grownSnake.pop();
+        return grownSnake;
+      });
+    }, SNAKE_TICK_MS);
+    return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D'].includes(event.key)) {
+        return;
+      }
+      event.preventDefault();
+      const mapping: Record<string, Direction> = {
+        ArrowUp: 'up',
+        w: 'up',
+        W: 'up',
+        ArrowDown: 'down',
+        s: 'down',
+        S: 'down',
+        ArrowLeft: 'left',
+        a: 'left',
+        A: 'left',
+        ArrowRight: 'right',
+        d: 'right',
+        D: 'right',
+      };
+      const nextDirection = mapping[event.key];
+      if (nextDirection && OPPOSITE_DIRECTION[directionRef.current] !== nextDirection) {
+        setDirection(nextDirection);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const changeDirection = (next: Direction) => {
+    if (OPPOSITE_DIRECTION[directionRef.current] === next) return;
+    setDirection(next);
   };
 
+  const startGame = () => {
+    resetGame();
+    setIsRunning(true);
+  };
+
+  const pauseGame = () => {
+    setIsRunning(false);
+  };
+
+  const statusLabel = hasLost ? 'Kollision! Taste START für neuen Versuch.' : isRunning ? 'Läuft' : 'Bereit';
+
+  const gridTemplate = useMemo(
+    () => ({ gridTemplateColumns: `repeat(${SNAKE_BOARD_SIZE}, minmax(0, 1fr))` }),
+    []
+  );
+
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-lime-500/30 bg-[#0f1f0b] p-3 text-lime-200">
-      <div className="text-3xl">🐍</div>
-      <div className="text-xs uppercase tracking-widest">Snake Demo</div>
-      <div className="text-sm font-semibold">Score: {score}</div>
-      <button
-        type="button"
-        className="rounded bg-lime-500/40 px-4 py-1 text-sm font-semibold hover:bg-lime-500/50 disabled:opacity-40"
-        onClick={start}
-        disabled={playing}
-        onMouseDown={(event) => event.stopPropagation()}
-      >{playing ? 'Läuft…' : 'Start'}</button>
-      <div className="text-[10px] text-lime-100/80">Die Demo stoppt automatisch nach 15 Sekunden.</div>
+    <div className="flex h-full flex-col gap-3 rounded-xl border border-lime-500/30 bg-[#081207] p-3 text-lime-50">
+      <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-lime-300">
+        <span>Snake 3210</span>
+        <span>Score {score}</span>
+      </div>
+      <div className="flex flex-1 items-center justify-center">
+        <div className="w-full max-w-[260px] rounded-2xl border border-lime-500/20 bg-[#030804] p-2">
+          <div className="grid gap-[2px]" style={gridTemplate}>
+            {Array.from({ length: SNAKE_BOARD_SIZE * SNAKE_BOARD_SIZE }).map((_, index) => {
+              const x = index % SNAKE_BOARD_SIZE;
+              const y = Math.floor(index / SNAKE_BOARD_SIZE);
+              const isHead = snake[0].x === x && snake[0].y === y;
+              const isBody = snake.some((segment, segmentIndex) => segmentIndex !== 0 && segment.x === x && segment.y === y);
+              const isFood = food.x === x && food.y === y;
+              let cellClass = 'bg-lime-900/20';
+              if (isFood) cellClass = 'bg-amber-400';
+              if (isBody) cellClass = 'bg-lime-500/60';
+              if (isHead) cellClass = 'bg-lime-300';
+              return <div key={`${x}-${y}`} className={`aspect-square rounded-sm ${cellClass}`} />;
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="text-[11px] text-lime-300/80">{statusLabel}</div>
+      <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
+        <button
+          type="button"
+          className="rounded bg-lime-500/30 py-1 text-lime-950 hover:bg-lime-500/50"
+          onClick={startGame}
+          onMouseDown={(event) => event.stopPropagation()}
+        >Start</button>
+        <button
+          type="button"
+          className="rounded bg-lime-500/10 py-1 text-lime-100 hover:bg-lime-500/20"
+          onClick={pauseGame}
+          onMouseDown={(event) => event.stopPropagation()}
+        >Pause</button>
+        <button
+          type="button"
+          className="rounded bg-lime-500/10 py-1 text-lime-100 hover:bg-lime-500/20"
+          onClick={resetGame}
+          onMouseDown={(event) => event.stopPropagation()}
+        >Reset</button>
+      </div>
+      <div className="mx-auto grid w-32 grid-cols-3 gap-1 text-xs">
+        <div />
+        <button
+          type="button"
+          className="rounded bg-lime-500/20 py-1 hover:bg-lime-500/30"
+          onClick={() => changeDirection('up')}
+          onMouseDown={(event) => event.stopPropagation()}
+        >▲</button>
+        <div />
+        <button
+          type="button"
+          className="rounded bg-lime-500/20 py-1 hover:bg-lime-500/30"
+          onClick={() => changeDirection('left')}
+          onMouseDown={(event) => event.stopPropagation()}
+        >◀</button>
+        <div />
+        <button
+          type="button"
+          className="rounded bg-lime-500/20 py-1 hover:bg-lime-500/30"
+          onClick={() => changeDirection('right')}
+          onMouseDown={(event) => event.stopPropagation()}
+        >▶</button>
+        <div />
+        <button
+          type="button"
+          className="rounded bg-lime-500/20 py-1 hover:bg-lime-500/30"
+          onClick={() => changeDirection('down')}
+          onMouseDown={(event) => event.stopPropagation()}
+        >▼</button>
+        <div />
+      </div>
+      <div className="text-[10px] text-lime-100/60">Steuerung: Pfeiltasten oder WASD – ganz wie auf dem Nokia 3210.</div>
     </div>
   );
 };
@@ -826,6 +1111,56 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
       );
 
     case 'button': {
+      if (node.props?.component === 'ad-banner') {
+        const badge = typeof node.props?.adBadge === 'string' && node.props.adBadge.trim() ? node.props.adBadge.trim() : 'Anzeige';
+        const headline = typeof node.props?.adHeadline === 'string' && node.props.adHeadline.trim()
+          ? node.props.adHeadline.trim()
+          : 'Platziere dein Produkt zur besten Zeit';
+        const description = typeof node.props?.adDescription === 'string' && node.props.adDescription.trim()
+          ? node.props.adDescription.trim()
+          : 'Buche Kampagnen, verfolge Ergebnisse in Echtzeit und überlasse die Optimierung unserer KI.';
+        const subline = typeof node.props?.adSubline === 'string' && node.props.adSubline.trim() ? node.props.adSubline.trim() : 'Incl. AI-Optimierung & Reporting';
+        const price = typeof node.props?.adPrice === 'string' && node.props.adPrice.trim() ? node.props.adPrice.trim() : 'Ab 49 € / Monat';
+        const ctaLabel = typeof node.props?.adCtaLabel === 'string' && node.props.adCtaLabel.trim() ? node.props.adCtaLabel.trim() : node.props?.label ?? 'Jetzt buchen';
+        const imageUrl = typeof node.props?.adImageUrl === 'string' && node.props.adImageUrl.trim()
+          ? node.props.adImageUrl.trim()
+          : 'https://images.unsplash.com/photo-1483478550801-ceba5fe50e8e?auto=format&fit=crop&w=640&q=80';
+        const cardBackground = node.props?.bg ?? 'linear-gradient(135deg,#0f172a,#1e1b4b)';
+        const handleAdCta = async (event: React.MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation();
+          await runAction(node.props?.action, {
+            target: node.props?.target,
+            targetPage: node.props?.targetPage,
+            url: node.props?.url,
+          });
+        };
+
+        return (
+          <div className={`${base} flex flex-col gap-3 rounded-2xl border border-amber-400/40 p-4 text-neutral-50`} style={{ background: cardBackground }}>
+            <div className="text-[11px] uppercase tracking-[0.4em] text-amber-200">{badge}</div>
+            <div className="text-xl font-semibold leading-snug">{headline}</div>
+            <p className="text-sm text-amber-50/80">{description}</p>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-2 text-[11px] text-neutral-300">{subline}</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs uppercase text-neutral-400">Paket</div>
+                <div className="text-lg font-semibold text-white">{price}</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleAdCta}
+                onMouseDown={(event) => event.stopPropagation()}
+                className="rounded-full bg-white/90 px-4 py-1.5 text-sm font-semibold text-black transition hover:bg-white"
+              >{ctaLabel}</button>
+            </div>
+            <div className="relative h-20 overflow-hidden rounded-xl border border-white/10 bg-black/30">
+              <img src={imageUrl} alt="Werbemotiv" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
+            </div>
+          </div>
+        );
+      }
+
       const handleButtonClick = async () => {
         await runAction(node.props?.action, {
           target: node.props?.target,
@@ -1025,7 +1360,16 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
 
       if (component === 'map') {
         const location = typeof node.props?.mapLocation === 'string' ? node.props.mapLocation : 'Berlin, Germany';
-        return <MapWidget location={location} />;
+        const mode = normalizeMapMode(node.props?.mapMode);
+        return (
+          <MapWidget
+            location={location}
+            mode={mode}
+            modeLabel={typeof node.props?.mapModeLabel === 'string' ? node.props.mapModeLabel : undefined}
+            info={typeof node.props?.mapInfo === 'string' ? node.props.mapInfo : undefined}
+            actionLabel={typeof node.props?.mapActionLabel === 'string' ? node.props.mapActionLabel : undefined}
+          />
+        );
       }
 
       if (component === 'video-player') {
@@ -1069,9 +1413,11 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
           const index = Math.abs([...question].reduce((acc, char) => acc + char.charCodeAt(0), 0)) % canned.length;
           window.alert(`🤖 Antwort: ${canned[index]}`);
         };
+        const backgroundStyle = buildContainerBackgroundStyle(node.props, AI_CHAT_FALLBACK_BACKGROUND);
         return (
           <div
-            className={`${base} flex flex-col gap-2 rounded-xl border border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-950 to-black p-3 text-neutral-200 shadow-inner`}
+            className={`${base} flex flex-col gap-2 rounded-xl border border-emerald-500/40 p-3 text-neutral-200 shadow-inner`}
+            style={backgroundStyle}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="text-xs font-semibold text-emerald-300">🤖 KI-Chat (Demo)</div>
@@ -1092,59 +1438,195 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
       }
 
       if (component === 'chat') {
+        const backgroundStyle = buildContainerBackgroundStyle(node.props, CHAT_FALLBACK_BACKGROUND);
         return (
-          <div className={`${base} grid place-items-center rounded-xl border border-emerald-500/30 bg-neutral-900 text-xs text-emerald-400`}>
+          <div className={`${base} grid place-items-center rounded-xl border border-emerald-500/30 text-xs text-emerald-400`} style={backgroundStyle}>
             💬 Chatfenster (Demo)
           </div>
         );
       }
 
       if (component === 'qr-code') {
-        const qrUrl = typeof node.props?.qrUrl === 'string' ? node.props.qrUrl : window.location.href;
+        const qrUrl = typeof node.props?.qrUrl === 'string' && node.props.qrUrl.trim()
+          ? node.props.qrUrl.trim()
+          : window.location.href;
+        const qrBackgroundColor = typeof node.props?.qrBackgroundColor === 'string' && node.props.qrBackgroundColor.trim()
+          ? node.props.qrBackgroundColor.trim()
+          : '#020617';
+        const qrImageOverride = typeof node.props?.qrImageOverride === 'string' && node.props.qrImageOverride.trim()
+          ? node.props.qrImageOverride.trim()
+          : null;
+        const generatedQr = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}`;
+        const qrImage = qrImageOverride ?? generatedQr;
         return (
-          <div className={`${base} grid place-items-center rounded-xl border border-blue-500/30 bg-neutral-900 text-xs text-blue-400`}>
-            📱 QR-Code für {qrUrl}
+          <div
+            className={`${base} flex flex-col items-center justify-center gap-3 rounded-xl border border-blue-500/30 p-4 text-xs text-blue-100`}
+            style={{ backgroundColor: qrBackgroundColor }}
+          >
+            <div className="rounded-2xl bg-white/95 p-3 shadow-inner">
+              <img src={qrImage} alt={`QR-Code für ${qrUrl}`} className="h-32 w-32 object-contain" />
+            </div>
+            <div className="text-center text-[10px] text-blue-100/80 break-all">Scanne: {qrUrl}</div>
+            {qrImageOverride && (
+              <div className="text-[10px] uppercase tracking-[0.3em] text-blue-200">Eigenes QR-Bild</div>
+            )}
           </div>
         );
       }
 
       if (component === 'analytics') {
+        const metrics = ensureAnalyticsMetrics(node.props?.analyticsMetrics);
+        const highlight = typeof node.props?.analyticsHighlight === 'string' && node.props.analyticsHighlight.trim()
+          ? node.props.analyticsHighlight.trim()
+          : metrics.length > 0
+            ? `Top-KPI: ${metrics[0].label}`
+            : 'Noch keine Kennzahlen hinterlegt.';
+        const gridTemplateColumns = `repeat(${Math.min(2, Math.max(1, metrics.length))}, minmax(0, 1fr))`;
         return (
           <div className={`${base} rounded-xl border border-sky-500/30 bg-[#06121f] p-3 text-xs text-neutral-200`}>
             <div className="font-semibold text-sky-200">Analytics Dashboard</div>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
-              <div className="rounded-lg bg-white/5 p-2">Visits<br /><span className="text-lg font-semibold">1.204</span></div>
-              <div className="rounded-lg bg-white/5 p-2">Conversion<br /><span className="text-lg font-semibold">3,4%</span></div>
-              <div className="col-span-2 rounded-lg bg-white/5 p-2">Top-Kampagne: 🚀 Launch KW12</div>
+            <div className="mt-2 space-y-2 text-[11px]">
+              <div className="grid gap-2" style={{ gridTemplateColumns }}>
+                {metrics.map((metric) => (
+                  <div key={metric.id} className="rounded-lg bg-white/5 p-2">
+                    <div className="text-[10px] uppercase tracking-[0.3em] text-sky-100/60">{metric.label}</div>
+                    <div className="text-lg font-semibold text-white">{metric.value}</div>
+                    {metric.description && <div className="text-[10px] text-neutral-400">{metric.description}</div>}
+                  </div>
+                ))}
+              </div>
+              {highlight && (
+                <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-[11px] text-sky-100">
+                  {highlight}
+                </div>
+              )}
             </div>
           </div>
         );
       }
 
       if (component === 'avatar-creator') {
+        const traits = ensureAvatarTraits(node.props?.avatarTraits);
+        const actions = ensureAvatarActions(node.props?.avatarActions);
+        const avatarTitle = typeof node.props?.avatarTitle === 'string' && node.props.avatarTitle.trim()
+          ? node.props.avatarTitle.trim()
+          : 'AI Avatar erstellen';
+        const avatarDescription = typeof node.props?.avatarDescription === 'string' && node.props.avatarDescription.trim()
+          ? node.props.avatarDescription.trim()
+          : 'Passe Gesicht, Outfit und Stimmung mit wenigen Klicks an.';
+        const accentColor = sanitizeHexColor(node.props?.avatarAccentColor, '#f472b6');
+        const backgroundColor = typeof node.props?.avatarBackgroundColor === 'string' && node.props.avatarBackgroundColor.trim()
+          ? node.props.avatarBackgroundColor.trim()
+          : '#1a0f1f';
+        const previewUrl = typeof node.props?.avatarPreviewUrl === 'string' && node.props.avatarPreviewUrl.trim()
+          ? node.props.avatarPreviewUrl.trim()
+          : '';
+        const previewImage = previewUrl || 'https://placehold.co/160x160/1a0f1f/f9a8d4?text=AI';
+
         return (
-          <div className={`${base} flex flex-col items-center justify-center gap-2 rounded-xl border border-fuchsia-500/30 bg-[#1a0f1f] text-xs text-fuchsia-200`}>
-            <div className="text-4xl">👤</div>
-            <div>Avatar Creator (Demo)</div>
-            <div className="text-[10px] text-fuchsia-100/70">Hier könntest du KI-basierte Avatare generieren.</div>
+          <div
+            className={`${base} flex flex-col gap-3 rounded-2xl border border-fuchsia-500/30 p-4 text-xs text-fuchsia-100`}
+            style={{ background: backgroundColor }}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col items-center gap-2">
+                <div className="relative">
+                  <div className="h-28 w-28 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                    <img src={previewImage} alt={avatarTitle} className="h-full w-full object-cover" />
+                  </div>
+                  <div
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white"
+                    style={{ color: accentColor }}
+                  >
+                    KI
+                  </div>
+                </div>
+                <div className="text-[10px] uppercase tracking-[0.3em] text-fuchsia-100/70">Live Vorschau</div>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="text-[10px] uppercase tracking-[0.35em]" style={{ color: accentColor }}>
+                  Avatar-Studio
+                </div>
+                <div className="text-base font-semibold text-white">{avatarTitle}</div>
+                <div className="text-[11px] leading-5 text-fuchsia-100/80">{avatarDescription}</div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {traits.length === 0 ? (
+                    <span className="rounded-full border border-dashed border-white/25 px-2 py-1 text-[11px] text-neutral-200">
+                      Hinterlege Eigenschaften im Panel
+                    </span>
+                  ) : (
+                    traits.map((trait) => (
+                      <span
+                        key={trait.id}
+                        className="flex items-center gap-1 rounded-full border border-white/15 bg-white/5 px-2 py-1 text-[11px] text-white"
+                      >
+                        {trait.icon && <span>{trait.icon}</span>}
+                        <span className="text-fuchsia-100/80">{trait.label}:</span>
+                        <span className="font-semibold text-white">{trait.value}</span>
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {actions.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/20 px-3 py-2 text-[11px] text-neutral-200">
+                  Füge Aktionen hinzu, um Buttons zu zeigen.
+                </div>
+              ) : (
+                actions.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    className="flex flex-col gap-1 rounded-xl border px-3 py-2 text-left text-white transition hover:bg-white/10"
+                    style={{ borderColor: action.accent ?? accentColor }}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <span className="text-sm font-semibold leading-tight">
+                      {action.icon ? `${action.icon} ${action.label}` : action.label}
+                    </span>
+                    {action.description && (
+                      <span className="text-[11px] text-fuchsia-100/80">{action.description}</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         );
       }
 
       if (component === 'table') {
+        const table = ensureTableConfig(node.props?.tableConfig);
+        const columnTemplate = `repeat(${Math.max(1, table.columns.length)}, minmax(0, 1fr))`;
         return (
           <div className={`${base} rounded-xl border border-yellow-500/30 bg-[#221f0b] p-3 text-xs text-neutral-200`}>
-            <div className="text-sm font-semibold text-yellow-200">Team Übersicht</div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-              <div className="font-semibold">Name</div>
-              <div className="font-semibold">Rolle</div>
-              <div className="font-semibold">Status</div>
-              <div>Alex</div>
-              <div>Design</div>
-              <div>✅ Online</div>
-              <div>Sam</div>
-              <div>Engineering</div>
-              <div>🟡 beschäftigt</div>
+            <div className="text-sm font-semibold text-yellow-200">{table.title}</div>
+            <div className="mt-2 space-y-2 text-[11px]">
+              <div className="grid gap-2 font-semibold" style={{ gridTemplateColumns: columnTemplate }}>
+                {table.columns.map((column) => (
+                  <div key={column.id}>{column.label}</div>
+                ))}
+              </div>
+              {table.rows.length === 0 ? (
+                <div className="rounded border border-dashed border-white/10 px-3 py-2 text-neutral-400">Noch keine Tabellenzeilen hinterlegt.</div>
+              ) : (
+                table.rows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid gap-2 rounded-lg bg-white/5 px-2 py-1"
+                    style={{ gridTemplateColumns: columnTemplate }}
+                  >
+                    {table.columns.map((column, index) => (
+                      <div key={`${row.id}-${column.id}`} className="truncate text-neutral-100">
+                        {row.values[index] ?? '—'}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         );
@@ -1202,31 +1684,52 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       const dy = (event.clientY - startY) / scale;
       const minW = 40;
       const minH = 32;
-      let x = start.x;
-      let y = start.y;
-      let w = start.w;
-      let h = start.h;
+      const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
       if (dir === 'se') {
-        w = Math.max(minW, start.w + dx);
-        h = Math.max(minH, start.h + dy);
+        const minDx = minW - start.w;
+        const maxDx = BOUNDS.w - (start.x + start.w);
+        const nextDx = clamp(dx, minDx, maxDx);
+        const minDy = minH - start.h;
+        const maxDy = BOUNDS.h - (start.y + start.h);
+        const nextDy = clamp(dy, minDy, maxDy);
+        const w = Math.max(minW, Math.min(start.w + nextDx, BOUNDS.w - start.x));
+        const h = Math.max(minH, Math.min(start.h + nextDy, BOUNDS.h - start.y));
+        onResize(id, { w, h });
+      } else if (dir === 'ne') {
+        const minDx = minW - start.w;
+        const maxDx = BOUNDS.w - (start.x + start.w);
+        const nextDx = clamp(dx, minDx, maxDx);
+        const minDy = -start.y;
+        const maxDy = start.h - minH;
+        const nextDy = clamp(dy, minDy, maxDy);
+        const w = Math.max(minW, Math.min(start.w + nextDx, BOUNDS.w - start.x));
+        const y = start.y + nextDy;
+        const h = Math.max(minH, Math.min(start.h - nextDy, (start.y + start.h) - y));
+        onResize(id, { y, w, h });
+      } else if (dir === 'sw') {
+        const minDx = -start.x;
+        const maxDx = start.w - minW;
+        const nextDx = clamp(dx, minDx, maxDx);
+        const minDy = minH - start.h;
+        const maxDy = BOUNDS.h - (start.y + start.h);
+        const nextDy = clamp(dy, minDy, maxDy);
+        const x = start.x + nextDx;
+        const w = Math.max(minW, Math.min(start.w - nextDx, (start.x + start.w) - x));
+        const h = Math.max(minH, Math.min(start.h + nextDy, BOUNDS.h - start.y));
+        onResize(id, { x, w, h });
+      } else if (dir === 'nw') {
+        const minDx = -start.x;
+        const maxDx = start.w - minW;
+        const nextDx = clamp(dx, minDx, maxDx);
+        const minDy = -start.y;
+        const maxDy = start.h - minH;
+        const nextDy = clamp(dy, minDy, maxDy);
+        const x = start.x + nextDx;
+        const y = start.y + nextDy;
+        const w = Math.max(minW, Math.min(start.w - nextDx, (start.x + start.w) - x));
+        const h = Math.max(minH, Math.min(start.h - nextDy, (start.y + start.h) - y));
+        onResize(id, { x, y, w, h });
       }
-      if (dir === 'ne') {
-        w = Math.max(minW, start.w + dx);
-        h = Math.max(minH, start.h - dy);
-        y = start.y + dy;
-      }
-      if (dir === 'sw') {
-        w = Math.max(minW, start.w - dx);
-        x = start.x + dx;
-        h = Math.max(minH, start.h + dy);
-      }
-      if (dir === 'nw') {
-        w = Math.max(minW, start.w - dx);
-        x = start.x + dx;
-        h = Math.max(minH, start.h - dy);
-        y = start.y + dy;
-      }
-      onResize(id, { x, y, w, h });
       return;
     }
     if (dragging.current && event.pointerId === dragging.current.pointerId) {
@@ -1296,13 +1799,18 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
             cursor: 'move',
             touchAction: 'none',
           };
+          const nodeOpacity = typeof n.props?.opacity === 'number' && Number.isFinite(n.props.opacity)
+            ? Math.min(1, Math.max(0.05, n.props.opacity))
+            : 1;
           const isSel = n.id === selectedId;
           return (
             <div key={n.id} style={style} className="group" onPointerDown={(event) => beginDrag(event, n.id)}>
-              <RenderNode
-                node={n}
-                onUpdate={(patch) => onUpdateNode(n.id, patch)}
-              />
+              <div style={{ opacity: nodeOpacity }}>
+                <RenderNode
+                  node={n}
+                  onUpdate={(patch) => onUpdateNode(n.id, patch)}
+                />
+              </div>
               {isSel && <div className="absolute inset-0 ring-2 ring-emerald-400/70 rounded-md pointer-events-none" />}
               {isSel && (
                 <>
@@ -1479,6 +1987,103 @@ function ensureTaskList(list?: TaskItem[] | null): TaskItem[] {
     title: item.title ?? 'Aufgabe',
     done: Boolean(item.done),
   }));
+}
+
+const ANALYTICS_METRIC_PRESETS: Array<Omit<AnalyticsMetric, 'id'>> = [
+  { label: 'Visits', value: '1.204', description: 'letzte 24h' },
+  { label: 'Conversion', value: '3,4%', description: '+0,6% vs. Vortag' },
+];
+
+function ensureAnalyticsMetrics(metrics?: AnalyticsMetric[] | null): AnalyticsMetric[] {
+  if (!Array.isArray(metrics) || metrics.length === 0) {
+    return ANALYTICS_METRIC_PRESETS.map((preset) => ({ ...preset, id: createId() }));
+  }
+  return metrics.map((metric, index) => ({
+    id: typeof metric?.id === 'string' ? metric.id : createId(),
+    label: typeof metric?.label === 'string' && metric.label.trim() ? metric.label.trim() : `Kennzahl ${index + 1}`,
+    value: typeof metric?.value === 'string' && metric.value.trim() ? metric.value.trim() : '—',
+    description: typeof metric?.description === 'string' && metric.description.trim() ? metric.description.trim() : undefined,
+  }));
+}
+
+const HEX_COLOR_REGEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const AVATAR_TRAIT_PRESETS: Array<Omit<AvatarTrait, 'id'>> = [
+  { label: 'Mood', value: 'Focused', icon: '🧠' },
+  { label: 'Stil', value: 'Neon Street', icon: '✨' },
+  { label: 'Outfit', value: 'Tech Wear', icon: '🧥' },
+];
+const AVATAR_ACTION_PRESETS: Array<Omit<AvatarAction, 'id'>> = [
+  { label: 'Zufall generieren', description: 'KI mixt neue Gesichtszüge', icon: '🎲', accent: '#f472b6' },
+  { label: 'Outfit wechseln', description: 'Wähle Presets & Farben', icon: '🧢', accent: '#c084fc' },
+];
+const AVATAR_ACCENT_CYCLE = ['#f472b6', '#c084fc', '#38bdf8', '#fbbf24'];
+
+function sanitizeHexColor(candidate: unknown, fallback: string) {
+  if (typeof candidate === 'string' && HEX_COLOR_REGEX.test(candidate.trim())) {
+    return candidate.trim();
+  }
+  return fallback;
+}
+
+function ensureAvatarTraits(traits?: AvatarTrait[] | null): AvatarTrait[] {
+  if (!Array.isArray(traits) || traits.length === 0) {
+    return AVATAR_TRAIT_PRESETS.map((preset) => ({ ...preset, id: createId() }));
+  }
+  return traits.map((trait, index) => ({
+    id: typeof trait?.id === 'string' ? trait.id : createId(),
+    label: typeof trait?.label === 'string' && trait.label.trim() ? trait.label.trim() : `Eigenschaft ${index + 1}`,
+    value: typeof trait?.value === 'string' && trait.value.trim() ? trait.value.trim() : '—',
+    icon: typeof trait?.icon === 'string' && trait.icon.trim() ? trait.icon.trim() : undefined,
+  }));
+}
+
+function ensureAvatarActions(actions?: AvatarAction[] | null): AvatarAction[] {
+  if (!Array.isArray(actions) || actions.length === 0) {
+    return AVATAR_ACTION_PRESETS.map((preset) => ({ ...preset, id: createId() }));
+  }
+  return actions.map((action, index) => ({
+    id: typeof action?.id === 'string' ? action.id : createId(),
+    label: typeof action?.label === 'string' && action.label.trim() ? action.label.trim() : `Aktion ${index + 1}`,
+    description: typeof action?.description === 'string' && action.description.trim() ? action.description.trim() : undefined,
+    icon: typeof action?.icon === 'string' && action.icon.trim() ? action.icon.trim() : undefined,
+    accent:
+      typeof action?.accent === 'string' && HEX_COLOR_REGEX.test(action.accent.trim())
+        ? action.accent.trim()
+        : AVATAR_ACCENT_CYCLE[index % AVATAR_ACCENT_CYCLE.length],
+  }));
+}
+
+const TABLE_COLUMN_PRESET = ['Name', 'Rolle', 'Status'];
+const TABLE_ROW_PRESET = [
+  ['Alex', 'Design', '✅ Online'],
+  ['Sam', 'Engineering', '🟡 beschäftigt'],
+];
+
+function ensureTableConfig(config?: TableConfig | null): TableConfig {
+  const columns = Array.isArray(config?.columns) && config.columns.length > 0
+    ? config.columns.map((column, index) => ({
+        id: typeof column?.id === 'string' ? column.id : createId(),
+        label: typeof column?.label === 'string' && column.label.trim() ? column.label.trim() : `Spalte ${index + 1}`,
+      }))
+    : TABLE_COLUMN_PRESET.map((label) => ({ id: createId(), label }));
+  const columnCount = Math.max(1, columns.length);
+  const rows = Array.isArray(config?.rows) && config.rows.length > 0
+    ? config.rows.map((row) => ({
+        id: typeof row?.id === 'string' ? row.id : createId(),
+        values: Array.isArray(row?.values) && row.values.length > 0
+          ? columns.map((_, index) => (typeof row.values?.[index] === 'string' ? row.values[index] : ''))
+          : Array.from({ length: columnCount }, () => ''),
+      }))
+    : TABLE_ROW_PRESET.map((preset) => ({
+        id: createId(),
+        values: columns.map((_, index) => preset[index] ?? ''),
+      }));
+  const title = typeof config?.title === 'string' && config.title.trim() ? config.title.trim() : 'Team Übersicht';
+  return {
+    title,
+    columns,
+    rows,
+  };
 }
 
 function ensureAudioNotes(notes?: AudioNote[] | null): AudioNote[] {

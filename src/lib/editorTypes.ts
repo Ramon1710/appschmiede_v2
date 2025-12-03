@@ -31,6 +31,16 @@ export type NavbarItem = {
   icon?: string;
 };
 
+export type DropdownOption = {
+  id: string;
+  label: string;
+  action: ButtonAction;
+  target?: string;
+  targetPage?: string;
+  url?: string;
+  icon?: string;
+};
+
 export type TaskItem = {
   id: string;
   title: string;
@@ -43,6 +53,39 @@ export type FolderNode = {
   name: string;
   children?: FolderNode[];
 };
+
+export type SupportTicket = {
+  id: string;
+  subject: string;
+  message?: string;
+  createdAt?: string;
+  channel?: string;
+};
+
+export type AnalyticsMetric = {
+  id: string;
+  label: string;
+  value: string;
+  description?: string;
+};
+
+export type TableColumn = {
+  id: string;
+  label: string;
+};
+
+export type TableRow = {
+  id: string;
+  values: string[];
+};
+
+export type TableConfig = {
+  title?: string;
+  columns: TableColumn[];
+  rows: TableRow[];
+};
+
+export type MapMode = 'static' | 'live-tracking' | 'route-recording' | 'geofence';
 
 export type TimeEntry = {
   id: string;
@@ -72,6 +115,21 @@ export type BackgroundLayer = {
   positionX: number; // Prozent
   positionY: number; // Prozent
   size: number; // Prozent
+};
+
+export type AvatarTrait = {
+  id: string;
+  label: string;
+  value: string;
+  icon?: string;
+};
+
+export type AvatarAction = {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  accent?: string;
 };
 
 // Welche Node-Arten erlaubt sind
@@ -112,10 +170,15 @@ export type NodeProps = {
   folderTree?: FolderNode[];
   tasks?: TaskItem[];
   todoItems?: TaskItem[];
+  supportTickets?: SupportTicket[];
   supportChannel?: 'email' | 'chat' | 'ticket';
   supportTarget?: string;
   calendarFocusDate?: string;
   mapLocation?: string;
+  mapMode?: MapMode;
+  mapModeLabel?: string;
+  mapInfo?: string;
+  mapActionLabel?: string;
   videoUrl?: string;
   audioNotes?: AudioNote[];
   qrUrl?: string;
@@ -124,6 +187,35 @@ export type NodeProps = {
   bgColor?: string;
   bgLayers?: BackgroundLayer[];
   bgApplyToAll?: boolean;
+  uploadAccept?: string;
+  uploadMaxSizeMb?: number;
+  uploadSuccessMessage?: string;
+  adBadge?: string;
+  adHeadline?: string;
+  adDescription?: string;
+  adSubline?: string;
+  adCtaLabel?: string;
+  adPrice?: string;
+  adImageUrl?: string;
+  containerBgColor?: string;
+  containerBgImageUrl?: string;
+  containerBgImagePosX?: number;
+  containerBgImagePosY?: number;
+  containerBgImageSize?: number;
+  qrBackgroundColor?: string;
+  qrImageOverride?: string;
+  opacity?: number;
+  dropdownOptions?: DropdownOption[];
+  analyticsMetrics?: AnalyticsMetric[];
+  analyticsHighlight?: string;
+  tableConfig?: TableConfig;
+  avatarTitle?: string;
+  avatarDescription?: string;
+  avatarPreviewUrl?: string;
+  avatarAccentColor?: string;
+  avatarBackgroundColor?: string;
+  avatarTraits?: AvatarTrait[];
+  avatarActions?: AvatarAction[];
   [key: string]: unknown;
 };
 

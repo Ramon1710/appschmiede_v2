@@ -15,11 +15,9 @@ type Category = {
 
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
   const [expanded, setExpanded] = useState<string[]>(['allgemein']);
-  const [searchQuery, setSearchQuery] = useState('');
-
   const categories: Category[] = [
     {
-      name: 'Allgemeine Buttons',
+      name: 'Alleine Funktionen',
       icon: '🎨',
       items: [
         { type: 'text', label: 'Text', icon: '📝' },
@@ -35,7 +33,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       items: [
         { type: 'input', label: 'Email-Feld', icon: '📧', defaultProps: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
         { type: 'input', label: 'Passwort-Feld', icon: '🔒', defaultProps: { placeholder: 'Passwort', inputType: 'password' } },
-        { type: 'button', label: 'Login-Button', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login', target: '/login' } },
+        { type: 'button', label: 'Login', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login', target: '/login' } },
         { type: 'button', label: 'Registrieren', icon: '📝', defaultProps: { label: 'Registrieren', action: 'register', target: '/register' } },
         { type: 'button', label: 'Passwort vergessen', icon: '🧠', defaultProps: { label: 'Passwort vergessen?', action: 'reset-password', target: '/reset' } },
         { type: 'button', label: 'Foto hochladen', icon: '📷', defaultProps: { label: 'Foto wählen', action: 'upload-photo' } },
@@ -47,7 +45,24 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       items: [
         { type: 'container', label: 'Chatfenster', icon: '💬', defaultProps: { component: 'chat' } },
         { type: 'button', label: 'Anrufbutton', icon: '📞', defaultProps: { label: 'Anrufen', action: 'call' } },
-        { type: 'button', label: 'Werbung', icon: '📢', defaultProps: { component: 'ad-banner' } },
+        {
+          type: 'button',
+          label: 'Werbung',
+          icon: '📢',
+          defaultProps: {
+            component: 'ad-banner',
+            label: 'Jetzt buchen',
+            action: 'url',
+            url: 'https://www.appschmiede.app',
+            adBadge: 'Anzeige',
+            adHeadline: 'Dein Produkt vor der richtigen Zielgruppe',
+            adDescription: 'Starte Kampagnen direkt aus deiner App und erreiche Nutzer:innen in Minuten.',
+            adSubline: 'Inklusive Tracking & AI-Kampagnen',
+            adCtaLabel: 'Mehr erfahren',
+            adPrice: 'Ab 49 € / Monat',
+            adImageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=640&q=80',
+          },
+        },
       ],
     },
     {
@@ -134,7 +149,19 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
             ],
           },
         },
-        { type: 'container', label: 'Analytics', icon: '📊', defaultProps: { component: 'analytics' } },
+        {
+          type: 'container',
+          label: 'Analytics',
+          icon: '📊',
+          defaultProps: {
+            component: 'analytics',
+            analyticsMetrics: [
+              { id: crypto.randomUUID(), label: 'Visits', value: '1.204', description: 'letzte 24h' },
+              { id: crypto.randomUUID(), label: 'Conversion', value: '3,4%', description: '+0,6% vs. Vortag' },
+            ],
+            analyticsHighlight: 'Top-Kampagne: 🚀 Launch KW12',
+          },
+        },
         {
           type: 'container',
           label: 'Support/Tickets',
@@ -143,9 +170,37 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
             component: 'support',
             supportChannel: 'ticket',
             supportTarget: 'support@appschmiede.dev',
+            supportTickets: [
+              {
+                id: crypto.randomUUID(),
+                subject: 'Login Hilfe',
+                message: 'Kundin meldet 2FA-Problem.',
+                createdAt: new Date().toISOString(),
+                channel: 'ticket',
+              },
+            ],
           },
         },
-        { type: 'container', label: 'Tabelle', icon: '📊', defaultProps: { component: 'table' } },
+        {
+          type: 'container',
+          label: 'Tabelle',
+          icon: '📊',
+          defaultProps: {
+            component: 'table',
+            tableConfig: {
+              title: 'Team Übersicht',
+              columns: [
+                { id: crypto.randomUUID(), label: 'Name' },
+                { id: crypto.randomUUID(), label: 'Rolle' },
+                { id: crypto.randomUUID(), label: 'Status' },
+              ],
+              rows: [
+                { id: crypto.randomUUID(), values: ['Alex', 'Design', '✅ Online'] },
+                { id: crypto.randomUUID(), values: ['Sam', 'Engineering', '🟡 beschäftigt'] },
+              ],
+            },
+          },
+        },
       ],
     },
     {
@@ -153,8 +208,31 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       icon: '📹',
       items: [
         { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
-        { type: 'container', label: 'Todo-Liste', icon: '✅', defaultProps: { component: 'todo', todoItems: [] } },
-        { type: 'container', label: 'Kartenansicht (GPS)', icon: '🗺️', defaultProps: { component: 'map', mapLocation: 'Berlin, Germany' } },
+        {
+          type: 'container',
+          label: 'Todo-Liste',
+          icon: '✅',
+          defaultProps: {
+            component: 'todo',
+            todoItems: [
+              { id: crypto.randomUUID(), title: 'Dokumentation prüfen', done: false },
+              { id: crypto.randomUUID(), title: 'Release vorbereiten', done: true },
+            ],
+          },
+        },
+        {
+          type: 'container',
+          label: 'Kartenansicht (GPS)',
+          icon: '🗺️',
+          defaultProps: {
+            component: 'map',
+            mapLocation: 'Berlin, Germany',
+            mapMode: 'live-tracking',
+            mapInfo: 'Trackt live, wo sich dein Team befindet – aktualisiert alle 2 Minuten.',
+            mapModeLabel: 'Live Tracking',
+            mapActionLabel: 'Tracking öffnen',
+          },
+        },
         { type: 'container', label: 'Videoplayer', icon: '📹', defaultProps: { component: 'video-player', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' } },
         { type: 'container', label: 'Audio Recorder', icon: '🎤', defaultProps: { component: 'audio-recorder', audioNotes: [] } },
       ],
@@ -166,7 +244,40 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         { type: 'container', label: 'Tic Tac Toe', icon: '❌', defaultProps: { component: 'game-tictactoe' } },
         { type: 'container', label: 'Würfel', icon: '🎲', defaultProps: { component: 'game-dice' } },
         { type: 'container', label: 'Snake', icon: '🐍', defaultProps: { component: 'game-snake' } },
-        { type: 'container', label: 'Avatar erstellen', icon: '👤', defaultProps: { component: 'avatar-creator' } },
+        {
+          type: 'container',
+          label: 'Avatar erstellen',
+          icon: '👤',
+          defaultProps: {
+            component: 'avatar-creator',
+            avatarTitle: 'Avatar erstellen',
+            avatarDescription: 'Generiere neue Outfits, Moods und KI-Stile in Sekunden.',
+            avatarPreviewUrl: 'https://placehold.co/160x160/1a0f1f/f9a8d4?text=AI',
+            avatarAccentColor: '#f472b6',
+            avatarBackgroundColor: '#1a0f1f',
+            avatarTraits: [
+              { id: crypto.randomUUID(), label: 'Mood', value: 'Focused', icon: '🧠' },
+              { id: crypto.randomUUID(), label: 'Style', value: 'Neon', icon: '✨' },
+              { id: crypto.randomUUID(), label: 'Outfit', value: 'Streetwear', icon: '🧥' },
+            ],
+            avatarActions: [
+              {
+                id: crypto.randomUUID(),
+                label: 'Zufall generieren',
+                description: 'KI mixt Gesichtszüge und Farben.',
+                icon: '🎲',
+                accent: '#f472b6',
+              },
+              {
+                id: crypto.randomUUID(),
+                label: 'Outfit wechseln',
+                description: 'Cycle zwischen Presets.',
+                icon: '🧢',
+                accent: '#c084fc',
+              },
+            ],
+          },
+        },
       ],
     },
   ];

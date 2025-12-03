@@ -1395,8 +1395,10 @@ export default function EditorShell({ initialPageId }: Props) {
               style: nextStyle,
             };
             if (layoutChanged) {
-              const width = Math.max(MIN_NODE_WIDTH, merged.w ?? MIN_NODE_WIDTH);
-              const height = Math.max(MIN_NODE_HEIGHT, merged.h ?? MIN_NODE_HEIGHT);
+              const rawWidth = Math.max(MIN_NODE_WIDTH, merged.w ?? MIN_NODE_WIDTH);
+              const rawHeight = Math.max(MIN_NODE_HEIGHT, merged.h ?? MIN_NODE_HEIGHT);
+              const width = Math.min(CANVAS_FRAME.width, rawWidth);
+              const height = Math.min(CANVAS_FRAME.height, rawHeight);
               const maxX = Math.max(0, CANVAS_FRAME.width - width);
               const maxY = Math.max(0, CANVAS_FRAME.height - height);
               const x = clampToRange(merged.x ?? 0, 0, maxX);
