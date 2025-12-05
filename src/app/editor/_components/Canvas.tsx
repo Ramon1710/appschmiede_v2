@@ -1833,7 +1833,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
                       e.stopPropagation();
                       onRemove(n.id);
                     }}
-                    className="absolute -right-4 -top-4 z-20 grid place-items-center w-7 h-7 rounded-full bg-rose-600 text-white text-sm shadow-lg border border-white/40"
+                    className="absolute -right-4 -top-4 z-30 grid place-items-center w-7 h-7 rounded-full bg-rose-600 text-white text-sm shadow-lg border border-white/40"
                     title="Element löschen"
                   >
                     ×
