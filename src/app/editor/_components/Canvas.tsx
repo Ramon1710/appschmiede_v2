@@ -1214,12 +1214,14 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
             display: 'flex',
             flexDirection: 'column',
           }}
+          data-editor-canvas-field="true"
         >
           <input
             type={inputType}
             className="block h-full w-full flex-1 rounded-md bg-transparent px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus-visible:outline-none select-text"
             placeholder={node.props?.placeholder ?? 'Eingabe'}
             style={{ height: '100%', minHeight: '100%' }}
+            data-editor-canvas-field="true"
           />
         </div>
       );
@@ -1833,7 +1835,8 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
                       e.stopPropagation();
                       onRemove(n.id);
                     }}
-                    className="absolute -right-4 -top-4 z-30 grid place-items-center w-7 h-7 rounded-full bg-rose-600 text-white text-sm shadow-lg border border-white/40"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    className="absolute -right-4 -top-4 z-50 grid place-items-center w-7 h-7 rounded-full bg-rose-600 text-white text-sm shadow-lg border border-white/40"
                     title="Element löschen"
                   >
                     ×

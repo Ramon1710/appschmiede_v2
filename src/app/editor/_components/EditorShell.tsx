@@ -1841,7 +1841,9 @@ export default function EditorShell({ initialPageId }: Props) {
       if (!selectedId) return;
       if (event.key !== 'Delete' && event.key !== 'Backspace') return;
       const target = event.target as HTMLElement | null;
-      if (target && (target.closest('input, textarea') || target.contentEditable === 'true')) {
+      const isEditableTarget = Boolean(target && (target.closest('input, textarea') || target.contentEditable === 'true'));
+      const isCanvasField = Boolean(target?.closest('[data-editor-canvas-field="true"]'));
+      if (isEditableTarget && !isCanvasField) {
         return;
       }
       event.preventDefault();
