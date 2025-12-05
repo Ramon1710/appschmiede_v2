@@ -10,7 +10,7 @@ import QRCodeButton from '../_extensions/QRCodeButton';
 import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
-import { savePage, subscribePages, createPage, deletePage, renamePage } from '@/lib/db-editor';
+import { savePage, subscribePages, createPage, deletePage, renamePage, loadPage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
@@ -119,8 +119,8 @@ const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: string; icon: string }> 
 ];
 
 const PANEL_LIMITS: Record<PanelSide, { min: number; max: number }> = {
-  left: { min: 240, max: 520 },
-  right: { min: 240, max: 520 },
+  left: { min: 240, max: 720 },
+  right: { min: 240, max: 640 },
 };
 
 const clampPanelWidth = (panel: PanelSide, value: number) => {
@@ -1106,6 +1106,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const hasPages = pages.length > 0;
   const undoStackRef = useRef<PageTree[]>([]);
   const [undoDepth, setUndoDepth] = useState(0);
+  const [resettingPage, setResettingPage] = useState(false);
+  const [deletingPage, setDeletingPage] = useState(false);
   const clearUndoHistory = useCallback(() => {
     undoStackRef.current = [];
     setUndoDepth(0);
@@ -1161,16 +1163,31 @@ export default function EditorShell({ initialPageId }: Props) {
     setSelectedId(null);
   }, [applyTreeUpdate, setSelectedId, setUndoDepth]);
 
-  const resetPageToSaved = useCallback(() => {
-    if (!currentPageId) return;
-    const saved = pages.find((p) => p.id === currentPageId);
-    if (!saved) return;
-    applyTreeUpdate(() => saved, { markDirty: false, pushHistory: false });
-    pendingSyncHash.current = hashPage(saved);
-    isDirty.current = false;
-    setSelectedId(null);
-    clearUndoHistory();
-  }, [currentPageId, pages, applyTreeUpdate, clearUndoHistory, setSelectedId]);
+  const resetPageToSaved = useCallback(async () => {
+    if (!(_projectId && currentPageId)) return;
+    setResettingPage(true);
+    try {
+      const remote = await loadPage(_projectId, currentPageId);
+      const fallbackLocal = pages.find((p) => p.id === currentPageId);
+      const source = remote ?? fallbackLocal;
+      if (!source) {
+        window.alert('Es konnte keine gespeicherte Version der Seite geladen werden.');
+        return;
+      }
+      const sanitized = sanitizePage(source);
+      applyTreeUpdate(() => sanitized, { markDirty: false, pushHistory: false });
+      pendingSyncHash.current = hashPage(sanitized);
+      isDirty.current = false;
+      setSelectedId(null);
+      clearUndoHistory();
+      setPages((prev) => prev.map((page) => (page.id === sanitized.id ? sanitized : page)));
+    } catch (error) {
+      console.error('resetPageToSaved failed', error);
+      window.alert('Seite konnte nicht zurückgesetzt werden. Bitte versuche es erneut.');
+    } finally {
+      setResettingPage(false);
+    }
+  }, [_projectId, currentPageId, pages, applyTreeUpdate, clearUndoHistory, setSelectedId]);
 
   const lastProjectIdRef = useRef<string | null>(null);
 
@@ -2074,6 +2091,30 @@ export default function EditorShell({ initialPageId }: Props) {
     ]
   );
 
+  const handleDeleteCurrentPage = useCallback(async () => {
+    if (!(_projectId && currentPageId)) return;
+    if (pages.length <= 1) {
+      window.alert('Mindestens eine Seite muss bestehen. Erstelle erst eine neue Seite, bevor du diese löscht.');
+      return;
+    }
+    const deletingPageId = currentPageId;
+    const fallback = pages.find((page) => page.id !== deletingPageId) ?? null;
+    if (!fallback) return;
+    const confirmed = window.confirm('Seite wirklich löschen?');
+    if (!confirmed) return;
+    setDeletingPage(true);
+    try {
+      await deletePage(_projectId, deletingPageId);
+      handlePageSelection(fallback.id, { placeholderName: fallback.name });
+      setPages((prev) => prev.filter((page) => page.id !== deletingPageId));
+    } catch (error) {
+      console.error('Seite konnte nicht gelöscht werden', error);
+      window.alert('Seite konnte nicht gelöscht werden. Bitte versuche es erneut.');
+    } finally {
+      setDeletingPage(false);
+    }
+  }, [_projectId, currentPageId, pages, handlePageSelection]);
+
   const templateControlsDisabled = !_projectId || !currentPageId;
 
   const templateContent = (
@@ -2153,7 +2194,7 @@ export default function EditorShell({ initialPageId }: Props) {
     </div>
   );
   const canUndo = undoDepth > 0;
-  const canResetPage = Boolean(currentPageId && currentPageMeta);
+  const canResetPage = Boolean(currentPageId) && !resettingPage;
   const HistoryControls = ({ className = '' }: { className?: string }) => (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <button
@@ -2172,7 +2213,7 @@ export default function EditorShell({ initialPageId }: Props) {
         className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] font-semibold text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <span className="text-base">⟳</span>
-        <span>Seite zurücksetzen</span>
+        <span>{resettingPage ? 'Setze zurück…' : 'Seite zurücksetzen'}</span>
       </button>
     </div>
   );
@@ -2341,24 +2382,10 @@ export default function EditorShell({ initialPageId }: Props) {
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       className="flex-1 rounded border border-rose-500/40 bg-rose-500/20 px-3 py-2 text-xs text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
-                      disabled={!_projectId || !currentPageId || pages.length <= 1}
-                      onClick={async () => {
-                        if (!(_projectId && currentPageId) || pages.length <= 1) return;
-                        const confirmed = window.confirm('Seite wirklich löschen?');
-                        if (!confirmed) return;
-                        try {
-                          await deletePage(_projectId, currentPageId);
-                          setSelectedId(null);
-                          setCurrentPageId(null);
-                          pendingSyncHash.current = null;
-                          isDirty.current = false;
-                          clearUndoHistory();
-                        } catch (err) {
-                          console.error('Seite konnte nicht gelöscht werden', err);
-                        }
-                      }}
+                      disabled={!_projectId || !currentPageId || pages.length <= 1 || deletingPage}
+                      onClick={handleDeleteCurrentPage}
                     >
-                      - Seite
+                      {deletingPage ? 'Lösche…' : '- Seite'}
                     </button>
                     <button
                       className="flex-1 rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
@@ -2500,24 +2527,10 @@ export default function EditorShell({ initialPageId }: Props) {
                 <div className="mt-2 flex items-center gap-2 text-xs">
                   <button
                     className="flex-1 rounded-xl border border-rose-500/40 bg-rose-500/20 px-3 py-2 font-semibold text-rose-200 transition hover:bg-rose-500/30 disabled:opacity-40"
-                    disabled={!_projectId || !currentPageId || pages.length <= 1}
-                    onClick={async () => {
-                      if (!(_projectId && currentPageId) || pages.length <= 1) return;
-                      const confirmed = window.confirm('Seite wirklich löschen?');
-                      if (!confirmed) return;
-                      try {
-                        await deletePage(_projectId, currentPageId);
-                        setSelectedId(null);
-                        setCurrentPageId(null);
-                        pendingSyncHash.current = null;
-                        isDirty.current = false;
-                        clearUndoHistory();
-                      } catch (err) {
-                        console.error('Seite konnte nicht gelöscht werden', err);
-                      }
-                    }}
+                    disabled={!_projectId || !currentPageId || pages.length <= 1 || deletingPage}
+                    onClick={handleDeleteCurrentPage}
                   >
-                    - Seite
+                    {deletingPage ? 'Lösche…' : '- Seite'}
                   </button>
                   {settingsHref ? (
                     <Link

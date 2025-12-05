@@ -1203,11 +1203,19 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
           </label>
         );
       }
+      const customStyle = (node.style ?? {}) as React.CSSProperties;
+      const inputStyle: React.CSSProperties = {
+        ...customStyle,
+        height: '100%',
+        width: '100%',
+        display: 'block',
+      };
       return (
         <input
           type={inputType}
-          className={`${base} rounded-md bg-neutral-800 px-2 text-sm`}
+          className={`${base} rounded-md border border-white/15 bg-neutral-800/80 px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus-visible:outline-none`}
           placeholder={node.props?.placeholder ?? 'Eingabe'}
+          style={inputStyle}
         />
       );
     }
