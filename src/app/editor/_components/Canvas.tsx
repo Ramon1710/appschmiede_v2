@@ -1207,11 +1207,17 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
       return (
         <div
           className={`${base} rounded-md border border-white/15 bg-neutral-800/80`}
-          style={wrapperStyle}
+          style={{
+            ...wrapperStyle,
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
         >
           <input
             type={inputType}
-            className="block h-full w-full rounded-md bg-transparent px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus-visible:outline-none select-text"
+            className="block h-full w-full flex-1 rounded-md bg-transparent px-3 py-2 text-sm text-white placeholder:text-neutral-400 focus-visible:outline-none select-text"
             placeholder={node.props?.placeholder ?? 'Eingabe'}
             style={{ height: '100%', minHeight: '100%' }}
           />
