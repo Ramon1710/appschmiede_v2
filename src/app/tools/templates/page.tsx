@@ -1935,6 +1935,8 @@ const builtinTemplates: Template[] = [
   createTravelTemplate(),
   createCoworkingTemplate(),
 ].map((tpl) => ({ ...tpl, source: 'builtin' as const }));
+
+const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
@@ -1960,9 +1962,9 @@ export default function TemplatesPage() {
         const mapped = snapshot.docs
           .map((docSnap) => {
             const data = docSnap.data();
-            const name = typeof data?.name === 'string' ? data.name : null;
-            const projectName = typeof data?.projectName === 'string' ? data.projectName : null;
-            const description = typeof data?.description === 'string' ? data.description : '';
+            const name = safeString(data?.name, null as unknown as string);
+            const projectName = safeString(data?.projectName, null as unknown as string);
+            const description = safeString(data?.description, '');
             if (!name || !projectName || !Array.isArray(data?.pages)) return null;
             return {
               id: docSnap.id,
@@ -2088,9 +2090,9 @@ export default function TemplatesPage() {
 
   const visibleTemplates = useMemo(() => {
     const normalize = (tpl: Template): Template | null => {
-      const name = typeof tpl.name === 'string' ? tpl.name : 'Unbenannte Vorlage';
-      const description = typeof tpl.description === 'string' ? tpl.description : '';
-      const projectName = typeof tpl.projectName === 'string' ? tpl.projectName : name;
+      const name = safeString(tpl.name, 'Unbenannte Vorlage');
+      const description = safeString(tpl.description, '');
+      const projectName = safeString(tpl.projectName, name);
       if (!tpl.id || !name) return null;
       return { ...tpl, name, description, projectName };
     };
@@ -2120,9 +2122,10 @@ export default function TemplatesPage() {
       const pages = pagesSnap.docs
         .map((p) => {
           const data = p.data();
-          if (!data?.tree || !data?.name) return null;
+          const name = safeString(data?.name, null as unknown as string);
+          if (!data?.tree || !name) return null;
           return {
-            name: data.name,
+            name,
             folder: data.folder ?? null,
             tree: data.tree,
           } as Template['pages'][number];
@@ -2154,9 +2157,9 @@ export default function TemplatesPage() {
       const mapped = snapshot.docs
         .map((docSnap) => {
           const data = docSnap.data();
-          const name = typeof data?.name === 'string' ? data.name : null;
-          const projectName = typeof data?.projectName === 'string' ? data.projectName : null;
-          const description = typeof data?.description === 'string' ? data.description : '';
+          const name = safeString(data?.name, null as unknown as string);
+          const projectName = safeString(data?.projectName, null as unknown as string);
+          const description = safeString(data?.description, '');
           if (!name || !projectName || !Array.isArray(data?.pages)) return null;
           return {
             id: docSnap.id,
