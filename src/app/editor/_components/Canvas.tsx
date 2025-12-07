@@ -1689,13 +1689,14 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (resizing.current && event.pointerId === resizing.current.pointerId) {
-      event.preventDefault();
-      const { id, dir, startX, startY, start, zoom: resizeZoom } = resizing.current;
-      const scale = resizeZoom || 1;
-      const dx = (event.clientX - startX) / scale;
-      const dy = (event.clientY - startY) / scale;
+  const processPointerMove = useCallback(
+    (pointerId: number, clientX: number, clientY: number, preventDefault?: () => void) => {
+      if (resizing.current && pointerId === resizing.current.pointerId) {
+        preventDefault?.();
+        const { id, dir, startX, startY, start, zoom: resizeZoom } = resizing.current;
+        const scale = resizeZoom || 1;
+        const dx = (clientX - startX) / scale;
+        const dy = (clientY - startY) / scale;
       const minW = 40;
       const minH = 32;
       const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
@@ -1772,27 +1773,56 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       }
       return;
     }
-    if (dragging.current && event.pointerId === dragging.current.pointerId) {
-      event.preventDefault();
-      const { id, startX, startY, zoom: dragZoom } = dragging.current;
-      const scale = dragZoom || 1;
-      const dx = (event.clientX - startX) / scale;
-      const dy = (event.clientY - startY) / scale;
+      if (dragging.current && pointerId === dragging.current.pointerId) {
+        preventDefault?.();
+        const { id, startX, startY, zoom: dragZoom } = dragging.current;
+        const scale = dragZoom || 1;
+        const dx = (clientX - startX) / scale;
+        const dy = (clientY - startY) / scale;
       if (dx !== 0 || dy !== 0) {
         onMove(id, dx, dy);
-        dragging.current = { id, pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, zoom: dragZoom };
+          dragging.current = { id, pointerId, startX: clientX, startY: clientY, zoom: dragZoom };
       }
     }
+    },
+    [onMove, onResize]
+  );
+
+  const processPointerUp = useCallback((pointerId: number) => {
+    if (dragging.current?.pointerId === pointerId) {
+      dragging.current = null;
+    }
+    if (resizing.current?.pointerId === pointerId) {
+      resizing.current = null;
+    }
+  }, []);
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    processPointerMove(event.pointerId, event.clientX, event.clientY, () => event.preventDefault());
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragging.current?.pointerId === event.pointerId) {
-      dragging.current = null;
-    }
-    if (resizing.current?.pointerId === event.pointerId) {
-      resizing.current = null;
-    }
+    processPointerUp(event.pointerId);
   };
+
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      if (!dragging.current && !resizing.current) return;
+      processPointerMove(event.pointerId, event.clientX, event.clientY, () => event.preventDefault());
+    };
+    const onUp = (event: PointerEvent) => {
+      if (!dragging.current && !resizing.current) return;
+      processPointerUp(event.pointerId);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, [processPointerMove, processPointerUp]);
 
   const hasCustomBackground = typeof tree.tree.props?.bg === 'string' && tree.tree.props.bg.trim() !== '';
   const backgroundValue = hasCustomBackground ? (tree.tree.props!.bg as string) : DEFAULT_PAGE_BACKGROUND;
@@ -1869,35 +1899,35 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
                   {/* Resize Handles */}
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'nw')}
-                    className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
+                    className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'n')}
-                    className="absolute left-1/2 top-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize"
+                    className="absolute left-1/2 top-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'ne')}
-                    className="absolute -right-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
+                    className="absolute -right-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'e')}
-                    className="absolute right-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize"
+                    className="absolute right-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'se')}
-                    className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
+                    className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 's')}
-                    className="absolute left-1/2 bottom-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize"
+                    className="absolute left-1/2 bottom-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'sw')}
-                    className="absolute -left-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
+                    className="absolute -left-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize touch-none"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'w')}
-                    className="absolute left-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize"
+                    className="absolute left-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize touch-none"
                   />
                 </>
               )}
