@@ -30,6 +30,8 @@ const fallbackId = () =>
 
 const defaultBackground = 'linear-gradient(135deg, #0b1220, #111827)';
 
+const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
+
 const nodeSize: Record<Node['type'], { w: number; h: number }> = {
   text: { w: 296, h: 60 },
   button: { w: 220, h: 52 },
@@ -1901,8 +1903,6 @@ const visibleBuiltinTemplates: Template[] = builtinTemplates
     return { ...tpl, name, description, projectName } as Template;
   })
   .filter((tpl): tpl is Template => Boolean(tpl));
-
-const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
