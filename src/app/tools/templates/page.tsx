@@ -1960,12 +1960,15 @@ export default function TemplatesPage() {
         const mapped = snapshot.docs
           .map((docSnap) => {
             const data = docSnap.data();
-            if (!data?.name || !data?.projectName || !Array.isArray(data?.pages)) return null;
+            const name = typeof data?.name === 'string' ? data.name : null;
+            const projectName = typeof data?.projectName === 'string' ? data.projectName : null;
+            const description = typeof data?.description === 'string' ? data.description : '';
+            if (!name || !projectName || !Array.isArray(data?.pages)) return null;
             return {
               id: docSnap.id,
-              name: data.name,
-              description: data.description ?? '',
-              projectName: data.projectName,
+              name,
+              description,
+              projectName,
               pages: data.pages || [],
               source: 'custom' as const,
               createdBy: data.createdBy,
@@ -2083,10 +2086,19 @@ export default function TemplatesPage() {
     },
   ];
 
-  const visibleTemplates = useMemo(
-    () => [...builtinTemplates, ...customTemplates].filter((tpl) => tpl && tpl.id && tpl.name),
-    [customTemplates]
-  );
+  const visibleTemplates = useMemo(() => {
+    const normalize = (tpl: Template): Template | null => {
+      const name = typeof tpl.name === 'string' ? tpl.name : 'Unbenannte Vorlage';
+      const description = typeof tpl.description === 'string' ? tpl.description : '';
+      const projectName = typeof tpl.projectName === 'string' ? tpl.projectName : name;
+      if (!tpl.id || !name) return null;
+      return { ...tpl, name, description, projectName };
+    };
+    const merged = [...builtinTemplates, ...customTemplates]
+      .map((tpl) => (tpl ? normalize(tpl) : null))
+      .filter((tpl): tpl is Template => Boolean(tpl));
+    return merged;
+  }, [customTemplates]);
 
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
@@ -2142,12 +2154,15 @@ export default function TemplatesPage() {
       const mapped = snapshot.docs
         .map((docSnap) => {
           const data = docSnap.data();
-          if (!data?.name || !data?.projectName || !Array.isArray(data?.pages)) return null;
+          const name = typeof data?.name === 'string' ? data.name : null;
+          const projectName = typeof data?.projectName === 'string' ? data.projectName : null;
+          const description = typeof data?.description === 'string' ? data.description : '';
+          if (!name || !projectName || !Array.isArray(data?.pages)) return null;
           return {
             id: docSnap.id,
-            name: data.name,
-            description: data.description ?? '',
-            projectName: data.projectName,
+            name,
+            description,
+            projectName,
             pages: data.pages || [],
             source: 'custom' as const,
             createdBy: data.createdBy,
