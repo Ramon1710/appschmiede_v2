@@ -135,8 +135,7 @@ const runAction = async (action?: ButtonAction | null, options: NodeProps = {}) 
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
-    <div className="text-xs uppercase tracking-widest text-indigo-200/70">Navigation</div>
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {items.length === 0 ? (
         <span className="rounded border border-dashed border-white/20 px-2 py-1 text-xs text-neutral-500">Keine Links hinterlegt</span>
       ) : (

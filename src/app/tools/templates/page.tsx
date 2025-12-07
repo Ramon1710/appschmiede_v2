@@ -304,63 +304,29 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: defaultBackground },
         children: withNavbar(
-          stack([
-            {
-              type: 'text',
-              props: { text: 'Unternehmens-Dashboard' },
-              style: { fontSize: 28, fontWeight: 600 },
-            },
-            {
-              type: 'text',
-              props: {
-                text: 'Springe direkt zu Zeiten, Aufgaben, Mitarbeitertracking, Projektstruktur oder Chat.',
+          stack(
+            [
+              {
+                type: 'text',
+                props: { text: 'Unternehmens-Dashboard' },
+                style: { fontSize: 28, fontWeight: 600 },
               },
-              style: { fontSize: 16, lineHeight: 1.5 },
-              h: 84,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'time-tracking',
-                timeTracking: {
-                  entries: [
-                    { id: fallbackId(), label: 'Projekt Alpha', seconds: 5400, endedAt: new Date().toISOString() },
-                    { id: fallbackId(), label: 'Projekt Beta', seconds: 3600, startedAt: new Date().toISOString() },
-                  ],
+              {
+                type: 'text',
+                props: {
+                  text: 'Wähle die gewünschte Seite und springe direkt in Zeiten, Aufgaben, Mitarbeitertracking, Struktur oder Chat.',
                 },
+                style: { fontSize: 16, lineHeight: 1.5 },
+                h: 84,
               },
-              h: 200,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Kundentermin vorbereiten', done: false },
-                  { id: fallbackId(), title: 'Sprint-Review freigeben', done: true },
-                ],
-              },
-              h: 200,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'status-board',
-                statusBoard: {
-                  title: 'Schnellzugriffe',
-                  activeId: 'nav-zeiterfassung',
-                  options: [
-                    { id: 'nav-zeiterfassung', label: 'Zeiten', description: 'Timer & Tracking', color: '#38bdf8' },
-                    { id: 'nav-aufgaben', label: 'Aufgaben', description: 'Kanban & Todos', color: '#a855f7' },
-                    { id: 'nav-mitarbeiter', label: 'Mitarbeiter', description: 'Status & Standort', color: '#22c55e' },
-                    { id: 'nav-projektstruktur', label: 'Projekte', description: 'Ordner & Assets', color: '#f59e0b' },
-                    { id: 'nav-chat', label: 'Chat', description: 'Team-Channel', color: '#f97316' },
-                  ],
-                },
-              },
-              h: 180,
-            },
-          ]),
+              { type: 'button', props: { label: 'Zu Zeiterfassung', action: 'navigate', targetPage: 'Zeiterfassung' }, w: 240 },
+              { type: 'button', props: { label: 'Zu Aufgaben', action: 'navigate', targetPage: 'Aufgaben' }, w: 240 },
+              { type: 'button', props: { label: 'Mitarbeiter-Tracking öffnen', action: 'navigate', targetPage: 'Mitarbeiter-Tracking' }, w: 240 },
+              { type: 'button', props: { label: 'Projektstruktur öffnen', action: 'navigate', targetPage: 'Projektstruktur' }, w: 240 },
+              { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat' }, w: 240 },
+            ],
+            { startY: 140, gap: 18 }
+          ),
           navItems
         ),
       },
@@ -374,38 +340,37 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#091322,#152846)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'time-tracking',
-                timeTracking: {
-                  entries: [
-                    {
-                      id: fallbackId(),
-                      label: 'Projekt Atlas – Konzept',
-                      seconds: 7200,
-                      startedAt: new Date(Date.now() - 7200 * 1000).toISOString(),
-                      endedAt: new Date().toISOString(),
-                    },
-                    {
-                      id: fallbackId(),
-                      label: 'Projekt Atlas – Entwicklung',
-                      seconds: 3600,
-                      startedAt: new Date().toISOString(),
-                    },
-                  ],
+          stack(
+            [
+              { type: 'button', props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+              { type: 'text', props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'time-tracking',
+                  timeTracking: {
+                    entries: [
+                      {
+                        id: fallbackId(),
+                        label: 'Projekt Atlas – Konzept',
+                        seconds: 7200,
+                        startedAt: new Date(Date.now() - 7200 * 1000).toISOString(),
+                        endedAt: new Date().toISOString(),
+                      },
+                      {
+                        id: fallbackId(),
+                        label: 'Projekt Atlas – Entwicklung',
+                        seconds: 3600,
+                        startedAt: new Date().toISOString(),
+                      },
+                    ],
+                  },
                 },
+                h: 440,
               },
-              h: 220,
-            },
-            {
-              type: 'button',
-              props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' },
-              w: 220,
-            },
-          ]),
+            ],
+            { startY: 140, gap: 20 }
+          ),
           navItems
         ),
       },
@@ -419,33 +384,36 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#101828,#1f2638)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Marketing-Kampagne briefen', done: false },
-                  { id: fallbackId(), title: 'Feedbackrunde Team', done: false },
-                  { id: fallbackId(), title: 'Release freigeben', done: true },
-                ],
+          stack(
+            [
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+              { type: 'text', props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'task-manager',
+                  tasks: [
+                    { id: fallbackId(), title: 'Marketing-Kampagne briefen', done: false },
+                    { id: fallbackId(), title: 'Feedbackrunde Team', done: false },
+                    { id: fallbackId(), title: 'Release freigeben', done: true },
+                  ],
+                },
+                h: 260,
               },
-              h: 220,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'todo',
-                todoItems: [
-                  { id: fallbackId(), title: 'Benachrichtigung: Alex neue Aufgabe', done: false },
-                  { id: fallbackId(), title: 'Reminder: Arbeitszeit bestätigen', done: false },
-                ],
+              {
+                type: 'container',
+                props: {
+                  component: 'todo',
+                  todoItems: [
+                    { id: fallbackId(), title: 'Benachrichtigung: Alex neue Aufgabe', done: false },
+                    { id: fallbackId(), title: 'Reminder: Arbeitszeit bestätigen', done: false },
+                  ],
+                },
+                h: 200,
               },
-              h: 200,
-            },
-            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-          ]),
+            ],
+            { startY: 140, gap: 20 }
+          ),
           navItems
         ),
       },
@@ -459,27 +427,40 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#0b1220,#0f1d32)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'status-board',
-                statusBoard: {
-                  title: 'Mitarbeiterstatus',
-                  activeId: 'status-remote',
-                  options: [
-                    { id: 'status-office', label: 'Im Büro', description: '8 Personen', color: '#22c55e' },
-                    { id: 'status-remote', label: 'Remote', description: '5 Personen', color: '#38bdf8' },
-                    { id: 'status-travel', label: 'Unterwegs', description: '2 Personen', color: '#f59e0b' },
-                  ],
+          stack(
+            [
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+              { type: 'text', props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'map',
+                  mapLocation: 'Berlin, Germany',
+                  mapInfo: 'Letzte Positionen deiner Mitarbeiter',
+                  mapActionLabel: 'Live-Standort aktualisieren',
                 },
+                h: 240,
               },
-              h: 200,
-            },
-            { type: 'container', props: { component: 'analytics' }, h: 200 },
-            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-          ]),
+              {
+                type: 'container',
+                props: {
+                  component: 'status-board',
+                  statusBoard: {
+                    title: 'Mitarbeiterstatus',
+                    activeId: 'status-remote',
+                    options: [
+                      { id: 'status-office', label: 'Im Büro', description: '8 Personen', color: '#22c55e' },
+                      { id: 'status-remote', label: 'Remote', description: '5 Personen', color: '#38bdf8' },
+                      { id: 'status-travel', label: 'Unterwegs', description: '2 Personen', color: '#f59e0b' },
+                    ],
+                  },
+                },
+                h: 200,
+              },
+              { type: 'container', props: { component: 'analytics' }, h: 200 },
+            ],
+            { startY: 140, gap: 20 }
+          ),
           navItems
         ),
       },
@@ -493,33 +474,36 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#0b1220,#111827)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Projektordner & Assets' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'folder-structure',
-                folderTree: [
-                  { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Design' }] },
-                  { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Development' }] },
-                  { id: fallbackId(), name: 'Projekt Helix', children: [{ id: fallbackId(), name: 'QA' }] },
-                ],
+          stack(
+            [
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+              { type: 'text', props: { text: 'Projektordner & Assets' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'folder-structure',
+                  folderTree: [
+                    { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Design' }] },
+                    { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Development' }] },
+                    { id: fallbackId(), name: 'Projekt Helix', children: [{ id: fallbackId(), name: 'QA' }] },
+                  ],
+                },
+                h: 320,
               },
-              h: 240,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'todo',
-                todoItems: [
-                  { id: fallbackId(), title: 'Ordnerberechtigungen prüfen', done: false },
-                  { id: fallbackId(), title: 'Assets aktualisieren', done: false },
-                ],
+              {
+                type: 'container',
+                props: {
+                  component: 'todo',
+                  todoItems: [
+                    { id: fallbackId(), title: 'Ordnerberechtigungen prüfen', done: false },
+                    { id: fallbackId(), title: 'Assets aktualisieren', done: false },
+                  ],
+                },
+                h: 180,
               },
-              h: 180,
-            },
-            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-          ]),
+            ],
+            { startY: 140, gap: 20 }
+          ),
           navItems
         ),
       },
@@ -533,21 +517,24 @@ const createCompanySuiteTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#10172a,#1a1f3b)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Team-Chat & Projektkommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
-            { type: 'container', props: { component: 'chat' }, h: 240 },
-            { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
-            {
-              type: 'container',
-              props: {
-                component: 'support',
-                supportChannel: 'chat',
-                supportTarget: 'support@unternehmen.app',
+          stack(
+            [
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+              { type: 'text', props: { text: 'Team-Chat & Projektkommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'container', props: { component: 'chat' }, h: 520 },
+              { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
+              {
+                type: 'container',
+                props: {
+                  component: 'support',
+                  supportChannel: 'chat',
+                  supportTarget: 'support@unternehmen.app',
+                },
+                h: 180,
               },
-              h: 160,
-            },
-            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-          ]),
+            ],
+            { startY: 140, gap: 18 }
+          ),
           navItems
         ),
       },
