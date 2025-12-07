@@ -1912,6 +1912,8 @@ export default function TemplatesPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [customTemplatesBroken, setCustomTemplatesBroken] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [adminProjects, setAdminProjects] = useState<Array<{ id: string; name: string | null }>>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [templateProjectId, setTemplateProjectId] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
@@ -1956,6 +1958,27 @@ export default function TemplatesPage() {
   }, [user]);
 
   const isTemplateAdmin = user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false;
+
+  useEffect(() => {
+    const loadProjectsForAdmin = async () => {
+      if (!isTemplateAdmin) return;
+      setLoadingProjects(true);
+      try {
+        const snap = await getDocs(collection(db, 'projects'));
+        const projects = snap.docs.map((d) => ({
+          id: d.id,
+          name: safeString(d.data()?.name, null as unknown as string) || null,
+        }));
+        setAdminProjects(projects);
+      } catch (projectLoadError) {
+        console.error('Konnte Projekte nicht laden', projectLoadError);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
+    loadProjectsForAdmin();
+  }, [isTemplateAdmin]);
 
   if (!user)
     return (
@@ -2159,6 +2182,43 @@ export default function TemplatesPage() {
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold text-emerald-100">Admin: Vorlage aus Projekt speichern</h2>
                 {savingTemplate && <span className="text-xs text-emerald-100">Speichere…</span>}
+              </div>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-200">Projekt auswählen</span>
+                  {loadingProjects && <span className="text-xs text-neutral-400">lädt…</span>}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!templateProjectId) return;
+                      router.push(`/editor?projectId=${templateProjectId}`);
+                    }}
+                    className="rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-neutral-100 hover:bg-white/10 disabled:opacity-40"
+                    disabled={!templateProjectId}
+                  >
+                    Im Editor öffnen
+                  </button>
+                </div>
+                <select
+                  value={templateProjectId}
+                  onChange={(e) => {
+                    const pid = e.target.value;
+                    setTemplateProjectId(pid);
+                    const match = adminProjects.find((p) => p.id === pid);
+                    if (match?.name) {
+                      setTemplateProjectName(match.name);
+                      if (!templateName) setTemplateName(`${match.name} Vorlage`);
+                    }
+                  }}
+                  className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                >
+                  <option value="">Projekt wählen…</option>
+                  {adminProjects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name ?? 'Unbenannt'} — {p.id}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm md:col-span-2">
