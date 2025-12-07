@@ -1942,6 +1942,7 @@ export default function TemplatesPage() {
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateProjectId, setTemplateProjectId] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
@@ -1956,18 +1957,21 @@ export default function TemplatesPage() {
       if (!user) return;
       try {
         const snapshot = await getDocs(collection(db, 'templates_custom'));
-        const mapped = snapshot.docs.map((docSnap) => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            name: data.name,
-            description: data.description,
-            projectName: data.projectName,
-            pages: data.pages || [],
-            source: 'custom' as const,
-            createdBy: data.createdBy,
-          } as Template;
-        });
+        const mapped = snapshot.docs
+          .map((docSnap) => {
+            const data = docSnap.data();
+            if (!data?.name || !data?.projectName || !Array.isArray(data?.pages)) return null;
+            return {
+              id: docSnap.id,
+              name: data.name,
+              description: data.description ?? '',
+              projectName: data.projectName,
+              pages: data.pages || [],
+              source: 'custom' as const,
+              createdBy: data.createdBy,
+            } as Template;
+          })
+          .filter((tpl): tpl is Template => Boolean(tpl));
         setCustomTemplates(mapped);
       } catch (loadError) {
         console.error('Konnte Custom Templates nicht laden', loadError);
@@ -2079,7 +2083,10 @@ export default function TemplatesPage() {
     },
   ];
 
-  const visibleTemplates = useMemo(() => [...builtinTemplates, ...customTemplates], [customTemplates]);
+  const visibleTemplates = useMemo(
+    () => [...builtinTemplates, ...customTemplates].filter((tpl) => tpl && tpl.id && tpl.name),
+    [customTemplates]
+  );
 
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
@@ -2098,14 +2105,17 @@ export default function TemplatesPage() {
 
       // Lade Seiten
       const pagesSnap = await getDocs(collection(db, 'projects', templateProjectId.trim(), 'pages'));
-      const pages = pagesSnap.docs.map((p) => {
-        const data = p.data();
-        return {
-          name: data.name,
-          folder: data.folder ?? null,
-          tree: data.tree,
-        } as Template['pages'][number];
-      });
+      const pages = pagesSnap.docs
+        .map((p) => {
+          const data = p.data();
+          if (!data?.tree || !data?.name) return null;
+          return {
+            name: data.name,
+            folder: data.folder ?? null,
+            tree: data.tree,
+          } as Template['pages'][number];
+        })
+        .filter((page): page is Template['pages'][number] => Boolean(page));
 
       if (!pages.length) {
         setError('Keine Seiten gefunden. Bitte prüfe die Projekt-ID.');
@@ -2113,8 +2123,11 @@ export default function TemplatesPage() {
         return;
       }
 
-      const tplId = fallbackId();
-      await setDoc(doc(db, 'templates_custom', tplId), {
+      const targetId = selectedTemplateId && customTemplates.some((tpl) => tpl.id === selectedTemplateId)
+        ? selectedTemplateId
+        : fallbackId();
+
+      await setDoc(doc(db, 'templates_custom', targetId), {
         name: templateName.trim(),
         description: templateDescription.trim() || 'Benutzerdefinierte Vorlage',
         projectName: templateProjectName.trim() || projectData?.name || templateName.trim(),
@@ -2126,24 +2139,28 @@ export default function TemplatesPage() {
 
       // Reload list
       const snapshot = await getDocs(collection(db, 'templates_custom'));
-      const mapped = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          name: data.name,
-          description: data.description,
-          projectName: data.projectName,
-          pages: data.pages || [],
-          source: 'custom' as const,
-          createdBy: data.createdBy,
-        } as Template;
-      });
+      const mapped = snapshot.docs
+        .map((docSnap) => {
+          const data = docSnap.data();
+          if (!data?.name || !data?.projectName || !Array.isArray(data?.pages)) return null;
+          return {
+            id: docSnap.id,
+            name: data.name,
+            description: data.description ?? '',
+            projectName: data.projectName,
+            pages: data.pages || [],
+            source: 'custom' as const,
+            createdBy: data.createdBy,
+          } as Template;
+        })
+        .filter((tpl): tpl is Template => Boolean(tpl));
       setCustomTemplates(mapped);
 
       setTemplateProjectId('');
       setTemplateName('');
       setTemplateDescription('');
       setTemplateProjectName('');
+      setSelectedTemplateId(null);
     } catch (saveError: any) {
       console.error('Vorlage konnte nicht gespeichert werden', saveError);
       setError(saveError?.message || 'Vorlage konnte nicht gespeichert werden.');
@@ -2172,6 +2189,20 @@ export default function TemplatesPage() {
                 {savingTemplate && <span className="text-xs text-emerald-100">Speichere…</span>}
               </div>
               <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm md:col-span-2">
+                  <span className="text-neutral-200">Bestehende Custom-Vorlage aktualisieren (optional)</span>
+                  <select
+                    value={selectedTemplateId ?? ''}
+                    onChange={(e) => setSelectedTemplateId(e.target.value || null)}
+                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                  >
+                    <option value="">Neue Vorlage anlegen</option>
+                    {customTemplates.map((tpl) => (
+                      <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
+                    ))}
+                  </select>
+                  <span className="text-xs text-neutral-400">Wenn gewählt, werden Meta-Daten und Seiten der ausgewählten Custom-Vorlage überschrieben.</span>
+                </label>
                 <label className="flex flex-col gap-1 text-sm">
                   <span className="text-neutral-200">Projekt-ID</span>
                   <input
