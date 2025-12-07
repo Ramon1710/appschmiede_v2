@@ -1005,10 +1005,14 @@ export default function EditorShell({ initialPageId }: Props) {
     async (layout: EditorLayoutPreferences) => {
       if (!user?.uid) return;
       try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          editorLayout: layout,
-          updatedAt: serverTimestamp(),
-        });
+        await setDoc(
+          doc(db, 'users', user.uid),
+          {
+            editorLayout: layout,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
         lastSavedLayoutRef.current = layout;
       } catch (error) {
         console.error('Editor-Layout konnte nicht gespeichert werden', error);
