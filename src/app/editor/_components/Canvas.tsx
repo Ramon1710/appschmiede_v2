@@ -1103,6 +1103,8 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
             color: node.style?.color ?? '#fff',
             fontSize: node.style?.fontSize ?? 16,
             fontWeight: node.style?.fontWeight ?? 400,
+            width: '100%',
+            height: '100%',
           }}
         >
           {node.props?.text ?? 'Text'}
