@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
+import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 import type { Project } from '@/lib/db-projects';
 import {
@@ -129,12 +130,10 @@ export default function ProjectsIndexPage() {
 
   if (!user)
     return (
-      <>
-        <Header />
-        <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-          <div>Bitte anmelden.</div>
-        </main>
-      </>
+      <UnauthenticatedScreen
+        badge="Projekte"
+        description="Melde dich an, um deine Projekte zu sehen, neue Workspaces anzulegen oder sie im Editor zu öffnen."
+      />
     );
 
   const tourSteps = [

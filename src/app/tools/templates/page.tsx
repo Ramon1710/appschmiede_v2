@@ -8,6 +8,7 @@ import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
+import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 
 type Template = {
@@ -194,43 +195,109 @@ const withAuthPages = (appName: string, pages: Template['pages'], options?: { ba
 const createCompanySuiteTemplate = (): Template => ({
   id: 'company-suite',
   name: 'Unternehmens-App',
-  description: 'Dashboard, Zeiterfassung, Aufgaben & Kommunikation für dein Team.',
+  description: 'Login, Registrierung, Reset, Dashboard plus Zeit, Aufgaben, Mitarbeitertracking, Projektstruktur und Chat.',
   projectName: 'Unternehmens-App',
-  pages: [
-    {
-      name: 'Login',
-      folder: 'Onboarding',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
-        children: stack(
-          [
-            {
-              type: 'text',
-              props: { text: 'Willkommen zurück in der Unternehmens-App' },
-              style: { fontSize: 28, fontWeight: 600 },
-            },
-            {
-              type: 'text',
-              h: 84,
-              props: {
-                text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
+  pages: (() => {
+    const navItems = [
+      { label: 'Dashboard', targetPage: 'Dashboard', icon: '📊' },
+      { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
+      { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
+      { label: 'Mitarbeiter', targetPage: 'Mitarbeiter-Tracking', icon: '🧑‍💼' },
+      { label: 'Projektstruktur', targetPage: 'Projektstruktur', icon: '🗂️' },
+      { label: 'Chat', targetPage: 'Chat', icon: '💬' },
+    ];
+
+    const authPages: Template['pages'] = [
+      {
+        name: 'Login',
+        folder: 'Onboarding',
+        tree: {
+          id: 'root',
+          type: 'container',
+          props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
+          children: stack(
+            [
+              {
+                type: 'text',
+                props: { text: 'Willkommen in der Unternehmens-App' },
+                style: { fontSize: 28, fontWeight: 600 },
               },
-              style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
-            },
-            { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
-            { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
-            { type: 'button', props: { label: 'Einloggen', action: 'login' } },
-            { type: 'button', props: { label: 'Passwort vergessen', action: 'reset-password' } },
-            { type: 'button', props: { label: 'Neues Team registrieren', action: 'register' } },
-          ],
-          { startY: 80 }
-        ),
+              {
+                type: 'text',
+                h: 84,
+                props: {
+                  text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
+                },
+                style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
+              },
+              { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
+              { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+              { type: 'button', props: { label: 'Einloggen', action: 'login' } },
+              { type: 'button', props: { label: 'Passwort vergessen', action: 'navigate', targetPage: 'Passwort Reset' } },
+              { type: 'button', props: { label: 'Jetzt registrieren', action: 'navigate', targetPage: 'Registrierung' } },
+            ],
+            { startY: 80 }
+          ),
+        },
       },
-    },
-    {
-      name: 'Unternehmen',
+      {
+        name: 'Registrierung',
+        folder: 'Onboarding',
+        tree: {
+          id: 'root',
+          type: 'container',
+          props: { bg: 'linear-gradient(135deg,#050c18,#112034)' },
+          children: stack(
+            [
+              { type: 'text', props: { text: 'Neues Team anlegen' }, style: { fontSize: 28, fontWeight: 600 } },
+              {
+                type: 'text',
+                h: 70,
+                props: { text: 'Erstelle einen Zugang für dein Team und lade Kolleg:innen ein.' },
+                style: { fontSize: 15, color: '#d7e4ff' },
+              },
+              { type: 'input', props: { placeholder: 'Vorname', inputType: 'text' } },
+              { type: 'input', props: { placeholder: 'Nachname', inputType: 'text' } },
+              { type: 'input', props: { placeholder: 'Unternehmen oder Team', inputType: 'text' } },
+              { type: 'input', props: { placeholder: 'E-Mail', inputType: 'email' } },
+              { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
+              { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+              { type: 'button', props: { label: 'Zurück zum Login', action: 'navigate', targetPage: 'Login' } },
+            ],
+            { startY: 80 }
+          ),
+        },
+      },
+      {
+        name: 'Passwort Reset',
+        folder: 'Onboarding',
+        tree: {
+          id: 'root',
+          type: 'container',
+          props: { bg: 'linear-gradient(135deg,#040b15,#0f1d30)' },
+          children: stack(
+            [
+              { type: 'text', props: { text: 'Passwort vergessen?' }, style: { fontSize: 28, fontWeight: 600 } },
+              {
+                type: 'text',
+                h: 72,
+                props: {
+                  text: 'Gib deine E-Mail-Adresse ein und wir schicken dir einen Link zum Zurücksetzen.',
+                },
+                style: { fontSize: 15, color: '#dbeafe' },
+              },
+              { type: 'input', props: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
+              { type: 'button', props: { label: 'Link senden', action: 'reset-password' } },
+              { type: 'button', props: { label: 'Zurück zum Login', action: 'navigate', targetPage: 'Login' } },
+            ],
+            { startY: 80 }
+          ),
+        },
+      },
+    ];
+
+    const dashboardPage: Template['pages'][number] = {
+      name: 'Dashboard',
       folder: 'Übersicht',
       tree: {
         id: 'root',
@@ -240,13 +307,13 @@ const createCompanySuiteTemplate = (): Template => ({
           stack([
             {
               type: 'text',
-              props: { text: 'Unternehmensübersicht' },
+              props: { text: 'Unternehmens-Dashboard' },
               style: { fontSize: 28, fontWeight: 600 },
             },
             {
               type: 'text',
               props: {
-                text: 'Projekte, Zeiten und Benachrichtigungen auf einen Blick – immer aktuell für dein Führungsteam.',
+                text: 'Springe direkt zu Zeiten, Aufgaben, Mitarbeitertracking, Projektstruktur oder Chat.',
               },
               style: { fontSize: 16, lineHeight: 1.5 },
               h: 84,
@@ -275,17 +342,31 @@ const createCompanySuiteTemplate = (): Template => ({
               },
               h: 200,
             },
+            {
+              type: 'container',
+              props: {
+                component: 'status-board',
+                statusBoard: {
+                  title: 'Schnellzugriffe',
+                  activeId: 'nav-zeiterfassung',
+                  options: [
+                    { id: 'nav-zeiterfassung', label: 'Zeiten', description: 'Timer & Tracking', color: '#38bdf8' },
+                    { id: 'nav-aufgaben', label: 'Aufgaben', description: 'Kanban & Todos', color: '#a855f7' },
+                    { id: 'nav-mitarbeiter', label: 'Mitarbeiter', description: 'Status & Standort', color: '#22c55e' },
+                    { id: 'nav-projektstruktur', label: 'Projekte', description: 'Ordner & Assets', color: '#f59e0b' },
+                    { id: 'nav-chat', label: 'Chat', description: 'Team-Channel', color: '#f97316' },
+                  ],
+                },
+              },
+              h: 180,
+            },
           ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen', icon: '📊' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
-          ]
+          navItems
         ),
       },
-    },
-    {
+    };
+
+    const timePage: Template['pages'][number] = {
       name: 'Zeiterfassung',
       folder: 'Team',
       tree: {
@@ -294,11 +375,7 @@ const createCompanySuiteTemplate = (): Template => ({
         props: { bg: 'linear-gradient(135deg,#091322,#152846)' },
         children: withNavbar(
           stack([
-            {
-              type: 'text',
-              props: { text: 'Zeiterfassung pro Projekt' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
+            { type: 'text', props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 26, fontWeight: 600 } },
             {
               type: 'container',
               props: {
@@ -324,26 +401,17 @@ const createCompanySuiteTemplate = (): Template => ({
               h: 220,
             },
             {
-              type: 'container',
-              props: {
-                component: 'folder-structure',
-                folderTree: [
-                  { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Sprint 1' }] },
-                  { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Design' }] },
-                ],
-              },
-              h: 220,
+              type: 'button',
+              props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' },
+              w: 220,
             },
           ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung', icon: '⏱️' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-          ]
+          navItems
         ),
       },
-    },
-    {
+    };
+
+    const tasksPage: Template['pages'][number] = {
       name: 'Aufgaben',
       folder: 'Team',
       tree: {
@@ -352,11 +420,7 @@ const createCompanySuiteTemplate = (): Template => ({
         props: { bg: 'linear-gradient(135deg,#101828,#1f2638)' },
         children: withNavbar(
           stack([
-            {
-              type: 'text',
-              props: { text: 'Aufgaben & Benachrichtigungen' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
+            { type: 'text', props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 26, fontWeight: 600 } },
             {
               type: 'container',
               props: {
@@ -364,6 +428,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 tasks: [
                   { id: fallbackId(), title: 'Marketing-Kampagne briefen', done: false },
                   { id: fallbackId(), title: 'Feedbackrunde Team', done: false },
+                  { id: fallbackId(), title: 'Release freigeben', done: true },
                 ],
               },
               h: 220,
@@ -379,17 +444,89 @@ const createCompanySuiteTemplate = (): Template => ({
               },
               h: 200,
             },
+            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
           ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Zeiten', targetPage: 'Zeiterfassung' },
-            { label: 'Aufgaben', targetPage: 'Aufgaben', icon: '✅' },
-          ]
+          navItems
         ),
       },
-    },
-    {
-      name: 'Kommunikation',
+    };
+
+    const employeePage: Template['pages'][number] = {
+      name: 'Mitarbeiter-Tracking',
+      folder: 'Team',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0b1220,#0f1d32)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 26, fontWeight: 600 } },
+            {
+              type: 'container',
+              props: {
+                component: 'status-board',
+                statusBoard: {
+                  title: 'Mitarbeiterstatus',
+                  activeId: 'status-remote',
+                  options: [
+                    { id: 'status-office', label: 'Im Büro', description: '8 Personen', color: '#22c55e' },
+                    { id: 'status-remote', label: 'Remote', description: '5 Personen', color: '#38bdf8' },
+                    { id: 'status-travel', label: 'Unterwegs', description: '2 Personen', color: '#f59e0b' },
+                  ],
+                },
+              },
+              h: 200,
+            },
+            { type: 'container', props: { component: 'analytics' }, h: 200 },
+            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+          ]),
+          navItems
+        ),
+      },
+    };
+
+    const projectStructurePage: Template['pages'][number] = {
+      name: 'Projektstruktur',
+      folder: 'Projekte',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#0b1220,#111827)' },
+        children: withNavbar(
+          stack([
+            { type: 'text', props: { text: 'Projektordner & Assets' }, style: { fontSize: 26, fontWeight: 600 } },
+            {
+              type: 'container',
+              props: {
+                component: 'folder-structure',
+                folderTree: [
+                  { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Design' }] },
+                  { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Development' }] },
+                  { id: fallbackId(), name: 'Projekt Helix', children: [{ id: fallbackId(), name: 'QA' }] },
+                ],
+              },
+              h: 240,
+            },
+            {
+              type: 'container',
+              props: {
+                component: 'todo',
+                todoItems: [
+                  { id: fallbackId(), title: 'Ordnerberechtigungen prüfen', done: false },
+                  { id: fallbackId(), title: 'Assets aktualisieren', done: false },
+                ],
+              },
+              h: 180,
+            },
+            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
+          ]),
+          navItems
+        ),
+      },
+    };
+
+    const chatPage: Template['pages'][number] = {
+      name: 'Chat',
       folder: 'Team',
       tree: {
         id: 'root',
@@ -397,11 +534,7 @@ const createCompanySuiteTemplate = (): Template => ({
         props: { bg: 'linear-gradient(135deg,#10172a,#1a1f3b)' },
         children: withNavbar(
           stack([
-            {
-              type: 'text',
-              props: { text: 'Team-Chat & Projektkommunikation' },
-              style: { fontSize: 26, fontWeight: 600 },
-            },
+            { type: 'text', props: { text: 'Team-Chat & Projektkommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
             { type: 'container', props: { component: 'chat' }, h: 240 },
             { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
             {
@@ -413,15 +546,23 @@ const createCompanySuiteTemplate = (): Template => ({
               },
               h: 160,
             },
+            { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
           ]),
-          [
-            { label: 'Dashboard', targetPage: 'Unternehmen' },
-            { label: 'Chat', targetPage: 'Kommunikation', icon: '💬' },
-          ]
+          navItems
         ),
       },
-    },
-  ],
+    };
+
+    return [
+      ...authPages,
+      dashboardPage,
+      timePage,
+      tasksPage,
+      employeePage,
+      projectStructurePage,
+      chatPage,
+    ];
+  })(),
 });
 
 const createChatAppTemplate = (): Template => ({
@@ -1809,10 +1950,10 @@ export default function TemplatesPage() {
 
   if (!user)
     return (
-      <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
-        <Header />
-        <main className="grid flex-1 place-items-center px-4 py-10">Bitte anmelden.</main>
-      </div>
+      <UnauthenticatedScreen
+        badge="Vorlagen"
+        description="Melde dich an, um Vorlagen zu kopieren und neue Projekte direkt aus dem Katalog zu erstellen."
+      />
     );
 
   const createFromTemplate = async (tpl: Template) => {

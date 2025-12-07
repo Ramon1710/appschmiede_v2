@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
+import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 import GuidedTour from '@/components/GuidedTour';
 import GoogleAdSlot from '@/components/GoogleAdSlot';
@@ -62,12 +63,10 @@ export default function DashboardPage() {
 
   if (!user)
     return (
-      <>
-        <Header />
-        <main className="min-h-screen grid place-items-center bg-neutral-950 text-neutral-100 p-6">
-          <div>Bitte anmelden.</div>
-        </main>
-      </>
+      <UnauthenticatedScreen
+        badge="Dashboard"
+        description="Melde dich an, um dein Dashboard zu sehen, Projekte zu öffnen oder neue Apps zu starten."
+      />
     );
 
   const tourSteps = [

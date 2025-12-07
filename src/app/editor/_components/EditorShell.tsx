@@ -9,6 +9,7 @@ import CategorizedToolbox from './CategorizedToolbox';
 import QRCodeButton from '../_extensions/QRCodeButton';
 import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
+import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, deletePage, renamePage, loadPage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
@@ -2262,32 +2263,10 @@ export default function EditorShell({ initialPageId }: Props) {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#05070e] text-white">
-        <Header />
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
-          <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">Editor</p>
-            <h1 className="text-3xl font-semibold text-white sm:text-4xl">Bitte anmelden</h1>
-            <p className="text-base text-neutral-200">
-              Der Editor steht nur angemeldeten Accounts zur Verfügung. Melde dich an, um deine Projekte zu laden oder neue Apps zu erstellen.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-3 text-sm">
-            <Link
-              href="/login"
-              className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-3 font-semibold text-white shadow-lg transition hover:from-cyan-400 hover:to-blue-400"
-            >
-              Zum Login
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
-            >
-              Noch kein Konto? Registrieren
-            </Link>
-          </div>
-        </div>
-      </div>
+      <UnauthenticatedScreen
+        badge="Editor"
+        description="Der Editor steht nur angemeldeten Accounts zur Verfügung. Melde dich an, um deine Projekte zu laden oder neue Apps zu erstellen."
+      />
     );
   }
 
