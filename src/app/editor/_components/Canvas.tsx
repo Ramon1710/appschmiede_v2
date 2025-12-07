@@ -1699,7 +1699,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
   };
 
   const processPointerMove = useCallback(
-    (_pointerId: number, clientX: number, clientY: number, preventDefault?: () => void) => {
+    (pointerId: number, clientX: number, clientY: number, preventDefault?: () => void) => {
       if (resizing.current) {
         preventDefault?.();
         const { id, dir, startX, startY, start, zoom: resizeZoom } = resizing.current;
