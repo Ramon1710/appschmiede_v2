@@ -1699,14 +1699,10 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
   };
 
   const processPointerMove = useCallback(
-    (pointerId: number, clientX: number, clientY: number, preventDefault?: () => void) => {
+    (_pointerId: number, clientX: number, clientY: number, preventDefault?: () => void) => {
       if (resizing.current) {
         preventDefault?.();
-        const { id, dir, startX, startY, start, zoom: resizeZoom, pointerId: activePointer } = resizing.current;
-        if (pointerId !== activePointer && activePointer !== undefined && activePointer !== null) {
-          // Wenn ein anderer Pointer aktiv ist, ignoriere die Bewegung
-          return;
-        }
+        const { id, dir, startX, startY, start, zoom: resizeZoom } = resizing.current;
         const scale = resizeZoom || 1;
         const dx = (clientX - startX) / scale;
         const dy = (clientY - startY) / scale;
@@ -1787,10 +1783,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       return;
     }
       if (dragging.current) {
-        const { id, startX, startY, zoom: dragZoom, pointerId: activePointer } = dragging.current;
-        if (pointerId !== activePointer && activePointer !== undefined && activePointer !== null) {
-          return;
-        }
+        const { id, startX, startY, zoom: dragZoom } = dragging.current;
         preventDefault?.();
         const scale = dragZoom || 1;
         const dx = (clientX - startX) / scale;
