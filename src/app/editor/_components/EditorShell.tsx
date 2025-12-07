@@ -1164,6 +1164,22 @@ export default function EditorShell({ initialPageId }: Props) {
     setSelectedId(null);
   }, [applyTreeUpdate, setSelectedId, setUndoDepth]);
 
+  const handleClearPage = useCallback(() => {
+    if (!currentPageId) return;
+    applyTreeUpdate((prev) => {
+      const bg = typeof prev.tree.props?.bg === 'string' && prev.tree.props.bg.trim() ? prev.tree.props.bg : DEFAULT_PAGE_BACKGROUND;
+      return sanitizePage({
+        ...prev,
+        tree: {
+          ...prev.tree,
+          props: { ...(prev.tree.props ?? {}), bg },
+          children: [],
+        },
+      });
+    });
+    setSelectedId(null);
+  }, [applyTreeUpdate, currentPageId, setSelectedId]);
+
   const resetPageToSaved = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
     setResettingPage(true);
@@ -2198,6 +2214,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
   const canUndo = undoDepth > 0;
   const canResetPage = Boolean(currentPageId) && !resettingPage;
+  const canClearPage = Boolean(currentPageId) && !resettingPage;
   const HistoryControls = ({ className = '' }: { className?: string }) => (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       <button
@@ -2208,6 +2225,16 @@ export default function EditorShell({ initialPageId }: Props) {
         aria-label={`Letzten Schritt rückgängig machen (${Math.min(undoDepth, UNDO_STACK_LIMIT)}/${UNDO_STACK_LIMIT})`}
       >
         <span aria-hidden="true">↺</span>
+      </button>
+      <button
+        type="button"
+        onClick={handleClearPage}
+        disabled={!canClearPage}
+        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#05070f]/90 px-3 py-1.5 text-[11px] font-semibold text-neutral-100 shadow-xl transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label="Seite leeren"
+      >
+        <span className="text-base">🗑️</span>
+        <span>Seite leeren</span>
       </button>
       <button
         type="button"

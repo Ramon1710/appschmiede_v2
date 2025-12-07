@@ -45,8 +45,7 @@ const CHAT_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#0f172a,#111827,#020617
 
 const NavbarWidget = ({ items, onItemClick }: { items: NavbarItem[]; onItemClick: (item: NavbarItem) => void }) => (
   <nav className="flex h-full flex-col justify-center rounded-xl border border-indigo-500/30 bg-[#0b0f1b]/90 px-4 py-3 text-sm text-neutral-200">
-    <div className="text-xs uppercase tracking-widest text-indigo-200/70">Navigation</div>
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       {items.length === 0 ? (
         <span className="rounded border border-dashed border-white/20 px-2 py-1 text-xs text-neutral-500">Keine Links hinterlegt</span>
       ) : (
@@ -1661,7 +1660,7 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
 }
 
 export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, onResize, onUpdateNode, zoom = 1 }: CanvasProps) {
-  type ResizeDir = 'nw' | 'ne' | 'sw' | 'se';
+  type ResizeDir = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
   const dragging = useRef<null | { id: string; pointerId: number; startX: number; startY: number; zoom: number }>(null);
   const resizing = useRef<null | { id: string; pointerId: number; dir: ResizeDir; startX: number; startY: number; start: { x: number; y: number; w: number; h: number }; zoom: number }>(null);
   const clampedZoom = Math.max(0.5, zoom);
@@ -1710,6 +1709,12 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
         const w = Math.max(minW, Math.min(start.w + nextDx, BOUNDS.w - start.x));
         const h = Math.max(minH, Math.min(start.h + nextDy, BOUNDS.h - start.y));
         onResize(id, { w, h });
+      } else if (dir === 's') {
+        const minDy = minH - start.h;
+        const maxDy = BOUNDS.h - (start.y + start.h);
+        const nextDy = clamp(dy, minDy, maxDy);
+        const h = Math.max(minH, Math.min(start.h + nextDy, BOUNDS.h - start.y));
+        onResize(id, { h });
       } else if (dir === 'ne') {
         const minDx = minW - start.w;
         const maxDx = BOUNDS.w - (start.x + start.w);
@@ -1721,6 +1726,13 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
         const y = start.y + nextDy;
         const h = Math.max(minH, Math.min(start.h - nextDy, (start.y + start.h) - y));
         onResize(id, { y, w, h });
+      } else if (dir === 'n') {
+        const minDy = -start.y;
+        const maxDy = start.h - minH;
+        const nextDy = clamp(dy, minDy, maxDy);
+        const y = start.y + nextDy;
+        const h = Math.max(minH, Math.min(start.h - nextDy, (start.y + start.h) - y));
+        onResize(id, { y, h });
       } else if (dir === 'sw') {
         const minDx = -start.x;
         const maxDx = start.w - minW;
@@ -1744,6 +1756,19 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
         const w = Math.max(minW, Math.min(start.w - nextDx, (start.x + start.w) - x));
         const h = Math.max(minH, Math.min(start.h - nextDy, (start.y + start.h) - y));
         onResize(id, { x, y, w, h });
+      } else if (dir === 'e') {
+        const minDx = minW - start.w;
+        const maxDx = BOUNDS.w - (start.x + start.w);
+        const nextDx = clamp(dx, minDx, maxDx);
+        const w = Math.max(minW, Math.min(start.w + nextDx, BOUNDS.w - start.x));
+        onResize(id, { w });
+      } else if (dir === 'w') {
+        const minDx = -start.x;
+        const maxDx = start.w - minW;
+        const nextDx = clamp(dx, minDx, maxDx);
+        const x = start.x + nextDx;
+        const w = Math.max(minW, Math.min(start.w - nextDx, (start.x + start.w) - x));
+        onResize(id, { x, w });
       }
       return;
     }
@@ -1847,16 +1872,32 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
                     className="absolute -left-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
                   />
                   <div
+                    onPointerDown={(event) => beginResize(event, n, 'n')}
+                    className="absolute left-1/2 top-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize"
+                  />
+                  <div
                     onPointerDown={(event) => beginResize(event, n, 'ne')}
                     className="absolute -right-1.5 -top-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
+                  />
+                  <div
+                    onPointerDown={(event) => beginResize(event, n, 'e')}
+                    className="absolute right-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize"
+                  />
+                  <div
+                    onPointerDown={(event) => beginResize(event, n, 'se')}
+                    className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
+                  />
+                  <div
+                    onPointerDown={(event) => beginResize(event, n, 's')}
+                    className="absolute left-1/2 bottom-[-6px] h-3 w-3 -translate-x-1/2 bg-emerald-400 rounded-sm cursor-ns-resize"
                   />
                   <div
                     onPointerDown={(event) => beginResize(event, n, 'sw')}
                     className="absolute -left-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nesw-resize"
                   />
                   <div
-                    onPointerDown={(event) => beginResize(event, n, 'se')}
-                    className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-emerald-400 rounded-sm cursor-nwse-resize"
+                    onPointerDown={(event) => beginResize(event, n, 'w')}
+                    className="absolute left-[-6px] top-1/2 h-3 w-3 -translate-y-1/2 bg-emerald-400 rounded-sm cursor-ew-resize"
                   />
                 </>
               )}
