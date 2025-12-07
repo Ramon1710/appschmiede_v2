@@ -1971,6 +1971,7 @@ export default function TemplatesPage() {
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [customTemplatesBroken, setCustomTemplatesBroken] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateProjectId, setTemplateProjectId] = useState('');
   const [templateName, setTemplateName] = useState('');
@@ -1985,6 +1986,7 @@ export default function TemplatesPage() {
     const loadCustomTemplates = async () => {
       if (!user) return;
       try {
+        setCustomTemplatesBroken(false);
         const snapshot = await getDocs(collection(db, 'templates_custom'));
         const mapped = snapshot.docs
           .map((docSnap) => {
@@ -2007,6 +2009,7 @@ export default function TemplatesPage() {
         setCustomTemplates(mapped);
       } catch (loadError) {
         console.error('Konnte Custom Templates nicht laden', loadError);
+        setCustomTemplatesBroken(true);
       }
     };
 
@@ -2123,11 +2126,12 @@ export default function TemplatesPage() {
       if (!tpl.id || !name) return null;
       return { ...tpl, name, description, projectName };
     };
-    const merged = [...builtinTemplates, ...customTemplates]
+    const sourceList = customTemplatesBroken ? builtinTemplates : [...builtinTemplates, ...customTemplates];
+    const merged = sourceList
       .map((tpl) => (tpl ? normalize(tpl) : null))
       .filter((tpl): tpl is Template => Boolean(tpl));
     return merged;
-  }, [customTemplates]);
+  }, [customTemplates, customTemplatesBroken]);
 
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
@@ -2285,6 +2289,12 @@ export default function TemplatesPage() {
                   />
                 </label>
               </div>
+              {customTemplatesBroken && (
+                <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                  Custom-Vorlagen konnten nicht geladen werden. Es werden nur Built-in Vorlagen angezeigt. Bitte Datensätze in
+                  Firestore `templates_custom` prüfen.
+                </div>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"
