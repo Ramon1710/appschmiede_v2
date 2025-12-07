@@ -2119,6 +2119,7 @@ export default function TemplatesPage() {
   ];
 
   const visibleTemplates = useMemo(() => {
+    // TEMP: um die Seite zu stabilisieren, nur Built-ins rendern
     const normalize = (tpl: Template): Template | null => {
       const name = safeString(tpl.name, 'Unbenannte Vorlage');
       const description = safeString(tpl.description, '');
@@ -2126,12 +2127,11 @@ export default function TemplatesPage() {
       if (!tpl.id || !name) return null;
       return { ...tpl, name, description, projectName };
     };
-    const sourceList = customTemplatesBroken ? builtinTemplates : [...builtinTemplates, ...customTemplates];
-    const merged = sourceList
+    const merged = builtinTemplates
       .map((tpl) => (tpl ? normalize(tpl) : null))
       .filter((tpl): tpl is Template => Boolean(tpl));
     return merged;
-  }, [customTemplates, customTemplatesBroken]);
+  }, []);
 
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
@@ -2289,12 +2289,11 @@ export default function TemplatesPage() {
                   />
                 </label>
               </div>
-              {customTemplatesBroken && (
-                <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-                  Custom-Vorlagen konnten nicht geladen werden. Es werden nur Built-in Vorlagen angezeigt. Bitte Datensätze in
-                  Firestore `templates_custom` prüfen.
-                </div>
-              )}
+              <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                Hinweis: Aktuell werden zur Stabilisierung nur die Built-in-Vorlagen angezeigt. Prüfe die Collection
+                `templates_custom` und bereinige fehlerhafte Einträge (Name, projectName als String, pages als Array). Danach können
+                wir das Rendering wieder aktivieren.
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"
