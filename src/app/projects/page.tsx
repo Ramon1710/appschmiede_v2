@@ -1,6 +1,7 @@
 // src/app/projects/page.tsx
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import Header from '@/components/Header';
@@ -29,6 +30,7 @@ export default function ProjectsIndexPage() {
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [iconUpdatingId, setIconUpdatingId] = useState<string | null>(null);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -154,6 +156,31 @@ export default function ProjectsIndexPage() {
     },
   ];
 
+  const formatTimestamp = (value: any) => {
+    if (!value) return '—';
+    if (value?.toDate) {
+      try {
+        const date = value.toDate();
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '—' : `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  };
+
+  const sortedProjects = [...projects].sort((a, b) => {
+    const aTime = a.updatedAt?.toMillis?.() ?? a.updatedAt ?? a.createdAt?.toMillis?.() ?? a.createdAt ?? 0;
+    const bTime = b.updatedAt?.toMillis?.() ?? b.updatedAt ?? b.createdAt?.toMillis?.() ?? b.createdAt ?? 0;
+    return bTime - aTime;
+  });
+
+  const openProject = (projectId: string) => {
+    setActiveProjectId(projectId);
+    router.push(`/editor?projectId=${encodeURIComponent(projectId)}`);
+  };
+
   return (
     <>
       <Header />
@@ -188,16 +215,21 @@ export default function ProjectsIndexPage() {
 
           <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3" data-tour-id="projects-list">
             <h2 className="font-semibold">Meine Projekte</h2>
-            {projects.length === 0 ? (
+            {sortedProjects.length === 0 ? (
               <div className="text-sm opacity-70">Keine Projekte gefunden. Lege oben ein neues an.</div>
             ) : (
               <div className="space-y-2">
-                {projects.map((p) => {
+                {sortedProjects.map((p) => {
                   const isEditing = renamingId === p.id;
                   const isActive = p.id === activeProjectId;
                   const icon = p.icon?.trim() || '📱';
+                  const updatedLabel = formatTimestamp(p.updatedAt || p.createdAt);
                   return (
-                    <div key={p.id} className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 sm:flex-row sm:items-center">
+                    <div
+                      key={p.id}
+                      className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 sm:flex-row sm:items-center hover:border-cyan-400/40 transition cursor-pointer"
+                      onClick={() => openProject(p.id)}
+                    >
                       <div className="flex items-center gap-3 flex-1">
                         <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-2xl ${isActive ? 'ring-2 ring-cyan-400/60' : ''}`}>
                           {icon}
@@ -242,23 +274,23 @@ export default function ProjectsIndexPage() {
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="text-base font-semibold text-white">{p.name}</p>
-                              {isActive && <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-200">Aktiv</span>}
+                              {isActive && <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[11px] font-semibold text-cyan-200">Aktuell aktiv</span>}
                             </div>
-                            <p className="text-xs text-neutral-400">ID: {p.id}</p>
-                            <div className="mt-2 flex flex-wrap gap-1 text-lg">
-                              {PROJECT_ICON_CHOICES.map((choice) => (
-                                <button
-                                  key={`${p.id}-${choice}`}
-                                  type="button"
-                                  onClick={() => handleIconChange(p.id, choice)}
-                                  className={`h-8 w-8 rounded-lg border border-white/10 bg-white/5 transition hover:bg-white/10 ${p.icon === choice ? 'border-cyan-400/60 bg-cyan-500/20' : ''}`}
-                                  aria-label={`Icon ${choice} wählen`}
-                                  disabled={iconUpdatingId === p.id}
-                                >
-                                  {choice}
-                                </button>
-                              ))}
-                              {iconUpdatingId === p.id && <span className="ml-2 text-xs text-neutral-400">Speichere…</span>}
+                            <p className="text-xs text-neutral-400">Zuletzt geändert: {updatedLabel}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                              <label className="text-xs text-neutral-300">Icon:</label>
+                              <select
+                                value={p.icon ?? icon}
+                                onChange={(e) => handleIconChange(p.id, e.target.value)}
+                                disabled={iconUpdatingId === p.id}
+                                className="rounded-lg border border-white/15 bg-neutral-900 px-2 py-1 text-sm"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {PROJECT_ICON_CHOICES.map((choice) => (
+                                  <option key={`${p.id}-${choice}`} value={choice}>{choice}</option>
+                                ))}
+                              </select>
+                              {iconUpdatingId === p.id && <span className="text-xs text-neutral-400">Speichere…</span>}
                             </div>
                           </div>
                         )}
@@ -269,6 +301,7 @@ export default function ProjectsIndexPage() {
                             type="button"
                             onClick={() => beginRename(p)}
                             className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 font-semibold text-neutral-200 hover:bg-white/10"
+                            onClickCapture={(event) => event.stopPropagation()}
                           >
                             ✏️ Umbenennen
                           </button>
@@ -276,12 +309,19 @@ export default function ProjectsIndexPage() {
                         <a
                           href={`/editor?projectId=${encodeURIComponent(p.id)}`}
                           className="rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 font-semibold text-cyan-100 hover:bg-cyan-500/30"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openProject(p.id);
+                          }}
                         >
                           Öffnen
                         </a>
                         <button
                           type="button"
-                          onClick={() => onRemove(p.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onRemove(p.id);
+                          }}
                           className="rounded-lg border border-rose-500/40 bg-rose-500/20 px-3 py-1.5 font-semibold text-rose-100 hover:bg-rose-500/30"
                         >
                           Löschen

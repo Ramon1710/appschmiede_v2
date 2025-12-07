@@ -54,8 +54,9 @@ const withNavbar = (
   entries: Array<{ label: string; targetPage: string; icon?: string }>
 ) => [
   makeNode('container', {
-    y: 32,
-    h: 64,
+    y: 28,
+    h: 96,
+    w: 380,
     props: {
       component: 'navbar',
       navItems: entries.map((entry) => ({
@@ -219,16 +220,19 @@ const createCompanySuiteTemplate = (): Template => ({
             [
               {
                 type: 'text',
+                h: 96,
+                w: 360,
                 props: { text: 'Willkommen in der Unternehmens-App' },
-                style: { fontSize: 28, fontWeight: 600 },
+                style: { fontSize: 30, fontWeight: 700 },
               },
               {
                 type: 'text',
-                h: 84,
+                h: 110,
+                w: 360,
                 props: {
                   text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
                 },
-                style: { fontSize: 15, lineHeight: 1.6, color: '#cbd5f5' },
+                style: { fontSize: 16, lineHeight: 1.6, color: '#cbd5f5' },
               },
               { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
               { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
@@ -308,8 +312,10 @@ const createCompanySuiteTemplate = (): Template => ({
             [
               {
                 type: 'text',
+                h: 88,
+                w: 360,
                 props: { text: 'Unternehmens-Dashboard' },
-                style: { fontSize: 28, fontWeight: 600 },
+                style: { fontSize: 30, fontWeight: 700 },
               },
               {
                 type: 'text',
@@ -317,7 +323,8 @@ const createCompanySuiteTemplate = (): Template => ({
                   text: 'Wähle die gewünschte Seite und springe direkt in Zeiten, Aufgaben, Mitarbeitertracking, Struktur oder Chat.',
                 },
                 style: { fontSize: 16, lineHeight: 1.5 },
-                h: 84,
+                h: 104,
+                w: 360,
               },
               { type: 'button', props: { label: 'Zu Zeiterfassung', action: 'navigate', targetPage: 'Zeiterfassung' }, w: 240 },
               { type: 'button', props: { label: 'Zu Aufgaben', action: 'navigate', targetPage: 'Aufgaben' }, w: 240 },
@@ -342,8 +349,8 @@ const createCompanySuiteTemplate = (): Template => ({
         children: withNavbar(
           stack(
             [
-              { type: 'button', props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-              { type: 'text', props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'button', props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
+              { type: 'text', h: 80, w: 340, props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 28, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -386,8 +393,8 @@ const createCompanySuiteTemplate = (): Template => ({
         children: withNavbar(
           stack(
             [
-              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-              { type: 'text', props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
+              { type: 'text', h: 80, w: 340, props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 28, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -429,8 +436,8 @@ const createCompanySuiteTemplate = (): Template => ({
         children: withNavbar(
           stack(
             [
-              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-              { type: 'text', props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
+              { type: 'text', h: 80, w: 340, props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 28, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -439,25 +446,8 @@ const createCompanySuiteTemplate = (): Template => ({
                   mapInfo: 'Letzte Positionen deiner Mitarbeiter',
                   mapActionLabel: 'Live-Standort aktualisieren',
                 },
-                h: 240,
+                h: 320,
               },
-              {
-                type: 'container',
-                props: {
-                  component: 'status-board',
-                  statusBoard: {
-                    title: 'Mitarbeiterstatus',
-                    activeId: 'status-remote',
-                    options: [
-                      { id: 'status-office', label: 'Im Büro', description: '8 Personen', color: '#22c55e' },
-                      { id: 'status-remote', label: 'Remote', description: '5 Personen', color: '#38bdf8' },
-                      { id: 'status-travel', label: 'Unterwegs', description: '2 Personen', color: '#f59e0b' },
-                    ],
-                  },
-                },
-                h: 200,
-              },
-              { type: 'container', props: { component: 'analytics' }, h: 200 },
             ],
             { startY: 140, gap: 20 }
           ),
@@ -476,8 +466,8 @@ const createCompanySuiteTemplate = (): Template => ({
         children: withNavbar(
           stack(
             [
-              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-              { type: 'text', props: { text: 'Projektordner & Assets' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
+              { type: 'text', h: 80, w: 340, props: { text: 'Projektordner & Assets' }, style: { fontSize: 28, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -519,8 +509,8 @@ const createCompanySuiteTemplate = (): Template => ({
         children: withNavbar(
           stack(
             [
-              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 220 },
-              { type: 'text', props: { text: 'Team-Chat & Projektkommunikation' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
+              { type: 'text', h: 80, w: 340, props: { text: 'Team-Chat & Projektkommunikation' }, style: { fontSize: 28, fontWeight: 700 } },
               { type: 'container', props: { component: 'chat' }, h: 520 },
               { type: 'button', props: { label: 'Bild hochladen', action: 'upload-photo' } },
               {

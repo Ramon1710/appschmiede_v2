@@ -1462,9 +1462,52 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
 
       if (component === 'chat') {
         const backgroundStyle = buildContainerBackgroundStyle(node.props, CHAT_FALLBACK_BACKGROUND);
+        const showFirstName = node.props?.chatShowFirstName !== false;
+        const showLastName = node.props?.chatShowLastName === true;
+        const textColor = typeof node.props?.chatTextColor === 'string' && node.props.chatTextColor.trim()
+          ? node.props.chatTextColor.trim()
+          : '#e5e7eb';
+        const messages = [
+          { id: 'm1', first: 'Alex', last: 'Schmidt', text: 'Hey, das neue Dashboard sieht gut aus!' },
+          { id: 'm2', first: 'Sam', last: 'Nguyen', text: 'Top. Ich pushe gleich die Zeiterfassung.' },
+          { id: 'm3', first: 'Jamie', last: 'Keller', text: 'Perfekt, dann können wir morgen testen.' },
+        ];
         return (
-          <div className={`${base} grid place-items-center rounded-xl border border-emerald-500/30 text-xs text-emerald-400`} style={backgroundStyle}>
-            💬 Chatfenster (Demo)
+          <div
+            className={`${base} flex flex-col gap-3 rounded-xl border border-emerald-500/30 p-3 text-xs`}
+            style={backgroundStyle}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-emerald-300/80">
+              <span>Team-Chat</span>
+              <span className="text-[10px] text-emerald-200/60">Demo</span>
+            </div>
+            <div className="flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/25 p-2">
+              {messages.map((msg) => {
+                const name = [showFirstName ? msg.first : null, showLastName ? msg.last : null].filter(Boolean).join(' ');
+                return (
+                  <div key={msg.id} className="flex flex-col gap-0.5 rounded-md border border-white/5 bg-white/5 px-2 py-1.5">
+                    {name && <span className="text-[10px] uppercase tracking-[0.25em] text-emerald-200/80">{name}</span>}
+                    <span className="text-sm" style={{ color: textColor }}>{msg.text}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2 py-1">
+              <input
+                type="text"
+                placeholder="Nachricht eingeben"
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-400 focus:outline-none"
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+              />
+              <button
+                type="button"
+                className="rounded-md bg-emerald-500/80 px-3 py-1 text-xs font-semibold text-emerald-950 hover:bg-emerald-400"
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+              >Senden</button>
+            </div>
           </div>
         );
       }

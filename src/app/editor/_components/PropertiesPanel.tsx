@@ -556,6 +556,7 @@ export default function PropertiesPanel({
   const isNavbarContainer = node?.type === 'container' && node.props?.component === 'navbar';
   const isTimeTrackingContainer = node?.type === 'container' && node.props?.component === 'time-tracking';
   const isStatusBoardContainer = node?.type === 'container' && node.props?.component === 'status-board';
+  const isChatContainer = node?.type === 'container' && node.props?.component === 'chat';
   const isChatBackgroundContainer = node?.type === 'container' && (node.props?.component === 'ai-chat' || node.props?.component === 'chat');
   const isQrContainer = node?.type === 'container' && node.props?.component === 'qr-code';
   const isButtonSelected = node?.type === 'button';
@@ -698,6 +699,11 @@ export default function PropertiesPanel({
     } as React.CSSProperties;
   }, [chatBackgroundColorValue, chatBackgroundImageUrl, chatBackgroundPosX, chatBackgroundPosY, chatBackgroundSize, isChatBackgroundContainer]);
   const chatBackgroundImageActive = Boolean(chatBackgroundImageUrl);
+  const chatShowFirstName = isChatContainer ? node?.props?.chatShowFirstName !== false : true;
+  const chatShowLastName = isChatContainer ? node?.props?.chatShowLastName === true : false;
+  const chatTextColor = isChatContainer && typeof node?.props?.chatTextColor === 'string' && node.props.chatTextColor.trim()
+    ? node.props.chatTextColor.trim()
+    : '#e5e7eb';
   const qrBackgroundColorValue = isQrContainer
     ? (typeof node?.props?.qrBackgroundColor === 'string' && node.props.qrBackgroundColor?.trim()
       ? node.props.qrBackgroundColor.trim()
@@ -1430,6 +1436,50 @@ export default function PropertiesPanel({
   return (
     <div className="p-4 space-y-4 text-sm bg-[#0b0b0f] h-full overflow-y-auto">
       <div className="font-semibold text-lg border-b border-[#222] pb-2">Eigenschaften</div>
+
+      {isChatContainer && (
+        <div className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+            <span>Chat</span>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-neutral-200">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-emerald-400"
+              checked={chatShowFirstName}
+              onChange={(e) => setProps({ chatShowFirstName: e.target.checked })}
+            />
+            <span>Vorname anzeigen</span>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-neutral-200">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-emerald-400"
+              checked={chatShowLastName}
+              onChange={(e) => setProps({ chatShowLastName: e.target.checked })}
+            />
+            <span>Nachname anzeigen</span>
+          </label>
+          <div className="space-y-1 text-xs text-neutral-300">
+            <div className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Textfarbe</div>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                className="h-8 w-10 cursor-pointer rounded border border-neutral-700 bg-neutral-800"
+                value={chatTextColor}
+                onChange={(e) => setProps({ chatTextColor: e.target.value })}
+              />
+              <input
+                type="text"
+                className="flex-1 rounded bg-neutral-800 px-2 py-1 text-sm"
+                value={chatTextColor}
+                onChange={(e) => setProps({ chatTextColor: e.target.value })}
+                placeholder="#e5e7eb"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPageBackgroundControls && (
         <div className="space-y-2">
