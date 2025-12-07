@@ -299,9 +299,11 @@ export default function ProjectsIndexPage() {
                         {!isEditing && (
                           <button
                             type="button"
-                            onClick={() => beginRename(p)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              beginRename(p);
+                            }}
                             className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 font-semibold text-neutral-200 hover:bg-white/10"
-                            onClickCapture={(event) => event.stopPropagation()}
                           >
                             ✏️ Umbenennen
                           </button>

@@ -51,12 +51,13 @@ const makeNode = (type: Node['type'], overrides: Partial<Node> = {}): Node => {
 
 const withNavbar = (
   children: Node[],
-  entries: Array<{ label: string; targetPage: string; icon?: string }>
+  entries: Array<{ label: string; targetPage: string; icon?: string }>,
+  options?: { width?: number; height?: number; y?: number }
 ) => [
   makeNode('container', {
-    y: 28,
-    h: 96,
-    w: 380,
+    y: options?.y ?? 16,
+    h: options?.height ?? 120,
+    w: options?.width ?? 520,
     props: {
       component: 'navbar',
       navItems: entries.map((entry) => ({
@@ -220,19 +221,19 @@ const createCompanySuiteTemplate = (): Template => ({
             [
               {
                 type: 'text',
-                h: 96,
-                w: 360,
+                h: 120,
+                w: 540,
                 props: { text: 'Willkommen in der Unternehmens-App' },
-                style: { fontSize: 30, fontWeight: 700 },
+                style: { fontSize: 34, fontWeight: 700 },
               },
               {
                 type: 'text',
-                h: 110,
-                w: 360,
+                h: 128,
+                w: 540,
                 props: {
                   text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
                 },
-                style: { fontSize: 16, lineHeight: 1.6, color: '#cbd5f5' },
+                style: { fontSize: 17, lineHeight: 1.6, color: '#cbd5f5' },
               },
               { type: 'input', props: { placeholder: 'Unternehmens-E-Mail', inputType: 'email' } },
               { type: 'input', props: { placeholder: 'Passwort', inputType: 'password' } },
@@ -312,19 +313,19 @@ const createCompanySuiteTemplate = (): Template => ({
             [
               {
                 type: 'text',
-                h: 88,
-                w: 360,
+                h: 120,
+                w: 560,
                 props: { text: 'Unternehmens-Dashboard' },
-                style: { fontSize: 30, fontWeight: 700 },
+                style: { fontSize: 34, fontWeight: 700 },
               },
               {
                 type: 'text',
                 props: {
                   text: 'Wähle die gewünschte Seite und springe direkt in Zeiten, Aufgaben, Mitarbeitertracking, Struktur oder Chat.',
                 },
-                style: { fontSize: 16, lineHeight: 1.5 },
-                h: 104,
-                w: 360,
+                style: { fontSize: 17, lineHeight: 1.6 },
+                h: 132,
+                w: 560,
               },
               { type: 'button', props: { label: 'Zu Zeiterfassung', action: 'navigate', targetPage: 'Zeiterfassung' }, w: 240 },
               { type: 'button', props: { label: 'Zu Aufgaben', action: 'navigate', targetPage: 'Aufgaben' }, w: 240 },
@@ -332,7 +333,7 @@ const createCompanySuiteTemplate = (): Template => ({
               { type: 'button', props: { label: 'Projektstruktur öffnen', action: 'navigate', targetPage: 'Projektstruktur' }, w: 240 },
               { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat' }, w: 240 },
             ],
-            { startY: 140, gap: 18 }
+            { startY: 170, gap: 18 }
           ),
           navItems
         ),
@@ -350,7 +351,7 @@ const createCompanySuiteTemplate = (): Template => ({
           stack(
             [
               { type: 'button', props: { label: 'Zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
-              { type: 'text', h: 80, w: 340, props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 28, fontWeight: 700 } },
+              { type: 'text', h: 110, w: 540, props: { text: 'Zeiterfassung pro Projekt' }, style: { fontSize: 32, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -376,7 +377,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 h: 440,
               },
             ],
-            { startY: 140, gap: 20 }
+            { startY: 170, gap: 20 }
           ),
           navItems
         ),
@@ -394,7 +395,7 @@ const createCompanySuiteTemplate = (): Template => ({
           stack(
             [
               { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
-              { type: 'text', h: 80, w: 340, props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 28, fontWeight: 700 } },
+              { type: 'text', h: 110, w: 540, props: { text: 'Aufgaben & Benachrichtigungen' }, style: { fontSize: 32, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -419,7 +420,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 h: 200,
               },
             ],
-            { startY: 140, gap: 20 }
+            { startY: 170, gap: 20 }
           ),
           navItems
         ),
@@ -437,7 +438,7 @@ const createCompanySuiteTemplate = (): Template => ({
           stack(
             [
               { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
-              { type: 'text', h: 80, w: 340, props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 28, fontWeight: 700 } },
+              { type: 'text', h: 110, w: 540, props: { text: 'Teamstatus & Standorte' }, style: { fontSize: 32, fontWeight: 700 } },
               {
                 type: 'container',
                 props: {
@@ -449,7 +450,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 h: 320,
               },
             ],
-            { startY: 140, gap: 20 }
+            { startY: 170, gap: 20 }
           ),
           navItems
         ),
@@ -492,7 +493,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 h: 180,
               },
             ],
-            { startY: 140, gap: 20 }
+            { startY: 170, gap: 20 }
           ),
           navItems
         ),
@@ -523,7 +524,7 @@ const createCompanySuiteTemplate = (): Template => ({
                 h: 180,
               },
             ],
-            { startY: 140, gap: 18 }
+            { startY: 170, gap: 18 }
           ),
           navItems
         ),
@@ -582,20 +583,23 @@ const createChatAppTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(140deg,#0b1120,#1f2a40)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Willkommen im Teamchat' }, style: { fontSize: 28, fontWeight: 600 } },
-            {
-              type: 'text',
-              props: {
-                text: 'Bleib verbunden, starte Projekt-Chats und verwalte Support-Anfragen mit einem Fingertipp.',
+          stack(
+            [
+              { type: 'text', props: { text: 'Willkommen im Teamchat' }, style: { fontSize: 28, fontWeight: 600 } },
+              {
+                type: 'text',
+                props: {
+                  text: 'Bleib verbunden, starte Projekt-Chats und verwalte Support-Anfragen mit einem Fingertipp.',
+                },
+                style: { fontSize: 16 },
+                h: 80,
               },
-              style: { fontSize: 16 },
-              h: 80,
-            },
-            { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat', target: 'chat' } },
-            { type: 'button', props: { label: 'Registrieren', action: 'register' } },
-            { type: 'button', props: { label: 'Login', action: 'login' } },
-          ]),
+              { type: 'button', props: { label: 'Zum Chat', action: 'navigate', targetPage: 'Chat', target: 'chat' } },
+              { type: 'button', props: { label: 'Registrieren', action: 'register' } },
+              { type: 'button', props: { label: 'Login', action: 'login' } },
+            ],
+            { startY: 160 }
+          ),
           [
             { label: 'Start', targetPage: 'Start', icon: '🏠' },
             { label: 'Chat', targetPage: 'Chat', icon: '💬' },
@@ -612,12 +616,15 @@ const createChatAppTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(140deg,#101926,#1d2a3d)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Projektchat' }, style: { fontSize: 26, fontWeight: 600 } },
-            { type: 'container', props: { component: 'chat' }, h: 280 },
-            { type: 'button', props: { label: 'Bild senden', action: 'upload-photo' } },
-            { type: 'button', props: { label: 'Audio aufnehmen', action: 'record-audio' } },
-          ]),
+          stack(
+            [
+              { type: 'text', props: { text: 'Projektchat' }, style: { fontSize: 26, fontWeight: 600 } },
+              { type: 'container', props: { component: 'chat' }, h: 280 },
+              { type: 'button', props: { label: 'Bild senden', action: 'upload-photo' } },
+              { type: 'button', props: { label: 'Audio aufnehmen', action: 'record-audio' } },
+            ],
+            { startY: 160 }
+          ),
           [
             { label: 'Start', targetPage: 'Start' },
             { label: 'Chat', targetPage: 'Chat', icon: '💬' },
@@ -633,27 +640,30 @@ const createChatAppTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(140deg,#0c1624,#14263c)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Support & Tickets' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'support',
-                supportChannel: 'ticket',
-                supportTarget: 'support@teamchat.app',
-                supportTickets: [
-                  {
-                    id: fallbackId(),
-                    subject: 'Datei-Upload funktioniert nicht',
-                    message: 'Bitte prüfen, ob die 10MB-Grenze erreicht ist.',
-                    createdAt: new Date().toISOString(),
-                    channel: 'ticket',
-                  },
-                ],
+          stack(
+            [
+              { type: 'text', props: { text: 'Support & Tickets' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'support',
+                  supportChannel: 'ticket',
+                  supportTarget: 'support@teamchat.app',
+                  supportTickets: [
+                    {
+                      id: fallbackId(),
+                      subject: 'Datei-Upload funktioniert nicht',
+                      message: 'Bitte prüfen, ob die 10MB-Grenze erreicht ist.',
+                      createdAt: new Date().toISOString(),
+                      channel: 'ticket',
+                    },
+                  ],
+                },
+                h: 220,
               },
-              h: 220,
-            },
-          ]),
+            ],
+            { startY: 160 }
+          ),
           [
             { label: 'Start', targetPage: 'Start' },
             { label: 'Support', targetPage: 'Support', icon: '🎫' },
@@ -707,12 +717,15 @@ const createEventTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#0a1424,#1d2b45)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Event Hub' }, style: { fontSize: 28, fontWeight: 600 } },
-            { type: 'container', props: { component: 'calendar', calendarFocusDate: new Date().toISOString() }, h: 240 },
-            { type: 'container', props: { component: 'map', mapLocation: 'Berlin, Germany' }, h: 220 },
-            { type: 'container', props: { component: 'qr-code', qrUrl: 'https://example.com/tickets' }, h: 160 },
-          ]),
+          stack(
+            [
+              { type: 'text', props: { text: 'Event Hub' }, style: { fontSize: 28, fontWeight: 600 } },
+              { type: 'container', props: { component: 'calendar', calendarFocusDate: new Date().toISOString() }, h: 240 },
+              { type: 'container', props: { component: 'map', mapLocation: 'Berlin, Germany' }, h: 220 },
+              { type: 'container', props: { component: 'qr-code', qrUrl: 'https://example.com/tickets' }, h: 160 },
+            ],
+            { startY: 160 }
+          ),
           [
             { label: 'Event', targetPage: 'Event', icon: '🎟️' },
             { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
@@ -728,29 +741,32 @@ const createEventTemplate = (): Template => ({
         type: 'container',
         props: { bg: 'linear-gradient(135deg,#10172a,#1d2a3d)' },
         children: withNavbar(
-          stack([
-            { type: 'text', props: { text: 'Event Organisation' }, style: { fontSize: 26, fontWeight: 600 } },
-            {
-              type: 'container',
-              props: {
-                component: 'task-manager',
-                tasks: [
-                  { id: fallbackId(), title: 'Catering bestätigen', done: false },
-                  { id: fallbackId(), title: 'Location dekorieren', done: false },
-                  { id: fallbackId(), title: 'Speaker einweisen', done: true },
-                ],
+          stack(
+            [
+              { type: 'text', props: { text: 'Event Organisation' }, style: { fontSize: 26, fontWeight: 600 } },
+              {
+                type: 'container',
+                props: {
+                  component: 'task-manager',
+                  tasks: [
+                    { id: fallbackId(), title: 'Catering bestätigen', done: false },
+                    { id: fallbackId(), title: 'Location dekorieren', done: false },
+                    { id: fallbackId(), title: 'Speaker einweisen', done: true },
+                  ],
+                },
+                h: 220,
               },
-              h: 220,
-            },
-            {
-              type: 'container',
-              props: {
-                component: 'audio-recorder',
-                audioNotes: [],
+              {
+                type: 'container',
+                props: {
+                  component: 'audio-recorder',
+                  audioNotes: [],
+                },
+                h: 200,
               },
-              h: 200,
-            },
-          ]),
+            ],
+            { startY: 160 }
+          ),
           [
             { label: 'Event', targetPage: 'Event' },
             { label: 'Tasks', targetPage: 'Orga', icon: '🛠️' },
