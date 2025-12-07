@@ -802,6 +802,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const routeParams = useParams<{ projectId?: string; pageId?: string }>();
   const [tree, setTree] = useState<PageTree>(() => sanitizePage(emptyTree));
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [copiedNode, setCopiedNode] = useState<EditorNode | null>(null);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDirty = useRef(false);
   const latestTree = useRef<PageTree>(sanitizePage(emptyTree));
@@ -1266,6 +1267,45 @@ export default function EditorShell({ initialPageId }: Props) {
     () => (tree.tree.children ?? []).find((n) => n.id === selectedId) ?? null,
     [tree, selectedId]
   );
+
+  const handleCopySelected = useCallback(() => {
+    if (!selectedNode) return;
+    setCopiedNode(selectedNode);
+  }, [selectedNode]);
+
+  const handlePasteNode = useCallback(() => {
+    if (!copiedNode) return;
+
+    const clone: EditorNode = {
+      ...copiedNode,
+      id: crypto.randomUUID(),
+      props: copiedNode.props ? JSON.parse(JSON.stringify(copiedNode.props)) : undefined,
+      style: copiedNode.style ? JSON.parse(JSON.stringify(copiedNode.style)) : undefined,
+      children: copiedNode.children ? JSON.parse(JSON.stringify(copiedNode.children)) : undefined,
+    };
+
+    const width = Math.max(MIN_NODE_WIDTH, clone.w ?? MIN_NODE_WIDTH);
+    const height = Math.max(MIN_NODE_HEIGHT, clone.h ?? MIN_NODE_HEIGHT);
+    const maxX = Math.max(0, CANVAS_FRAME.width - width);
+    const maxY = Math.max(0, CANVAS_FRAME.height - height);
+
+    const nextX = clampToRange((clone.x ?? 0) + 12, 0, maxX);
+    const nextY = clampToRange((clone.y ?? 0) + 12, 0, maxY);
+
+    clone.x = nextX;
+    clone.y = nextY;
+    clone.w = width;
+    clone.h = height;
+
+    applyTreeUpdate((prev) => ({
+      ...prev,
+      tree: {
+        ...prev.tree,
+        children: [...(prev.tree.children ?? []), clone],
+      },
+    }));
+    setSelectedId(clone.id);
+  }, [applyTreeUpdate, copiedNode]);
 
   const currentPageMeta = useMemo(() => pages.find((p) => p.id === currentPageId) ?? null, [pages, currentPageId]);
 
@@ -1855,20 +1895,36 @@ export default function EditorShell({ initialPageId }: Props) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!selectedId) return;
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
       const target = event.target as HTMLElement | null;
       const isEditableTarget = Boolean(target && (target.closest('input, textarea') || target.contentEditable === 'true'));
       const isCanvasField = Boolean(target?.closest('[data-editor-canvas-field="true"]'));
       if (isEditableTarget && !isCanvasField) {
         return;
       }
+
+      const modKey = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+
+      if (modKey && key === 'c') {
+        event.preventDefault();
+        handleCopySelected();
+        return;
+      }
+
+      if (modKey && key === 'v') {
+        event.preventDefault();
+        handlePasteNode();
+        return;
+      }
+
+      if (!selectedId) return;
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
       event.preventDefault();
       onRemove(selectedId);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, onRemove]);
+  }, [selectedId, onRemove, handleCopySelected, handlePasteNode]);
 
   const runAiGenerator = useCallback(async () => {
     if (!aiPrompt.trim()) {

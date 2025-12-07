@@ -228,7 +228,9 @@ export default function ProjectsIndexPage() {
                     <div
                       key={p.id}
                       className="flex flex-col gap-2 rounded-xl border border-white/10 p-3 sm:flex-row sm:items-center hover:border-cyan-400/40 transition cursor-pointer"
-                      onClick={() => openProject(p.id)}
+                      onClick={() => {
+                        if (!isEditing) openProject(p.id);
+                      }}
                     >
                       <div className="flex items-center gap-3 flex-1">
                         <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-white/5 text-2xl ${isActive ? 'ring-2 ring-cyan-400/60' : ''}`}>
@@ -240,6 +242,7 @@ export default function ProjectsIndexPage() {
                               ref={renameInputRef}
                               value={renameValue}
                               onChange={(e) => setRenameValue(e.target.value)}
+                              onClick={(event) => event.stopPropagation()}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter') {
                                   event.preventDefault();

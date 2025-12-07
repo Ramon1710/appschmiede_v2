@@ -1,10 +1,10 @@
 // src/app/tools/templates/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
@@ -17,7 +17,11 @@ type Template = {
   description: string;
   projectName: string;
   pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+  source?: 'builtin' | 'custom';
+  createdBy?: string;
 };
+
+const TEMPLATE_ADMIN_EMAILS = ['ramon.mueler@gmx.ch', 'admin.admin@appschmiede.com'];
 
 const fallbackId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -1909,7 +1913,7 @@ const createCoworkingTemplate = (): Template => {
   };
 };
 
-const templates: Template[] = [
+const builtinTemplates: Template[] = [
   createCompanySuiteTemplate(),
   createChatAppTemplate(),
   createEventTemplate(),
@@ -1930,16 +1934,53 @@ const templates: Template[] = [
   createNonprofitTemplate(),
   createTravelTemplate(),
   createCoworkingTemplate(),
-];
+].map((tpl) => ({ ...tpl, source: 'builtin' as const }));
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateProjectId, setTemplateProjectId] = useState('');
+  const [templateName, setTemplateName] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [templateProjectName, setTemplateProjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
+
+  useEffect(() => {
+    const loadCustomTemplates = async () => {
+      if (!user) return;
+      try {
+        const snapshot = await getDocs(collection(db, 'templates_custom'));
+        const mapped = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.name,
+            description: data.description,
+            projectName: data.projectName,
+            pages: data.pages || [],
+            source: 'custom' as const,
+            createdBy: data.createdBy,
+          } as Template;
+        });
+        setCustomTemplates(mapped);
+      } catch (loadError) {
+        console.error('Konnte Custom Templates nicht laden', loadError);
+      }
+    };
+
+    loadCustomTemplates();
+  }, [user]);
+
+  const isTemplateAdmin = useMemo(
+    () => (user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false),
+    [user?.email]
+  );
 
   if (!user)
     return (
@@ -2038,6 +2079,79 @@ export default function TemplatesPage() {
     },
   ];
 
+  const visibleTemplates = useMemo(() => [...builtinTemplates, ...customTemplates], [customTemplates]);
+
+  const saveTemplateFromProject = async () => {
+    if (!isTemplateAdmin) return;
+    if (!templateProjectId.trim() || !templateName.trim()) {
+      setError('Projekt-ID und Vorlagenname dürfen nicht leer sein.');
+      return;
+    }
+    setSavingTemplate(true);
+    setError(null);
+
+    try {
+      // Lade Projekt-Metadaten
+      const projectSnap = await getDoc(doc(db, 'projects', templateProjectId.trim()))
+        .catch(() => null);
+      const projectData = projectSnap?.exists() ? projectSnap.data() : null;
+
+      // Lade Seiten
+      const pagesSnap = await getDocs(collection(db, 'projects', templateProjectId.trim(), 'pages'));
+      const pages = pagesSnap.docs.map((p) => {
+        const data = p.data();
+        return {
+          name: data.name,
+          folder: data.folder ?? null,
+          tree: data.tree,
+        } as Template['pages'][number];
+      });
+
+      if (!pages.length) {
+        setError('Keine Seiten gefunden. Bitte prüfe die Projekt-ID.');
+        setSavingTemplate(false);
+        return;
+      }
+
+      const tplId = fallbackId();
+      await setDoc(doc(db, 'templates_custom', tplId), {
+        name: templateName.trim(),
+        description: templateDescription.trim() || 'Benutzerdefinierte Vorlage',
+        projectName: templateProjectName.trim() || projectData?.name || templateName.trim(),
+        pages,
+        createdBy: user?.uid ?? null,
+        createdAt: serverTimestamp(),
+        source: 'custom',
+      });
+
+      // Reload list
+      const snapshot = await getDocs(collection(db, 'templates_custom'));
+      const mapped = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          name: data.name,
+          description: data.description,
+          projectName: data.projectName,
+          pages: data.pages || [],
+          source: 'custom' as const,
+          createdBy: data.createdBy,
+        } as Template;
+      });
+      setCustomTemplates(mapped);
+
+      setTemplateProjectId('');
+      setTemplateName('');
+      setTemplateDescription('');
+      setTemplateProjectName('');
+    } catch (saveError: any) {
+      console.error('Vorlage konnte nicht gespeichert werden', saveError);
+      setError(saveError?.message || 'Vorlage konnte nicht gespeichert werden.');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
       <Header />
@@ -2050,10 +2164,75 @@ export default function TemplatesPage() {
               weiter angepasst werden.
             </p>
           </header>
+
+          {isTemplateAdmin && (
+            <section className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-emerald-100">Admin: Vorlage aus Projekt speichern</h2>
+                {savingTemplate && <span className="text-xs text-emerald-100">Speichere…</span>}
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-neutral-200">Projekt-ID</span>
+                  <input
+                    value={templateProjectId}
+                    onChange={(e) => setTemplateProjectId(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                    placeholder="projectId"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-neutral-200">Vorlagenname</span>
+                  <input
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                    placeholder="z. B. Meine neue Vorlage"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm md:col-span-2">
+                  <span className="text-neutral-200">Beschreibung</span>
+                  <input
+                    value={templateDescription}
+                    onChange={(e) => setTemplateDescription(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                    placeholder="Kurzer Teaser für Nutzer"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm md:col-span-2">
+                  <span className="text-neutral-200">Anzeigename im Projekt (optional)</span>
+                  <input
+                    value={templateProjectName}
+                    onChange={(e) => setTemplateProjectName(e.target.value)}
+                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
+                    placeholder="Name des angelegten Projekts"
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={saveTemplateFromProject}
+                  disabled={savingTemplate}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                    savingTemplate
+                      ? 'bg-white/5 text-neutral-500 cursor-wait'
+                      : 'bg-emerald-500/20 text-emerald-100 border border-emerald-400/50 hover:bg-emerald-500/30'
+                  }`}
+                >
+                  {savingTemplate ? 'Speichere…' : 'Als Vorlage speichern'}
+                </button>
+              </div>
+            </section>
+          )}
+
           <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
-            {templates.map((tpl) => (
+            {visibleTemplates.map((tpl) => (
               <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
-                <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                  {tpl.source === 'custom' && <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">Custom</span>}
+                </div>
                 <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
                 <button
                   type="button"
