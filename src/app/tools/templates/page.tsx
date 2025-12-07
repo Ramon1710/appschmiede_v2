@@ -200,6 +200,7 @@ const withAuthPages = (appName: string, pages: Template['pages'], options?: { ba
   ...pages,
 ];
 
+<<<<<<< HEAD
 const createCompanySuiteTemplate = (): Template => ({
   id: 'company-suite',
   name: 'Unternehmens-App',
@@ -231,6 +232,29 @@ const createCompanySuiteTemplate = (): Template => ({
                 w: 540,
                 props: { text: 'Willkommen in der Unternehmens-App' },
                 style: { fontSize: 34, fontWeight: 700 },
+=======
+const createCompanySuiteTemplate = (): Template => {
+  const pages: Template['pages'] = [
+    {
+      name: 'Login',
+      folder: 'Onboarding',
+      tree: {
+        id: 'root',
+        type: 'container',
+        props: { bg: 'linear-gradient(135deg,#050910,#0f1b2e)' },
+        children: stack(
+          [
+            {
+              type: 'text',
+              props: { text: 'Willkommen zurück in der Unternehmens-App' },
+              style: { fontSize: 28, fontWeight: 600 },
+            },
+            {
+              type: 'text',
+              h: 84,
+              props: {
+                text: 'Verwalte Projekte, Zeiten und Team-Kommunikation. Bitte melde dich mit deinen Unternehmensdaten an.',
+>>>>>>> cbeb394 (feat: editor updates and ui polish)
               },
               {
                 type: 'text',
@@ -492,6 +516,7 @@ const createCompanySuiteTemplate = (): Template => ({
           navItems
         ),
       },
+<<<<<<< HEAD
     };
 
     return [
@@ -504,6 +529,19 @@ const createCompanySuiteTemplate = (): Template => ({
     ];
   })(),
 });
+=======
+    },
+  ];
+
+  return {
+    id: 'company-suite',
+    name: 'Unternehmens-App',
+    description: 'Dashboard, Zeiterfassung, Aufgaben & Kommunikation für dein Team.',
+    projectName: 'Unternehmens-App',
+    pages: withAuthPages('Unternehmens-App', pages, { background: defaultBackground }),
+  };
+};
+>>>>>>> cbeb394 (feat: editor updates and ui polish)
 
 const createChatAppTemplate = (): Template => ({
   id: 'team-chat',
