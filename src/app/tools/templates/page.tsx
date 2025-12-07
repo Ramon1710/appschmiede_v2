@@ -23,6 +23,33 @@ type Template = {
 
 const TEMPLATE_ADMIN_EMAILS = ['ramon.mueler@gmx.ch', 'admin.admin@appschmiede.com'];
 
+class TemplatesErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; message: string }>
+{
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, message: '' };
+  }
+
+  static getDerivedStateFromError(error: unknown) {
+    return { hasError: true, message: error instanceof Error ? error.message : 'Unbekannter Fehler' };
+  }
+
+  componentDidCatch(error: unknown, info: any) {
+    console.error('Vorlagen-Rendering fehlgeschlagen', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          Vorlagen konnten nicht geladen werden. Bitte Seite neu laden. Fehler: {this.state.message}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const fallbackId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
@@ -2275,30 +2302,32 @@ export default function TemplatesPage() {
             </section>
           )}
 
-          <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
-            {visibleTemplates.map((tpl) => (
-              <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
-                  {tpl.source === 'custom' && <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">Custom</span>}
+          <TemplatesErrorBoundary>
+            <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
+              {visibleTemplates.map((tpl) => (
+                <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                    {tpl.source === 'custom' && <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">Custom</span>}
+                  </div>
+                  <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
+                  <button
+                    type="button"
+                    onClick={() => createFromTemplate(tpl)}
+                    disabled={creatingTemplateId === tpl.id}
+                    className={`mt-4 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                      creatingTemplateId === tpl.id
+                        ? 'bg-white/5 text-neutral-500 cursor-wait'
+                        : 'bg-white/10 text-neutral-100 hover:bg-white/20'
+                    }`}
+                    data-tour-id="templates-create"
+                  >
+                    {creatingTemplateId === tpl.id ? 'Wird erstellt…' : 'Projekt erstellen'}
+                  </button>
                 </div>
-                <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
-                <button
-                  type="button"
-                  onClick={() => createFromTemplate(tpl)}
-                  disabled={creatingTemplateId === tpl.id}
-                  className={`mt-4 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                    creatingTemplateId === tpl.id
-                      ? 'bg-white/5 text-neutral-500 cursor-wait'
-                      : 'bg-white/10 text-neutral-100 hover:bg-white/20'
-                  }`}
-                  data-tour-id="templates-create"
-                >
-                  {creatingTemplateId === tpl.id ? 'Wird erstellt…' : 'Projekt erstellen'}
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </TemplatesErrorBoundary>
           {error && (
             <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
               {error}
