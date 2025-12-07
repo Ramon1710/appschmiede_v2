@@ -1875,6 +1875,9 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
             top: n.y ?? 0,
             width: n.w ?? 120,
             height: n.h ?? 40,
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'stretch',
             cursor: 'move',
             touchAction: 'none',
           };
@@ -1884,7 +1887,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
           const isSel = n.id === selectedId;
           return (
             <div key={n.id} style={style} className="group" onPointerDown={(event) => beginDrag(event, n.id)}>
-              <div style={{ opacity: nodeOpacity }}>
+              <div style={{ opacity: nodeOpacity, width: '100%', height: '100%', display: 'flex' }}>
                 <RenderNode
                   node={n}
                   onUpdate={(patch) => onUpdateNode(n.id, patch)}
