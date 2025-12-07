@@ -1,7 +1,7 @@
 // src/app/tools/templates/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -461,49 +461,6 @@ const createCompanySuiteTemplate = (): Template => ({
       },
     };
 
-    const projectStructurePage: Template['pages'][number] = {
-      name: 'Projektstruktur',
-      folder: 'Projekte',
-      tree: {
-        id: 'root',
-        type: 'container',
-        props: { bg: 'linear-gradient(135deg,#0b1220,#111827)' },
-        children: withNavbar(
-          stack(
-            [
-              { type: 'button', props: { label: 'Zurück zum Dashboard', action: 'navigate', targetPage: 'Dashboard' }, w: 240 },
-              { type: 'text', h: 80, w: 340, props: { text: 'Projektordner & Assets' }, style: { fontSize: 28, fontWeight: 700 } },
-              {
-                type: 'container',
-                props: {
-                  component: 'folder-structure',
-                  folderTree: [
-                    { id: fallbackId(), name: 'Projekt Atlas', children: [{ id: fallbackId(), name: 'Design' }] },
-                    { id: fallbackId(), name: 'Projekt Nova', children: [{ id: fallbackId(), name: 'Development' }] },
-                    { id: fallbackId(), name: 'Projekt Helix', children: [{ id: fallbackId(), name: 'QA' }] },
-                  ],
-                },
-                h: 320,
-              },
-              {
-                type: 'container',
-                props: {
-                  component: 'todo',
-                  todoItems: [
-                    { id: fallbackId(), title: 'Ordnerberechtigungen prüfen', done: false },
-                    { id: fallbackId(), title: 'Assets aktualisieren', done: false },
-                  ],
-                },
-                h: 180,
-              },
-            ],
-            { startY: 170, gap: 20 }
-          ),
-          navItems
-        ),
-      },
-    };
-
     const chatPage: Template['pages'][number] = {
       name: 'Chat',
       folder: 'Team',
@@ -541,7 +498,6 @@ const createCompanySuiteTemplate = (): Template => ({
       timePage,
       tasksPage,
       employeePage,
-      projectStructurePage,
       chatPage,
     ];
   })(),
@@ -1936,6 +1892,16 @@ const builtinTemplates: Template[] = [
   createCoworkingTemplate(),
 ].map((tpl) => ({ ...tpl, source: 'builtin' as const }));
 
+const visibleBuiltinTemplates: Template[] = builtinTemplates
+  .map((tpl) => {
+    const name = safeString(tpl.name, 'Unbenannte Vorlage');
+    const description = safeString(tpl.description, '');
+    const projectName = safeString(tpl.projectName, name);
+    if (!tpl.id || !name) return null;
+    return { ...tpl, name, description, projectName } as Template;
+  })
+  .filter((tpl): tpl is Template => Boolean(tpl));
+
 const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
@@ -1989,10 +1955,7 @@ export default function TemplatesPage() {
     loadCustomTemplates();
   }, [user]);
 
-  const isTemplateAdmin = useMemo(
-    () => (user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false),
-    [user?.email]
-  );
+  const isTemplateAdmin = user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false;
 
   if (!user)
     return (
@@ -2091,20 +2054,7 @@ export default function TemplatesPage() {
     },
   ];
 
-  const visibleTemplates = useMemo(() => {
-    // TEMP: um die Seite zu stabilisieren, nur Built-ins rendern
-    const normalize = (tpl: Template): Template | null => {
-      const name = safeString(tpl.name, 'Unbenannte Vorlage');
-      const description = safeString(tpl.description, '');
-      const projectName = safeString(tpl.projectName, name);
-      if (!tpl.id || !name) return null;
-      return { ...tpl, name, description, projectName };
-    };
-    const merged = builtinTemplates
-      .map((tpl) => (tpl ? normalize(tpl) : null))
-      .filter((tpl): tpl is Template => Boolean(tpl));
-    return merged;
-  }, []);
+  const visibleTemplates = visibleBuiltinTemplates;
 
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
