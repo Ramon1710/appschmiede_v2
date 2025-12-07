@@ -1,7 +1,7 @@
 // src/app/tools/templates/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -22,9 +22,6 @@ type Template = {
 };
 
 const TEMPLATE_ADMIN_EMAILS = ['ramon.mueler@gmx.ch', 'admin.admin@appschmiede.com'];
-
-// React wird für die ErrorBoundary explizit benötigt (Next 16 entfernt implizite React-Importe)
-import React from 'react';
 
 class TemplatesErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean; message: string }>
 {
