@@ -1,6 +1,7 @@
 import React from 'react';
 import Script from 'next/script';
 import './globals.css';
+import I18nRoot from './I18nRoot';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-neutral-950 text-neutral-100 min-h-screen">
-        {children}
+        <I18nRoot>{children}</I18nRoot>
       </body>
     </html>
   );

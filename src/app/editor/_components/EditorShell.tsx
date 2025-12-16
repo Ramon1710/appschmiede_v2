@@ -17,7 +17,7 @@ import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import JSZip from 'jszip';
 import useUserProfile from '@/hooks/useUserProfile';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { EditorLayoutPreferences } from '@/types/user';
 import {
@@ -26,6 +26,7 @@ import {
   setStoredProjectId as persistStoredProjectId,
 } from '@/lib/editor-storage';
 import { touchProject } from '@/lib/db-projects';
+import { isAdminEmail } from '@/lib/user-utils';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -107,6 +108,23 @@ type ExportablePage = {
   name: string;
   folder?: string | null;
   tree: PageTree['tree'];
+};
+
+type StoredAppTemplate = {
+  id: string;
+  name: string;
+  description?: string | null;
+  projectName: string;
+  pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+  createdBy?: string | null;
+};
+
+type StoredPageTemplate = {
+  id: string;
+  name: string;
+  description?: string | null;
+  tree: PageTree['tree'];
+  createdBy?: string | null;
 };
 
 type MobilePanel = 'toolbox' | 'canvas' | 'properties';
@@ -809,6 +827,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const pendingSyncHash = useRef<string | null>(null);
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
+  const isAdmin = isAdminEmail(user?.email);
 
   // Unterstütze sowohl ?projectId= als auch ?id=
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
@@ -986,6 +1005,10 @@ export default function EditorShell({ initialPageId }: Props) {
   const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [pageTemplates, setPageTemplates] = useState<StoredPageTemplate[]>([]);
+  const [loadingPageTemplates, setLoadingPageTemplates] = useState(false);
+  const [savingPageTemplate, setSavingPageTemplate] = useState(false);
+  const [savingAppTemplate, setSavingAppTemplate] = useState(false);
   const [canvasZoom, setCanvasZoom] = useState(DEFAULT_CANVAS_ZOOM);
   const [layoutInitialized, setLayoutInitialized] = useState(false);
   const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1105,6 +1128,31 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice(null);
     }
   }, [_projectId, currentPageId]);
+
+  useEffect(() => {
+    const fetchPageTemplates = async () => {
+      setLoadingPageTemplates(true);
+      try {
+        const snap = await getDocs(collection(db, 'pageTemplates'));
+        const next = snap.docs.map((docSnap) => {
+          const data = docSnap.data() as any;
+          return {
+            id: docSnap.id,
+            name: typeof data?.name === 'string' ? data.name : 'Ohne Titel',
+            description: typeof data?.description === 'string' ? data.description : null,
+            tree: (data?.tree as PageTree['tree']) ?? emptyTree.tree,
+            createdBy: typeof data?.createdBy === 'string' ? data.createdBy : null,
+          } satisfies StoredPageTemplate;
+        });
+        setPageTemplates(next);
+      } catch (error) {
+        console.error('Seitentemplates konnten nicht geladen werden', error);
+      } finally {
+        setLoadingPageTemplates(false);
+      }
+    };
+    void fetchPageTemplates();
+  }, []);
 
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
   const [exporting, setExporting] = useState<'web' | 'apk' | null>(null);
@@ -1491,6 +1539,49 @@ export default function EditorShell({ initialPageId }: Props) {
     [applyTreeUpdate]
   );
 
+  const persistTemplateApplication = useCallback(
+    (nextTree: PageTree | null | undefined, preservedName: string) => {
+      if (!nextTree) return false;
+
+      setPages((prev) => {
+        const existing = prev.find((page) => page.id === currentPageId) ?? null;
+        const updatedPage: PageTree = existing
+          ? { ...existing, tree: nextTree.tree }
+          : {
+              id: currentPageId,
+              name: preservedName,
+              tree: nextTree.tree,
+              folder: nextTree.folder ?? null,
+            };
+        if (existing) {
+          return prev.map((page) => (page.id === currentPageId ? updatedPage : page));
+        }
+        return [...prev, updatedPage];
+      });
+
+      if (_projectId && currentPageId && nextTree) {
+        const payload = { ...nextTree, name: preservedName };
+        latestTree.current = payload;
+        (async () => {
+          try {
+            await savePage(_projectId, currentPageId, payload);
+            await touchProject(_projectId, 'edited');
+            pendingSyncHash.current = hashPage(payload);
+            isDirty.current = false;
+          } catch (err) {
+            console.error('Template save failed', err);
+            isDirty.current = true;
+            setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+          }
+        })();
+      }
+
+      setSelectedId(null);
+      return true;
+    },
+    [_projectId, currentPageId, setPages, setTemplateNotice]
+  );
+
   const applyTemplate = useCallback((template: string) => {
     if (!_projectId) {
       setTemplateNotice('Bitte wähle zuerst ein Projekt oder lege eines im Dashboard an.');
@@ -1765,43 +1856,112 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
 
-    if (!nextTree) return false;
-
-    setPages((prev) => {
-      const existing = prev.find((page) => page.id === currentPageId) ?? null;
-      const updatedPage: PageTree = existing
-        ? { ...existing, tree: nextTree.tree }
-        : {
-            id: currentPageId,
-            name: nextTree.name,
-            tree: nextTree.tree,
-            folder: nextTree.folder ?? null,
-          };
-      if (existing) {
-        return prev.map((page) => (page.id === currentPageId ? updatedPage : page));
-      }
-      return [...prev, updatedPage];
-    });
-
-    if (_projectId && currentPageId && nextTree) {
-      const payload = { ...nextTree, name: preservedName };
-      latestTree.current = payload;
-      (async () => {
-        try {
-          await savePage(_projectId, currentPageId, payload);
-          await touchProject(_projectId, 'edited');
-          pendingSyncHash.current = hashPage(payload);
-          isDirty.current = false;
-        } catch (err) {
-          console.error('Template save failed', err);
-          isDirty.current = true;
-          setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
-        }
-      })();
-    }
-    setSelectedId(null);
-    return true;
+    return persistTemplateApplication(nextTree, preservedName);
   }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice, currentPageMeta, tree.name]);
+
+  const applySavedPageTemplate = useCallback(
+    (template: StoredPageTemplate) => {
+      if (!_projectId) {
+        setTemplateNotice('Bitte wähle zuerst ein Projekt oder lege eines im Dashboard an.');
+        return false;
+      }
+      if (!currentPageId) {
+        setTemplateNotice('Seiten werden noch geladen. Bitte einen Moment warten.');
+        return false;
+      }
+      const preservedName = currentPageMeta?.name ?? tree.name ?? 'Unbenannte Seite';
+      const baseTree = template.tree ?? emptyTree.tree;
+      const sanitizedTree = sanitizeNode({ ...baseTree, id: 'root' });
+
+      const nextTree = applyTreeUpdate(() => ({
+        id: currentPageId,
+        name: preservedName,
+        tree: sanitizedTree,
+      }));
+
+      return persistTemplateApplication(nextTree, preservedName);
+    },
+    [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate, persistTemplateApplication, setTemplateNotice]
+  );
+
+  const handleSavePageTemplate = useCallback(async () => {
+    if (!isAdmin) {
+      setTemplateNotice('Nur Admins dürfen Seitenvorlagen speichern.');
+      return;
+    }
+    if (!(_projectId && currentPageId)) {
+      setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.');
+      return;
+    }
+
+    const defaultName = currentPageMeta?.name ?? tree.name ?? 'Neue Seite';
+    const name = window.prompt('Name der Seitenvorlage', defaultName)?.trim();
+    if (!name) return;
+    const description = window.prompt('Kurzbeschreibung (optional)')?.trim() || null;
+
+    const sanitizedTree = sanitizeNode(tree.tree);
+
+    setSavingPageTemplate(true);
+    try {
+      const payload = {
+        name,
+        description,
+        tree: sanitizedTree,
+        createdBy: user?.uid ?? null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      const ref = await addDoc(collection(db, 'pageTemplates'), payload);
+      setPageTemplates((prev) => [{ id: ref.id, ...payload }, ...prev]);
+      setTemplateNotice('Seitenvorlage gespeichert.');
+    } catch (error) {
+      console.error('Seitenvorlage konnte nicht gespeichert werden', error);
+      setTemplateNotice('Seitenvorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    } finally {
+      setSavingPageTemplate(false);
+    }
+  }, [isAdmin, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice]);
+
+  const handleSaveAppTemplate = useCallback(async () => {
+    if (!isAdmin) {
+      setTemplateNotice('Nur Admins dürfen App-Vorlagen speichern.');
+      return;
+    }
+    if (!_projectId || !pages.length) {
+      setTemplateNotice('Bitte öffne ein Projekt mit mindestens einer Seite.');
+      return;
+    }
+
+    const defaultName = project?.name ?? 'App-Vorlage';
+    const name = window.prompt('Name der App-Vorlage', defaultName)?.trim();
+    if (!name) return;
+    const description = window.prompt('Kurzbeschreibung (optional)')?.trim() || null;
+
+    const payloadPages = pages.map((page) => ({
+      name: page.name,
+      folder: page.folder ?? null,
+      tree: sanitizeNode(page.tree),
+    }));
+
+    setSavingAppTemplate(true);
+    try {
+      await addDoc(collection(db, 'templates'), {
+        name,
+        description,
+        projectName: name,
+        pages: payloadPages,
+        createdBy: user?.uid ?? null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setTemplateNotice('App-Vorlage gespeichert.');
+    } catch (error) {
+      console.error('App-Vorlage konnte nicht gespeichert werden', error);
+      setTemplateNotice('App-Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    } finally {
+      setSavingAppTemplate(false);
+    }
+  }, [isAdmin, _projectId, pages, project?.name, user?.uid, setTemplateNotice]);
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
@@ -2204,6 +2364,30 @@ export default function EditorShell({ initialPageId }: Props) {
       {templateNotice && (
         <p className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{templateNotice}</p>
       )}
+      {isAdmin && (
+        <div className="space-y-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-50">
+          <div className="font-semibold text-emerald-100">Admin-Aktionen</div>
+          <p className="text-[11px] text-emerald-100/80">Speichere eigene Seiten- oder App-Vorlagen für alle Nutzer.</p>
+          <div className="flex flex-col gap-2 text-sm">
+            <button
+              type="button"
+              className="rounded-lg border border-emerald-400/60 bg-emerald-500/20 px-3 py-2 font-semibold text-emerald-50 transition hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleSavePageTemplate}
+              disabled={templateControlsDisabled || savingPageTemplate}
+            >
+              {savingPageTemplate ? 'Speichere Seitenvorlage…' : 'Aktuelle Seite als Vorlage speichern'}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-3 py-2 font-semibold text-cyan-50 transition hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleSaveAppTemplate}
+              disabled={!_projectId || !pages.length || savingAppTemplate}
+            >
+              {savingAppTemplate ? 'Speichere App-Vorlage…' : 'Projekt als App-Vorlage speichern'}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="space-y-3">
         {APP_TEMPLATES.map((tpl) => (
           <button
@@ -2238,6 +2422,41 @@ export default function EditorShell({ initialPageId }: Props) {
             </span>
           </button>
         ))}
+      </div>
+      <div className="space-y-2">
+        <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Gespeicherte Seitenvorlagen</div>
+        {loadingPageTemplates ? (
+          <p className="text-xs text-neutral-400">Lade gespeicherte Vorlagen…</p>
+        ) : pageTemplates.length === 0 ? (
+          <p className="text-xs text-neutral-500">Noch keine Seitenvorlagen verfügbar.</p>
+        ) : (
+          <div className="space-y-3">
+            {pageTemplates.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                disabled={templateControlsDisabled}
+                onClick={() => applySavedPageTemplate(tpl)}
+                className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
+                  templateControlsDisabled
+                    ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500 opacity-60'
+                    : 'border-white/10 bg-white/5 hover:border-cyan-400/50 hover:bg-white/10'
+                }`}
+              >
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-cyan-100">
+                  <span>🗂️</span>
+                  <span>Gespeicherte Vorlage</span>
+                </div>
+                <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
+                {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
+                <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-cyan-200">
+                  Vorlage anwenden
+                  <span className="ml-1 transition group-hover:translate-x-1">→</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

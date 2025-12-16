@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import type { PageTree, Node, NodeProps } from '@/lib/editorTypes';
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
 const defaultWidths: Record<Node['type'], number> = {
   text: 296,
   button: 240,
@@ -48,6 +50,16 @@ function createNode(type: Node['type'], overrides: Partial<Node> = {}): Node {
     style: overrides.style ?? {},
     children: overrides.children,
   };
+}
+
+function safeParseTree(raw: unknown): PageTree | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as any;
+  if (!candidate.tree || typeof candidate.tree !== 'object') return null;
+  return {
+    name: typeof candidate.name === 'string' && candidate.name.trim() ? candidate.name.trim() : 'KI-Layout',
+    tree: candidate.tree as PageTree['tree'],
+  } satisfies PageTree;
 }
 
 function stack(nodes: Array<{ type: Node['type']; props?: NodeProps; style?: Node['style']; h?: number }>, startY = 96, gap = 24) {
@@ -125,8 +137,66 @@ export async function POST(request: Request) {
   }
 
   const pageName = typeof body.pageName === 'string' ? body.pageName : undefined;
+  const userPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 
-  const singlePage = buildStandardLoginPage(pageName);
+  // Fallback ohne OpenAI oder ohne Prompt
+  if (!OPENAI_API_KEY || !userPrompt) {
+    const singlePage = buildStandardLoginPage(pageName ?? userPrompt);
+    return NextResponse.json({ page: singlePage, source: 'fallback' });
+  }
 
-  return NextResponse.json({ page: singlePage });
+  try {
+    const systemPrompt = `Du bist ein Layout-Generator für eine No-Code-App (AppSchmiede). Erzeuge ein JSON-Objekt vom Typ PageTree mit folgenden Regeln:
+- id des Root-Knotens muss 'root' sein.
+- Erlaubte Node-Typen: text, button, image, input, container.
+- Props-Beispiele: text.text, button.label, button.action (login|register|reset-password|navigate|chat|none), button.targetPage (optional), input.placeholder, input.inputType (text|email|password|number|tel), container.component (navbar|chat|time-tracking optional), navbars dürfen navItems (label,targetPage,target) haben.
+- Setze sinnvolle x,y,w,h (max 360) und einen Hintergrund unter tree.props.bg.
+- Antworte NUR mit JSON im Format {"name":"...","tree":{...}} ohne Markdown oder Kommentare.`;
+
+    const completion = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0.4,
+        max_tokens: 900,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: `Baue eine Seite für: ${userPrompt}. Seitentitel: ${pageName ?? 'Seite'}`,
+          },
+        ],
+      }),
+    });
+
+    if (!completion.ok) {
+      const errText = await completion.text();
+      console.error('OpenAI error', errText);
+      throw new Error('OpenAI konnte keine Seite erzeugen.');
+    }
+
+    const result = (await completion.json()) as any;
+    const content = result?.choices?.[0]?.message?.content;
+    let parsed: PageTree | null = null;
+    if (typeof content === 'string') {
+      try {
+        parsed = safeParseTree(JSON.parse(content));
+      } catch (error) {
+        console.warn('Konnte OpenAI-Antwort nicht parsen, nutze Fallback', error);
+      }
+    }
+
+    const page = parsed ?? buildStandardLoginPage(pageName ?? userPrompt);
+
+    return NextResponse.json({ page, source: 'openai' });
+  } catch (error) {
+    console.error('AI generation failed, falling back', error);
+    const fallback = buildStandardLoginPage(pageName ?? userPrompt);
+    return NextResponse.json({ page: fallback, source: 'fallback' });
+  }
 }

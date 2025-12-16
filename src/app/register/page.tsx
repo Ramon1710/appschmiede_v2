@@ -13,11 +13,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
-  const [paymentType, setPaymentType] = useState<'credit-card' | 'sepa'>('credit-card');
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [iban, setIban] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,53 +51,10 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!cardHolder.trim()) {
-      setError('Bitte gib den Karten- oder Kontoinhaber an.');
-      return;
-    }
-
-    if (paymentType === 'credit-card') {
-      const digits = cardNumber.replace(/\D/g, '');
-      if (digits.length < 12) {
-        setError('Die Kartennummer scheint ungültig zu sein.');
-        return;
-      }
-      if (!/^(0[1-9]|1[0-2])\/(\d{2})$/.test(cardExpiry)) {
-        setError('Bitte gib das Ablaufdatum im Format MM/YY ein.');
-        return;
-      }
-    } else {
-      const normalizedIban = iban.replace(/\s+/g, '');
-      if (normalizedIban.length < 12) {
-        setError('Die IBAN scheint zu kurz zu sein.');
-        return;
-      }
-    }
-
     setBusy(true);
     try {
       const displayName = `${firstName} ${lastName}`;
-      const billingMethod = paymentType === 'credit-card'
-        ? (() => {
-            const digits = cardNumber.replace(/\D/g, '');
-            const last4 = digits.slice(-4);
-            return {
-              type: 'credit-card' as const,
-              label: `${cardHolder || 'Kreditkarte'} •••• ${last4}`,
-              last4,
-              expiresAt: cardExpiry,
-            };
-          })()
-        : (() => {
-            const normalizedIban = iban.replace(/\s+/g, '');
-            const last4 = normalizedIban.slice(-4);
-            return {
-              type: 'sepa' as const,
-              label: `${cardHolder || 'SEPA'} •••• ${last4}`,
-              last4,
-            };
-          })();
-      await registerWithEmail(email, password, displayName, company || undefined, billingMethod);
+      await registerWithEmail(email, password, displayName, company || undefined, null);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err?.message ?? 'Registrierung fehlgeschlagen');
@@ -158,87 +110,14 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/40 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">Zahlungsart</p>
-                <p className="text-sm text-slate-200">Wir benötigen eine Zahlungsart für Coins & Abos.</p>
-              </div>
-              <div className="flex gap-2 text-xs font-semibold">
-                {[
-                  { id: 'credit-card', label: 'Kreditkarte' },
-                  { id: 'sepa', label: 'SEPA' },
-                ].map((method) => (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => setPaymentType(method.id as 'credit-card' | 'sepa')}
-                    className={`rounded-full border px-3 py-1 ${
-                      paymentType === method.id
-                        ? 'border-indigo-400 bg-indigo-500/20 text-white'
-                        : 'border-slate-600 text-slate-300'
-                    }`}
-                  >
-                    {method.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="mt-4 grid gap-3">
-              <div>
-                <label className="mb-1 block text-sm text-slate-300">Inhaber *</label>
-                <input
-                  type="text"
-                  placeholder="z. B. Alex Meyer"
-                  value={cardHolder}
-                  onChange={(e) => setCardHolder(e.target.value)}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-                  required
-                />
-              </div>
-              {paymentType === 'credit-card' ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm text-slate-300">Kartennummer *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="1234 5678 9012 3456"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm text-slate-300">Ablauf (MM/YY) *</label>
-                    <input
-                      type="text"
-                      placeholder="09/27"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-                      required
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="mb-1 block text-sm text-slate-300">IBAN *</label>
-                  <input
-                    type="text"
-                    placeholder="DE44 5001 0517 5407 3249 31"
-                    value={iban}
-                    onChange={(e) => setIban(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              )}
-              <p className="text-xs text-slate-400">
-                Deine Zahlungsdaten werden sicher gespeichert. Coins und Abos werden erst abgebucht, wenn du sie aktiv bestellst.
-              </p>
-            </div>
+          <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/40 p-4 space-y-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">Zahlungsart (optional)</p>
+            <p className="text-sm text-slate-200">
+              Du kannst die Zahlungsart später in deinem Profil hinterlegen – sie wird erst benötigt, wenn du Coins kaufst oder ein Abo startest.
+            </p>
+            <p className="text-xs text-slate-400">
+              Hinweis: Speichere nach der Registrierung deine Zahlungsdaten im Profil, sobald du einen Kauf auslösen möchtest.
+            </p>
           </div>
 
           <div>

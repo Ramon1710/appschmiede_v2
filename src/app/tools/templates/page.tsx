@@ -4,7 +4,11 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
+<<<<<<< HEAD
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+=======
+import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+>>>>>>> af507ed (feat: editor updates and ui polish)
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
@@ -18,7 +22,11 @@ type Template = {
   projectName: string;
   pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
   source?: 'builtin' | 'custom';
+<<<<<<< HEAD
   createdBy?: string;
+=======
+  createdBy?: string | null;
+>>>>>>> af507ed (feat: editor updates and ui polish)
 };
 
 const TEMPLATE_ADMIN_EMAILS = ['ramon.mueler@gmx.ch', 'admin.admin@appschmiede.com'];
@@ -1945,7 +1953,12 @@ const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 export default function TemplatesPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+<<<<<<< HEAD
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
+=======
+  const [remoteTemplates, setRemoteTemplates] = useState<Template[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+>>>>>>> af507ed (feat: editor updates and ui polish)
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [customTemplatesBroken, setCustomTemplatesBroken] = useState(false);
@@ -1962,6 +1975,7 @@ export default function TemplatesPage() {
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
   useEffect(() => {
+<<<<<<< HEAD
     const loadCustomTemplates = async () => {
       if (!user) return;
       try {
@@ -2017,6 +2031,33 @@ export default function TemplatesPage() {
 
     loadProjectsForAdmin();
   }, [isTemplateAdmin]);
+=======
+    const loadTemplates = async () => {
+      setTemplatesLoading(true);
+      try {
+        const snap = await getDocs(collection(db, 'templates'));
+        const loaded: Template[] = snap.docs.map((docSnap) => {
+          const data = docSnap.data() as any;
+          return {
+            id: docSnap.id,
+            name: typeof data?.name === 'string' ? data.name : 'Vorlage',
+            description: typeof data?.description === 'string' ? data.description : 'Admin-Vorlage',
+            projectName: typeof data?.projectName === 'string' ? data.projectName : data?.name ?? 'App-Vorlage',
+            pages: Array.isArray(data?.pages) ? (data.pages as Template['pages']) : [],
+            source: 'custom',
+            createdBy: typeof data?.createdBy === 'string' ? data.createdBy : null,
+          } satisfies Template;
+        });
+        setRemoteTemplates(loaded);
+      } catch (loadError) {
+        console.error('Vorlagen konnten nicht geladen werden', loadError);
+      } finally {
+        setTemplatesLoading(false);
+      }
+    };
+    void loadTemplates();
+  }, []);
+>>>>>>> af507ed (feat: editor updates and ui polish)
 
   if (!user)
     return (
@@ -2115,6 +2156,7 @@ export default function TemplatesPage() {
     },
   ];
 
+<<<<<<< HEAD
   const visibleTemplates = visibleBuiltinTemplates;
 
   const saveTemplateFromProject = async () => {
@@ -2201,6 +2243,12 @@ export default function TemplatesPage() {
       setSavingTemplate(false);
     }
   };
+=======
+  const visibleTemplates: Template[] = [
+    ...remoteTemplates,
+    ...templates.map((tpl) => ({ ...tpl, source: tpl.source ?? 'builtin' })),
+  ];
+>>>>>>> af507ed (feat: editor updates and ui polish)
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
@@ -2213,6 +2261,7 @@ export default function TemplatesPage() {
               Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt
               weiter angepasst werden.
             </p>
+            {templatesLoading && <p className="text-xs text-neutral-500">Lade Admin-Vorlagen…</p>}
           </header>
 
           {isTemplateAdmin && (
@@ -2336,12 +2385,21 @@ export default function TemplatesPage() {
             {visibleTemplates.map((tpl) => (
               <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
                 <div className="flex items-center justify-between gap-2">
+<<<<<<< HEAD
                   <div className="text-lg font-medium text-neutral-100">{tpl.name ?? 'Vorlage'}</div>
                   {tpl.source === 'custom' && (
                     <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">Custom</span>
                   )}
                 </div>
                 <div className="mt-1 text-sm text-neutral-400">{tpl.description ?? ''}</div>
+=======
+                  <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                  {tpl.source === 'custom' && (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-100">Admin</span>
+                  )}
+                </div>
+                <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
+>>>>>>> af507ed (feat: editor updates and ui polish)
                 <button
                   type="button"
                   onClick={() => createFromTemplate(tpl)}

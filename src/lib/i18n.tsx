@@ -21,6 +21,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('lang', lang);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang;
+      document.body.setAttribute('data-lang', lang);
+    }
   }, [lang]);
 
   const t = useMemo(() => (key: keyof typeof dict['de']) => dict[lang][key], [lang]);

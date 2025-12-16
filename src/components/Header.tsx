@@ -7,10 +7,12 @@ import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
 import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
+import { useI18n } from '@/lib/i18n';
 
 export default function Header() {
   const { user, loading } = useAuth();
   const { profile } = useUserProfile(user?.uid);
+  const { t, lang, setLang } = useI18n();
   const coinsValue = profile?.coinsBalance;
   const formattedCoins =
     typeof coinsValue === 'number'
@@ -60,9 +62,9 @@ export default function Header() {
             <span className="block text-xs uppercase tracking-[0.35em] text-cyan-400/80">AI App Builder</span>
           </div>
         </Link>
-        <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Startseite</Link>
-        <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Dashboard</Link>
-        <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Projekte</Link>
+        <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_home')}</Link>
+        <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_dashboard')}</Link>
+        <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_projects')}</Link>
         <Link
           href="/editor"
           aria-disabled={editorDisabled}
@@ -77,22 +79,46 @@ export default function Header() {
           }`}
           title={editorDisabled ? 'Lege zuerst ein Projekt an, bevor du den Editor öffnest.' : undefined}
         >
-          Editor
+          {t('nav_editor')}
         </Link>
-        <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Vorlagen</Link>
-        <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Preise</Link>
-        <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Coins</Link>
+        <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
+        <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
+        <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
       </nav>
 
       <div className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white shadow">
+          <button
+            type="button"
+            aria-label={t('lang_de')}
+            onClick={() => setLang('de')}
+            className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${
+              lang === 'de' ? 'bg-white/20 text-white' : 'text-neutral-200 hover:bg-white/10'
+            }`}
+          >
+            <span role="img" aria-hidden="true">🇩🇪</span>
+            <span className="hidden sm:inline">DE</span>
+          </button>
+          <button
+            type="button"
+            aria-label={t('lang_en')}
+            onClick={() => setLang('en')}
+            className={`flex items-center gap-1 rounded-full px-2 py-1 transition ${
+              lang === 'en' ? 'bg-white/20 text-white' : 'text-neutral-200 hover:bg-white/10'
+            }`}
+          >
+            <span role="img" aria-hidden="true">🇺🇸</span>
+            <span className="hidden sm:inline">EN</span>
+          </button>
+        </div>
         {profile && formattedCoins && (
           <Link
             href="/tools/billing"
             className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white transition hover:border-cyan-400/50 hover:bg-white/10"
           >
-            <span className="text-[10px] uppercase tracking-[0.35em] text-neutral-300">Coins</span>
+            <span className="text-[10px] uppercase tracking-[0.35em] text-neutral-300">{t('coins_label')}</span>
             <span className="text-sm font-semibold">{formattedCoins}</span>
-            <span className="text-[11px] text-cyan-300">Aufladen</span>
+            <span className="text-[11px] text-cyan-300">{t('coins_topup')}</span>
           </Link>
         )}
         {!loading && user ? (
@@ -125,8 +151,8 @@ export default function Header() {
           </div>
         ) : (
           <nav className="flex gap-2">
-            <Link href="/login" className="hover:text-cyan-400 transition">Login</Link>
-            <Link href="/register" className="hover:text-cyan-400 transition">Registrieren</Link>
+            <Link href="/login" className="hover:text-cyan-400 transition">{t('nav_login')}</Link>
+            <Link href="/register" className="hover:text-cyan-400 transition">{t('nav_register')}</Link>
           </nav>
         )}
       </div>
