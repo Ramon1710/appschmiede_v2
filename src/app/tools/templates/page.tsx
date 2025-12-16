@@ -1667,7 +1667,6 @@ export default function TemplatesPage() {
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [customTemplatesBroken, setCustomTemplatesBroken] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [adminProjects, setAdminProjects] = useState<Array<{ id: string; name: string | null }>>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
@@ -1750,7 +1749,6 @@ export default function TemplatesPage() {
       if (!user) return;
       try {
         setTemplatesLoading(true);
-        setCustomTemplatesBroken(false);
         const snapshot = await getDocs(collection(db, 'templates_custom'));
         const mapped = snapshot.docs
           .map((docSnap) => {
@@ -1773,7 +1771,6 @@ export default function TemplatesPage() {
         setCustomTemplates(mapped);
       } catch (loadError) {
         console.error('Konnte Custom Templates nicht laden', loadError);
-        setCustomTemplatesBroken(true);
       } finally {
         setTemplatesLoading(false);
       }
@@ -1804,14 +1801,6 @@ export default function TemplatesPage() {
 
     loadProjectsForAdmin();
   }, [isTemplateAdmin]);
-
-  if (!user)
-    return (
-      <UnauthenticatedScreen
-        badge="Vorlagen"
-        description="Melde dich an, um Vorlagen zu kopieren und neue Projekte direkt aus dem Katalog zu erstellen."
-      />
-    );
 
   const createFromTemplate = async (tpl: Template) => {
       if (!user) return;
@@ -1991,7 +1980,7 @@ export default function TemplatesPage() {
       setTemplateDescription('');
       setTemplateProjectName('');
       setSelectedTemplateId(null);
-    } catch (saveError: any) {
+    } catch (saveError: unknown) {
       console.error('Vorlage konnte nicht gespeichert werden', saveError);
       setError(
         saveError?.message || (lang === 'en' ? 'Template could not be saved.' : 'Vorlage konnte nicht gespeichert werden.')
@@ -2119,6 +2108,14 @@ export default function TemplatesPage() {
     []
   );
 
+  if (!user)
+    return (
+      <UnauthenticatedScreen
+        badge={copy.badge}
+        description={copy.unauthDesc}
+      />
+    );
+
   const visibleTemplates: Template[] = useMemo(
     () =>
       [...visibleBuiltinTemplates, ...customTemplates].map((tpl) => {
@@ -2141,7 +2138,7 @@ export default function TemplatesPage() {
           pages,
         };
       }),
-    [customTemplates, lang, templateMeta, visibleBuiltinTemplates]
+    [customTemplates, lang, templateMeta]
   );
 
   return (
@@ -2150,24 +2147,21 @@ export default function TemplatesPage() {
       <main className="flex-1 w-full px-4 py-10 lg:px-10">
         <div className="flex flex-col gap-6">
           <header className="space-y-1" data-tour-id="templates-intro">
-            <h1 className="text-3xl font-semibold">Vorlagenbibliothek</h1>
-            <p className="text-sm text-neutral-400">
-              Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt
-              weiter angepasst werden.
-            </p>
-            {templatesLoading && <p className="text-xs text-neutral-500">Lade Admin-Vorlagen…</p>}
+            <h1 className="text-3xl font-semibold">{copy.headerTitle}</h1>
+            <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
+            {templatesLoading && <p className="text-xs text-neutral-500">{copy.loadingAdmin}</p>}
           </header>
 
           {isTemplateAdmin && (
             <section className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-emerald-100">Admin: Vorlage aus Projekt speichern</h2>
-                {savingTemplate && <span className="text-xs text-emerald-100">Speichere…</span>}
+                <h2 className="text-lg font-semibold text-emerald-100">{copy.adminTitle}</h2>
+                {savingTemplate && <span className="text-xs text-emerald-100">{copy.adminSaving}</span>}
               </div>
               <div className="flex flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-neutral-200">Projekt auswählen</span>
-                  {loadingProjects && <span className="text-xs text-neutral-400">lädt…</span>}
+                  <span className="text-neutral-200">{copy.projectSelect}</span>
+                  {loadingProjects && <span className="text-xs text-neutral-400">{copy.loadingProjects}</span>}
                   <button
                     type="button"
                     onClick={() => {
@@ -2177,7 +2171,7 @@ export default function TemplatesPage() {
                     className="rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-neutral-100 hover:bg-white/10 disabled:opacity-40"
                     disabled={!templateProjectId}
                   >
-                    Im Editor öffnen
+                    {copy.openInEditor}
                   </button>
                 </div>
                 <select
@@ -2217,7 +2211,7 @@ export default function TemplatesPage() {
                   <span className="text-xs text-neutral-400">Wenn gewählt, werden Meta-Daten und Seiten der ausgewählten Custom-Vorlage überschrieben.</span>
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-neutral-200">Projekt-ID</span>
+                  <span className="text-neutral-200">{copy.projectIdLabel}</span>
                   <input
                     value={templateProjectId}
                     onChange={(e) => setTemplateProjectId(e.target.value)}
@@ -2226,7 +2220,7 @@ export default function TemplatesPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-neutral-200">Vorlagenname</span>
+                  <span className="text-neutral-200">{copy.templateNameLabel}</span>
                   <input
                     value={templateName}
                     onChange={(e) => setTemplateName(e.target.value)}
@@ -2235,7 +2229,7 @@ export default function TemplatesPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-neutral-200">Beschreibung</span>
+                  <span className="text-neutral-200">{copy.descriptionLabel}</span>
                   <input
                     value={templateDescription}
                     onChange={(e) => setTemplateDescription(e.target.value)}
@@ -2244,7 +2238,7 @@ export default function TemplatesPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-neutral-200">Anzeigename im Projekt (optional)</span>
+                  <span className="text-neutral-200">{copy.projectNameLabel}</span>
                   <input
                     value={templateProjectName}
                     onChange={(e) => setTemplateProjectName(e.target.value)}
@@ -2254,8 +2248,7 @@ export default function TemplatesPage() {
                 </label>
               </div>
               <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-                Hinweis: Benutzerdefinierte Vorlagen werden angezeigt. Falls Karten fehlen, prüfe bitte `templates_custom`
-                (erforderlich: name, projectName als String und pages als Array) und bereinige fehlerhafte Einträge.
+                {copy.hintCustom}
               </div>
               <div className="flex gap-2">
                 <button
@@ -2268,7 +2261,7 @@ export default function TemplatesPage() {
                       : 'bg-emerald-500/20 text-emerald-100 border border-emerald-400/50 hover:bg-emerald-500/30'
                   }`}
                 >
-                  {savingTemplate ? 'Speichere…' : 'Als Vorlage speichern'}
+                  {savingTemplate ? copy.savingButton : copy.saveButton}
                 </button>
               </div>
             </section>
@@ -2278,9 +2271,9 @@ export default function TemplatesPage() {
             {visibleTemplates.map((tpl) => (
               <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="text-lg font-medium text-neutral-100">{tpl.name ?? 'Vorlage'}</div>
+                  <div className="text-lg font-medium text-neutral-100">{tpl.name ?? (lang === 'en' ? 'Template' : 'Vorlage')}</div>
                   {tpl.source === 'custom' && (
-                    <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">Custom</span>
+                    <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">{copy.customBadge}</span>
                   )}
                 </div>
                 <div className="mt-1 text-sm text-neutral-400">{tpl.description ?? ''}</div>
@@ -2295,7 +2288,7 @@ export default function TemplatesPage() {
                   }`}
                   data-tour-id="templates-create"
                 >
-                  {creatingTemplateId === tpl.id ? 'Wird erstellt…' : 'Projekt erstellen'}
+                  {creatingTemplateId === tpl.id ? copy.creatingProject : copy.createProject}
                 </button>
               </div>
             ))}
