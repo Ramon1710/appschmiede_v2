@@ -1676,6 +1676,7 @@ export default function TemplatesPage() {
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateProjectName, setTemplateProjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { lang } = useI18n();
 
@@ -1746,6 +1747,8 @@ export default function TemplatesPage() {
   );
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const loadCustomTemplates = async () => {
@@ -2125,6 +2128,10 @@ export default function TemplatesPage() {
     }),
     []
   );
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!user)
     return (
