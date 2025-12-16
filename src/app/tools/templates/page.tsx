@@ -1670,6 +1670,7 @@ export default function TemplatesPage() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [adminProjects, setAdminProjects] = useState<Array<{ id: string; name: string | null }>>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [customTemplatesError, setCustomTemplatesError] = useState<string | null>(null);
   const [templateProjectId, setTemplateProjectId] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
@@ -1677,6 +1678,8 @@ export default function TemplatesPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { lang } = useI18n();
+
+  const isTemplateAdmin = user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false;
 
   const copy = useMemo(
     () =>
@@ -1747,8 +1750,20 @@ export default function TemplatesPage() {
   useEffect(() => {
     const loadCustomTemplates = async () => {
       if (!user) return;
+
+      if (!isTemplateAdmin) {
+        setCustomTemplates([]);
+        setCustomTemplatesError(
+          lang === 'en'
+            ? 'Custom Templates sind nur mit Admin-Berechtigung sichtbar.'
+            : 'Custom-Vorlagen sind nur mit Admin-Berechtigung sichtbar.'
+        );
+        return;
+      }
+
       try {
         setTemplatesLoading(true);
+        setCustomTemplatesError(null);
         const snapshot = await getDocs(collection(db, 'templates_custom'));
         const mapped = snapshot.docs
           .map((docSnap) => {
@@ -1771,15 +1786,18 @@ export default function TemplatesPage() {
         setCustomTemplates(mapped);
       } catch (loadError) {
         console.error('Konnte Custom Templates nicht laden', loadError);
+        setCustomTemplatesError(
+          lang === 'en'
+            ? 'Custom Templates konnten nicht geladen werden (Berechtigungen oder Firestore-Fehler).'
+            : 'Custom-Vorlagen konnten nicht geladen werden (Berechtigungen oder Firestore-Fehler).'
+        );
       } finally {
         setTemplatesLoading(false);
       }
     };
 
     loadCustomTemplates();
-  }, [user]);
-
-  const isTemplateAdmin = user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false;
+  }, [user, isTemplateAdmin, lang]);
 
   useEffect(() => {
     const loadProjectsForAdmin = async () => {
@@ -2151,6 +2169,12 @@ export default function TemplatesPage() {
             <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
             {templatesLoading && <p className="text-xs text-neutral-500">{copy.loadingAdmin}</p>}
           </header>
+
+          {customTemplatesError && (
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {customTemplatesError}
+            </div>
+          )}
 
           {isTemplateAdmin && (
             <section className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 space-y-3">

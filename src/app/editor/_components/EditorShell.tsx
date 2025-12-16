@@ -17,7 +17,7 @@ import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import JSZip from 'jszip';
 import useUserProfile from '@/hooks/useUserProfile';
-import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { EditorLayoutPreferences } from '@/types/user';
 import {
