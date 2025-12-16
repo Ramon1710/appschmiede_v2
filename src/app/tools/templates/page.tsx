@@ -1,7 +1,7 @@
 // src/app/tools/templates/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -10,6 +10,7 @@ import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
+import { useI18n } from '@/lib/i18n';
 
 type Template = {
   id: string;
@@ -1676,6 +1677,71 @@ export default function TemplatesPage() {
   const [templateProjectName, setTemplateProjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { lang } = useI18n();
+
+  const copy = useMemo(
+    () =>
+      lang === 'en'
+        ? {
+            badge: 'Templates',
+            unauthDesc: 'Sign in to copy templates and create projects directly from the catalog.',
+            headerTitle: 'Template Library',
+            headerDesc:
+              'Start faster with curated projects. Every template uses the same building blocks as your editor and can be customized instantly.',
+            loadingAdmin: 'Loading admin templates…',
+            tourTitle: 'Template Library',
+            tourGrid: 'Ready-to-use flows like company suite, chat or event app.',
+            tourCreate: 'Create a project in one click and open it in the editor.',
+            adminTitle: 'Admin: Save template from project',
+            adminSaving: 'Saving…',
+            projectSelect: 'Select project',
+            loadingProjects: 'loading…',
+            openInEditor: 'Open in editor',
+            projectIdLabel: 'Project ID',
+            templateNameLabel: 'Template name',
+            descriptionLabel: 'Description',
+            projectNameLabel: 'Display name (optional)',
+            hintCustom:
+              'Custom templates are shown. If a card is missing, check `templates_custom` (required: name, projectName as string and pages as array) and fix invalid entries.',
+            saveButton: 'Save as template',
+            savingButton: 'Saving…',
+            createProject: 'Create project',
+            creatingProject: 'Creating…',
+            customBadge: 'Custom',
+            adminOverwriteHint:
+              'If selected, meta data and pages of the chosen custom template will be overwritten.',
+          }
+        : {
+            badge: 'Vorlagen',
+            unauthDesc: 'Melde dich an, um Vorlagen zu kopieren und neue Projekte direkt aus dem Katalog zu erstellen.',
+            headerTitle: 'Vorlagenbibliothek',
+            headerDesc:
+              'Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt weiter angepasst werden.',
+            loadingAdmin: 'Lade Admin-Vorlagen…',
+            tourTitle: 'Vorlagenbibliothek',
+            tourGrid: 'Fertige Use-Cases wie Unternehmens-Suite, Chat oder Event-App.',
+            tourCreate: 'Mit einem Klick Projekt anlegen und direkt im Editor öffnen.',
+            adminTitle: 'Admin: Vorlage aus Projekt speichern',
+            adminSaving: 'Speichere…',
+            projectSelect: 'Projekt auswählen',
+            loadingProjects: 'lädt…',
+            openInEditor: 'Im Editor öffnen',
+            projectIdLabel: 'Projekt-ID',
+            templateNameLabel: 'Vorlagenname',
+            descriptionLabel: 'Beschreibung',
+            projectNameLabel: 'Anzeigename im Projekt (optional)',
+            hintCustom:
+              'Benutzerdefinierte Vorlagen werden angezeigt. Falls Karten fehlen, prüfe bitte `templates_custom` (erforderlich: name, projectName als String und pages als Array) und bereinige fehlerhafte Einträge.',
+            saveButton: 'Als Vorlage speichern',
+            savingButton: 'Speichere…',
+            createProject: 'Projekt erstellen',
+            creatingProject: 'Wird erstellt…',
+            customBadge: 'Custom',
+            adminOverwriteHint:
+              'Wenn gewählt, werden Meta-Daten und Seiten der ausgewählten Custom-Vorlage überschrieben.',
+          },
+    [lang]
+  );
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -1821,24 +1887,37 @@ export default function TemplatesPage() {
   const templatesTourSteps = [
     {
       id: 'templates-intro',
-      title: 'Vorlagenbibliothek',
-      description: 'Hier findest du kuratierte Projekte, die alle Bausteine des Editors bereits kombiniert verwenden.',
+      title: copy.tourTitle,
+      description:
+        lang === 'en'
+          ? 'Here you find curated projects that already combine all editor blocks.'
+          : 'Hier findest du kuratierte Projekte, die alle Bausteine des Editors bereits kombiniert verwenden.',
     },
     {
       id: 'templates-grid',
-      title: 'Fertige Use-Cases',
-      description: 'Jede Karte beschreibt einen kompletten Flow – z. B. Unternehmens-Suite, Chat oder Event-App.',
+      title: copy.tourGrid,
+      description:
+        lang === 'en'
+          ? 'Each card describes a full flow – e.g. company suite, chat or event app.'
+          : 'Jede Karte beschreibt einen kompletten Flow – z. B. Unternehmens-Suite, Chat oder Event-App.',
     },
     {
       id: 'templates-create',
-      title: 'Projekt erzeugen',
-      description: 'Mit einem Klick wird ein neues Projekt inkl. Seitenstruktur angelegt und direkt im Editor geöffnet.',
+      title: copy.tourCreate,
+      description:
+        lang === 'en'
+          ? 'With one click you create a project including page structure and open it in the editor.'
+          : 'Mit einem Klick wird ein neues Projekt inkl. Seitenstruktur angelegt und direkt im Editor geöffnet.',
     },
   ];
   const saveTemplateFromProject = async () => {
     if (!isTemplateAdmin) return;
     if (!templateProjectId.trim() || !templateName.trim()) {
-      setError('Projekt-ID und Vorlagenname dürfen nicht leer sein.');
+      setError(
+        lang === 'en'
+          ? 'Project ID and template name must not be empty.'
+          : 'Projekt-ID und Vorlagenname dürfen nicht leer sein.'
+      );
       return;
     }
     setSavingTemplate(true);
@@ -1866,7 +1945,7 @@ export default function TemplatesPage() {
         .filter((page): page is Template['pages'][number] => Boolean(page));
 
       if (!pages.length) {
-        setError('Keine Seiten gefunden. Bitte prüfe die Projekt-ID.');
+        setError(lang === 'en' ? 'No pages found. Please check the project ID.' : 'Keine Seiten gefunden. Bitte prüfe die Projekt-ID.');
         setSavingTemplate(false);
         return;
       }
@@ -1914,12 +1993,156 @@ export default function TemplatesPage() {
       setSelectedTemplateId(null);
     } catch (saveError: any) {
       console.error('Vorlage konnte nicht gespeichert werden', saveError);
-      setError(saveError?.message || 'Vorlage konnte nicht gespeichert werden.');
+      setError(
+        saveError?.message || (lang === 'en' ? 'Template could not be saved.' : 'Vorlage konnte nicht gespeichert werden.')
+      );
     } finally {
       setSavingTemplate(false);
     }
   };
-  const visibleTemplates = visibleBuiltinTemplates;
+  const templateMeta = useMemo(
+    () => ({
+      en: {
+        'company-suite': {
+          name: 'Company Suite',
+          description: 'Dashboard, tasks and chat for your team.',
+          projectName: 'Company App',
+          pages: {
+            Dashboard: 'Dashboard',
+            Aufgaben: 'Tasks',
+            Chat: 'Chat',
+          },
+        },
+        'team-chat': {
+          name: 'Team Chat & Support',
+          description: 'Login, chat window, support tickets and uploads.',
+          projectName: 'Team Chat',
+          pages: {
+            Login: 'Login',
+            Start: 'Home',
+            Chat: 'Chat',
+            Support: 'Support',
+          },
+        },
+        'event-planner': {
+          name: 'Event Planner',
+          description: 'Landing, agenda, tasks and team chat for events.',
+          projectName: 'Event Planner',
+        },
+        'construction-manager': {
+          name: 'Construction Manager',
+          description: 'Project overview, tasks, files and time tracking.',
+          projectName: 'Build Manager',
+        },
+        'time-tracking': {
+          name: 'Time Tracking',
+          description: 'Track work, timers and approvals.',
+          projectName: 'TimePro',
+        },
+        'mini-crm': {
+          name: 'Mini CRM',
+          description: 'Contacts, deals and notes.',
+          projectName: 'Mini CRM',
+        },
+        'course-app': {
+          name: 'Course App',
+          description: 'Lessons, progress and community chat.',
+          projectName: 'Course App',
+        },
+        'field-service': {
+          name: 'Field Service',
+          description: 'Tickets, dispatch and chat for crews.',
+          projectName: 'Field Service',
+        },
+        'property-suite': {
+          name: 'Property Suite',
+          description: 'Listings, visits and documents.',
+          projectName: 'Property Suite',
+        },
+        'fitness-coach': {
+          name: 'Fitness Coach',
+          description: 'Plans, progress and check-ins.',
+          projectName: 'CoachFlow',
+        },
+        'restaurant-suite': {
+          name: 'Restaurant Suite',
+          description: 'Menu, reservations and loyalty.',
+          projectName: 'Restaurant',
+        },
+        'medical-suite': {
+          name: 'Medical Suite',
+          description: 'Appointments, records and chat.',
+          projectName: 'Clinic App',
+        },
+        'inventory-suite': {
+          name: 'Inventory Suite',
+          description: 'Stock, movements and alerts.',
+          projectName: 'Inventory',
+        },
+        'logistics-suite': {
+          name: 'Logistics Suite',
+          description: 'Shipments, tracking and status.',
+          projectName: 'Logistics',
+        },
+        'agency-suite': {
+          name: 'Agency Suite',
+          description: 'Pipeline, tasks and reports for agencies.',
+          projectName: 'Agency',
+        },
+        'photo-portfolio': {
+          name: 'Photo Portfolio',
+          description: 'Showcase, bookings and client area.',
+          projectName: 'Photo Portfolio',
+        },
+        'retail-suite': {
+          name: 'Retail Suite',
+          description: 'Catalog, orders and support.',
+          projectName: 'Retail',
+        },
+        'nonprofit-suite': {
+          name: 'Nonprofit Suite',
+          description: 'Donations, events and members.',
+          projectName: 'Nonprofit',
+        },
+        'travel-suite': {
+          name: 'Travel Suite',
+          description: 'Trips, bookings and chat.',
+          projectName: 'Travel Desk',
+        },
+        'coworking-suite': {
+          name: 'Coworking Suite',
+          description: 'Spaces, bookings and members.',
+          projectName: 'Space Desk',
+        },
+      },
+    }),
+    []
+  );
+
+  const visibleTemplates: Template[] = useMemo(
+    () =>
+      [...visibleBuiltinTemplates, ...customTemplates].map((tpl) => {
+        if (lang !== 'en') return tpl;
+        const meta = templateMeta.en[tpl.id];
+        if (!meta) return tpl;
+        const pageTranslations = meta.pages ?? {};
+        const pages = tpl.pages.map((p) => ({
+          ...p,
+          name: pageTranslations[p.name as keyof typeof pageTranslations] ?? p.name,
+          folder: p.folder && pageTranslations[p.folder as keyof typeof pageTranslations]
+            ? (pageTranslations[p.folder as keyof typeof pageTranslations] as string)
+            : p.folder,
+        }));
+        return {
+          ...tpl,
+          name: meta.name ?? tpl.name,
+          description: meta.description ?? tpl.description,
+          projectName: meta.projectName ?? tpl.projectName,
+          pages,
+        };
+      }),
+    [customTemplates, lang, templateMeta, visibleBuiltinTemplates]
+  );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
@@ -2031,9 +2254,8 @@ export default function TemplatesPage() {
                 </label>
               </div>
               <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-                Hinweis: Aktuell werden zur Stabilisierung nur die Built-in-Vorlagen angezeigt. Prüfe die Collection
-                `templates_custom` und bereinige fehlerhafte Einträge (Name, projectName als String, pages als Array). Danach können
-                wir das Rendering wieder aktivieren.
+                Hinweis: Benutzerdefinierte Vorlagen werden angezeigt. Falls Karten fehlen, prüfe bitte `templates_custom`
+                (erforderlich: name, projectName als String und pages als Array) und bereinige fehlerhafte Einträge.
               </div>
               <div className="flex gap-2">
                 <button

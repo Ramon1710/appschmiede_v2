@@ -123,6 +123,64 @@ function buildStandardLoginPage(desiredName?: string): PageTree {
   };
 }
 
+function buildSimpleChatPage(prompt: string): PageTree {
+  const background = pickBackground('chat');
+  const headline = prompt && prompt.length > 3 ? prompt : 'Team Chat';
+  const hero = stack(
+    [
+      {
+        type: 'text',
+        props: { text: headline },
+        style: { fontSize: 30, fontWeight: 700 },
+      },
+      {
+        type: 'text',
+        props: { text: 'Nachrichten, Dateien und Support an einem Ort.' },
+        style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+        h: 70,
+      },
+    ],
+    86,
+    16
+  );
+
+  const chatStart = (hero.at(-1)?.y ?? 86) + (hero.at(-1)?.h ?? 60) + 24;
+  const chatArea = stack(
+    [
+      {
+        type: 'container',
+        props: { component: 'chat' },
+        h: 360,
+      },
+      {
+        type: 'input',
+        props: { placeholder: 'Nachricht schreiben…', inputType: 'text' },
+      },
+      {
+        type: 'button',
+        props: { label: 'Senden', action: 'chat' },
+      },
+    ],
+    chatStart,
+    14
+  );
+
+  const sections: Node[] = [
+    ...hero,
+    ...chatArea,
+  ];
+
+  return {
+    name: 'Chat',
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg: background },
+      children: sections,
+    },
+  };
+}
+
 type GeneratePageBody = {
   prompt?: unknown;
   pageName?: unknown;
@@ -139,9 +197,13 @@ export async function POST(request: Request) {
   const pageName = typeof body.pageName === 'string' ? body.pageName : undefined;
   const userPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 
-  // Fallback ohne OpenAI oder ohne Prompt
+  // Fallback ohne OpenAI oder ohne Prompt, aber mit Heuristik auf Chat
   if (!OPENAI_API_KEY || !userPrompt) {
-    const singlePage = buildStandardLoginPage(pageName ?? userPrompt);
+    const normalized = userPrompt.toLowerCase();
+    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
+    const singlePage = wantsChat
+      ? buildSimpleChatPage(pageName ?? userPrompt)
+      : buildStandardLoginPage(pageName ?? userPrompt);
     return NextResponse.json({ page: singlePage, source: 'fallback' });
   }
 
@@ -151,7 +213,9 @@ export async function POST(request: Request) {
 - Erlaubte Node-Typen: text, button, image, input, container.
 - Props-Beispiele: text.text, button.label, button.action (login|register|reset-password|navigate|chat|none), button.targetPage (optional), input.placeholder, input.inputType (text|email|password|number|tel), container.component (navbar|chat|time-tracking optional), navbars dürfen navItems (label,targetPage,target) haben.
 - Setze sinnvolle x,y,w,h (max 360) und einen Hintergrund unter tree.props.bg.
-- Antworte NUR mit JSON im Format {"name":"...","tree":{...}} ohne Markdown oder Kommentare.`;
+  - Antworte NUR mit JSON im Format {"name":"...","tree":{...}} ohne Markdown oder Kommentare.
+  - Bevorzuge die geforderten Inhalte aus dem Nutzerprompt. Erzeuge KEINE Login- oder Auth-Seite, sofern der Nutzer nicht explizit nach Login/Registration fragt.
+  - Falls der Nutzer nach einer Chat-Seite fragt, muss mindestens ein container mit component: "chat" enthalten sein und ein Eingabefeld für Nachrichten.`;
 
     const completion = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -168,7 +232,7 @@ export async function POST(request: Request) {
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Baue eine Seite für: ${userPrompt}. Seitentitel: ${pageName ?? 'Seite'}`,
+            content: `Baue eine Seite für: ${userPrompt}. Seitentitel: ${pageName ?? 'Seite'}. Verwende nur Login/Registrierung, wenn im Prompt gefordert. Wenn Chat gewünscht ist, füge eine Chat-Komponente, Eingabe und Senden-Button hinzu.`,
           },
         ],
       }),
@@ -191,12 +255,18 @@ export async function POST(request: Request) {
       }
     }
 
-    const page = parsed ?? buildStandardLoginPage(pageName ?? userPrompt);
+    const normalized = userPrompt.toLowerCase();
+    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
+    const page = parsed ?? (wantsChat ? buildSimpleChatPage(pageName ?? userPrompt) : buildStandardLoginPage(pageName ?? userPrompt));
 
     return NextResponse.json({ page, source: 'openai' });
   } catch (error) {
     console.error('AI generation failed, falling back', error);
-    const fallback = buildStandardLoginPage(pageName ?? userPrompt);
+    const normalized = userPrompt.toLowerCase();
+    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
+    const fallback = wantsChat
+      ? buildSimpleChatPage(pageName ?? userPrompt)
+      : buildStandardLoginPage(pageName ?? userPrompt);
     return NextResponse.json({ page: fallback, source: 'fallback' });
   }
 }
