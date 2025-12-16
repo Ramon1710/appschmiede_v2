@@ -29,6 +29,7 @@ export type Project = {
   updatedAt?: any;
   lastOpenedAt?: any;
   icon?: string;
+  description?: string | null;
 };
 
 export async function createProject(name: string, ownerId: string) {

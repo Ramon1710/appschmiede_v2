@@ -1542,6 +1542,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const persistTemplateApplication = useCallback(
     (nextTree: PageTree | null | undefined, preservedName: string) => {
       if (!nextTree) return false;
+      if (!currentPageId) return false;
 
       setPages((prev) => {
         const existing = prev.find((page) => page.id === currentPageId) ?? null;
@@ -2344,7 +2345,7 @@ export default function EditorShell({ initialPageId }: Props) {
     setDeletingPage(true);
     try {
       await deletePage(_projectId, deletingPageId);
-      handlePageSelection(fallback.id, { placeholderName: fallback.name });
+      handlePageSelection(fallback.id ?? null, { placeholderName: fallback.name });
       setPages((prev) => prev.filter((page) => page.id !== deletingPageId));
     } catch (error) {
       console.error('Seite konnte nicht gelöscht werden', error);
