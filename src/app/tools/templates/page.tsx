@@ -16,9 +16,6 @@ import { useI18n } from '@/lib/i18n';
 const BUILD_TAG =
   process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
 
-const BUILD_TAG =
-  process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
-
 type Template = {
   id: string;
   name: string;
