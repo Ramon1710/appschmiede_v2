@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
@@ -25,8 +25,6 @@ type Template = {
   source?: 'builtin' | 'custom';
   createdBy?: string | null;
 };
-
-const TEMPLATE_ADMIN_EMAILS = ['ramon.mueler@gmx.ch', 'admin.admin@appschmiede.com'];
 
 const fallbackId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -1667,25 +1665,12 @@ const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 function TemplatesPageComponent() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
-  const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
-  const [templatesLoading, setTemplatesLoading] = useState(false);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
-  const [savingTemplate, setSavingTemplate] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [adminProjects, setAdminProjects] = useState<Array<{ id: string; name: string | null }>>([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [customTemplatesError, setCustomTemplatesError] = useState<string | null>(null);
-  const [templateProjectId, setTemplateProjectId] = useState('');
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
-  const [templateProjectName, setTemplateProjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const router = useRouter();
   const { lang } = useI18n();
-
-  const isTemplateAdmin = user?.email ? TEMPLATE_ADMIN_EMAILS.includes(user.email) : false;
 
   const copy = useMemo(
     () =>
@@ -1696,28 +1681,11 @@ function TemplatesPageComponent() {
             headerTitle: 'Template Library',
             headerDesc:
               'Start faster with curated projects. Every template uses the same building blocks as your editor and can be customized instantly.',
-            loadingAdmin: 'Loading admin templates…',
             tourTitle: 'Template Library',
             tourGrid: 'Ready-to-use flows like company suite, chat or event app.',
             tourCreate: 'Create a project in one click and open it in the editor.',
-            adminTitle: 'Admin: Save template from project',
-            adminSaving: 'Saving…',
-            projectSelect: 'Select project',
-            loadingProjects: 'loading…',
-            openInEditor: 'Open in editor',
-            projectIdLabel: 'Project ID',
-            templateNameLabel: 'Template name',
-            descriptionLabel: 'Description',
-            projectNameLabel: 'Display name (optional)',
-            hintCustom:
-              'Custom templates are shown. If a card is missing, check `templates_custom` (required: name, projectName as string and pages as array) and fix invalid entries.',
-            saveButton: 'Save as template',
-            savingButton: 'Saving…',
             createProject: 'Create project',
             creatingProject: 'Creating…',
-            customBadge: 'Custom',
-            adminOverwriteHint:
-              'If selected, meta data and pages of the chosen custom template will be overwritten.',
           }
         : {
             badge: 'Vorlagen',
@@ -1725,28 +1693,11 @@ function TemplatesPageComponent() {
             headerTitle: 'Vorlagenbibliothek',
             headerDesc:
               'Starte schneller mit vorgefertigten Projekten. Jede Vorlage nutzt die gleichen Bausteine wie dein Editor und kann direkt weiter angepasst werden.',
-            loadingAdmin: 'Lade Admin-Vorlagen…',
             tourTitle: 'Vorlagenbibliothek',
             tourGrid: 'Fertige Use-Cases wie Unternehmens-Suite, Chat oder Event-App.',
             tourCreate: 'Mit einem Klick Projekt anlegen und direkt im Editor öffnen.',
-            adminTitle: 'Admin: Vorlage aus Projekt speichern',
-            adminSaving: 'Speichere…',
-            projectSelect: 'Projekt auswählen',
-            loadingProjects: 'lädt…',
-            openInEditor: 'Im Editor öffnen',
-            projectIdLabel: 'Projekt-ID',
-            templateNameLabel: 'Vorlagenname',
-            descriptionLabel: 'Beschreibung',
-            projectNameLabel: 'Anzeigename im Projekt (optional)',
-            hintCustom:
-              'Benutzerdefinierte Vorlagen werden angezeigt. Falls Karten fehlen, prüfe bitte `templates_custom` (erforderlich: name, projectName als String und pages als Array) und bereinige fehlerhafte Einträge.',
-            saveButton: 'Als Vorlage speichern',
-            savingButton: 'Speichere…',
             createProject: 'Projekt erstellen',
             creatingProject: 'Wird erstellt…',
-            customBadge: 'Custom',
-            adminOverwriteHint:
-              'Wenn gewählt, werden Meta-Daten und Seiten der ausgewählten Custom-Vorlage überschrieben.',
           },
     [lang]
   );
@@ -1765,79 +1716,6 @@ function TemplatesPageComponent() {
   useEffect(() => {
     console.info('templates build', BUILD_TAG);
   }, []);
-
-  useEffect(() => {
-    const loadCustomTemplates = async () => {
-      if (!user) return;
-
-      if (!isTemplateAdmin) {
-        setCustomTemplates([]);
-        setCustomTemplatesError(
-          lang === 'en'
-            ? 'Custom Templates sind nur mit Admin-Berechtigung sichtbar.'
-            : 'Custom-Vorlagen sind nur mit Admin-Berechtigung sichtbar.'
-        );
-        return;
-      }
-
-      try {
-        setTemplatesLoading(true);
-        setCustomTemplatesError(null);
-        const snapshot = await getDocs(collection(db, 'templates_custom'));
-        const mapped = snapshot.docs
-          .map((docSnap) => {
-            const data = docSnap.data();
-            const name = safeString(data?.name, null as unknown as string);
-            const projectName = safeString(data?.projectName, null as unknown as string);
-            const description = safeString(data?.description, '');
-            if (!name || !projectName || !Array.isArray(data?.pages)) return null;
-            return {
-              id: docSnap.id,
-              name,
-              description,
-              projectName,
-              pages: data.pages || [],
-              source: 'custom' as const,
-              createdBy: data.createdBy,
-            } as Template;
-          })
-          .filter((tpl): tpl is Template => Boolean(tpl));
-        setCustomTemplates(mapped);
-      } catch (loadError) {
-        console.error('Konnte Custom Templates nicht laden', loadError);
-        setCustomTemplatesError(
-          lang === 'en'
-            ? 'Custom Templates konnten nicht geladen werden (Berechtigungen oder Firestore-Fehler).'
-            : 'Custom-Vorlagen konnten nicht geladen werden (Berechtigungen oder Firestore-Fehler).'
-        );
-      } finally {
-        setTemplatesLoading(false);
-      }
-    };
-
-    loadCustomTemplates();
-  }, [user, isTemplateAdmin, lang]);
-
-  useEffect(() => {
-    const loadProjectsForAdmin = async () => {
-      if (!isTemplateAdmin) return;
-      setLoadingProjects(true);
-      try {
-        const snap = await getDocs(collection(db, 'projects'));
-        const projects = snap.docs.map((d) => ({
-          id: d.id,
-          name: safeString(d.data()?.name, null as unknown as string) || null,
-        }));
-        setAdminProjects(projects);
-      } catch (projectLoadError) {
-        console.error('Konnte Projekte nicht laden', projectLoadError);
-      } finally {
-        setLoadingProjects(false);
-      }
-    };
-
-    loadProjectsForAdmin();
-  }, [isTemplateAdmin]);
 
   const createFromTemplate = async (tpl: Template) => {
       if (!user) return;
@@ -1936,96 +1814,6 @@ function TemplatesPageComponent() {
           : 'Mit einem Klick wird ein neues Projekt inkl. Seitenstruktur angelegt und direkt im Editor geöffnet.',
     },
   ];
-  const saveTemplateFromProject = async () => {
-    if (!isTemplateAdmin) return;
-    if (!templateProjectId.trim() || !templateName.trim()) {
-      setError(
-        lang === 'en'
-          ? 'Project ID and template name must not be empty.'
-          : 'Projekt-ID und Vorlagenname dürfen nicht leer sein.'
-      );
-      return;
-    }
-    setSavingTemplate(true);
-    setError(null);
-
-    try {
-      // Lade Projekt-Metadaten
-      const projectSnap = await getDoc(doc(db, 'projects', templateProjectId.trim()))
-        .catch(() => null);
-      const projectData = projectSnap?.exists() ? projectSnap.data() : null;
-
-      // Lade Seiten
-      const pagesSnap = await getDocs(collection(db, 'projects', templateProjectId.trim(), 'pages'));
-      const pages = pagesSnap.docs
-        .map((p) => {
-          const data = p.data();
-          const name = safeString(data?.name, null as unknown as string);
-          if (!data?.tree || !name) return null;
-          return {
-            name,
-            folder: data.folder ?? null,
-            tree: data.tree,
-          } as Template['pages'][number];
-        })
-        .filter((page): page is Template['pages'][number] => Boolean(page));
-
-      if (!pages.length) {
-        setError(lang === 'en' ? 'No pages found. Please check the project ID.' : 'Keine Seiten gefunden. Bitte prüfe die Projekt-ID.');
-        setSavingTemplate(false);
-        return;
-      }
-
-      const targetId = selectedTemplateId && customTemplates.some((tpl) => tpl.id === selectedTemplateId)
-        ? selectedTemplateId
-        : fallbackId();
-
-      await setDoc(doc(db, 'templates_custom', targetId), {
-        name: templateName.trim(),
-        description: templateDescription.trim() || 'Benutzerdefinierte Vorlage',
-        projectName: templateProjectName.trim() || projectData?.name || templateName.trim(),
-        pages,
-        createdBy: user?.uid ?? null,
-        createdAt: serverTimestamp(),
-        source: 'custom',
-      });
-
-      // Reload list
-      const snapshot = await getDocs(collection(db, 'templates_custom'));
-      const mapped = snapshot.docs
-        .map((docSnap) => {
-          const data = docSnap.data();
-          const name = safeString(data?.name, null as unknown as string);
-          const projectName = safeString(data?.projectName, null as unknown as string);
-          const description = safeString(data?.description, '');
-          if (!name || !projectName || !Array.isArray(data?.pages)) return null;
-          return {
-            id: docSnap.id,
-            name,
-            description,
-            projectName,
-            pages: data.pages || [],
-            source: 'custom' as const,
-            createdBy: data.createdBy,
-          } as Template;
-        })
-        .filter((tpl): tpl is Template => Boolean(tpl));
-      setCustomTemplates(mapped);
-
-      setTemplateProjectId('');
-      setTemplateName('');
-      setTemplateDescription('');
-      setTemplateProjectName('');
-      setSelectedTemplateId(null);
-    } catch (saveError: unknown) {
-      console.error('Vorlage konnte nicht gespeichert werden', saveError);
-      setError(
-        saveError?.message || (lang === 'en' ? 'Template could not be saved.' : 'Vorlage konnte nicht gespeichert werden.')
-      );
-    } finally {
-      setSavingTemplate(false);
-    }
-  };
   const templateMeta = useMemo(
     () => ({
       en: {
@@ -2159,7 +1947,7 @@ function TemplatesPageComponent() {
 
   const visibleTemplates: Template[] = useMemo(
     () =>
-      [...visibleBuiltinTemplates, ...customTemplates].map((tpl) => {
+      visibleBuiltinTemplates.map((tpl) => {
         if (lang !== 'en') return tpl;
         const meta = templateMeta.en[tpl.id];
         if (!meta) return tpl;
@@ -2179,7 +1967,7 @@ function TemplatesPageComponent() {
           pages,
         };
       }),
-    [customTemplates, lang, templateMeta]
+    [lang, templateMeta]
   );
 
   return (
@@ -2191,138 +1979,13 @@ function TemplatesPageComponent() {
             <h1 className="text-3xl font-semibold">{copy.headerTitle}</h1>
             <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
             <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Build: {BUILD_TAG}</p>
-            {templatesLoading && <p className="text-xs text-neutral-500">{copy.loadingAdmin}</p>}
           </header>
-
-          {customTemplatesError && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-              {customTemplatesError}
-            </div>
-          )}
-
-          {isTemplateAdmin && (
-            <section className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-emerald-100">{copy.adminTitle}</h2>
-                {savingTemplate && <span className="text-xs text-emerald-100">{copy.adminSaving}</span>}
-              </div>
-              <div className="flex flex-col gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-neutral-200">{copy.projectSelect}</span>
-                  {loadingProjects && <span className="text-xs text-neutral-400">{copy.loadingProjects}</span>}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!templateProjectId) return;
-                      router.push(`/editor?projectId=${templateProjectId}`);
-                    }}
-                    className="rounded-md border border-white/15 bg-white/5 px-2.5 py-1 text-xs text-neutral-100 hover:bg-white/10 disabled:opacity-40"
-                    disabled={!templateProjectId}
-                  >
-                    {copy.openInEditor}
-                  </button>
-                </div>
-                <select
-                  value={templateProjectId}
-                  onChange={(e) => {
-                    const pid = e.target.value;
-                    setTemplateProjectId(pid);
-                    const match = adminProjects.find((p) => p.id === pid);
-                    if (match?.name) {
-                      setTemplateProjectName(match.name);
-                      if (!templateName) setTemplateName(`${match.name} Vorlage`);
-                    }
-                  }}
-                  className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                >
-                  <option value="">Projekt wählen…</option>
-                  {adminProjects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name ?? 'Unbenannt'} — {p.id}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-neutral-200">Bestehende Custom-Vorlage aktualisieren (optional)</span>
-                  <select
-                    value={selectedTemplateId ?? ''}
-                    onChange={(e) => setSelectedTemplateId(e.target.value || null)}
-                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                  >
-                    <option value="">Neue Vorlage anlegen</option>
-                    {customTemplates.map((tpl) => (
-                      <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
-                    ))}
-                  </select>
-                  <span className="text-xs text-neutral-400">Wenn gewählt, werden Meta-Daten und Seiten der ausgewählten Custom-Vorlage überschrieben.</span>
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-neutral-200">{copy.projectIdLabel}</span>
-                  <input
-                    value={templateProjectId}
-                    onChange={(e) => setTemplateProjectId(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                    placeholder="projectId"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-neutral-200">{copy.templateNameLabel}</span>
-                  <input
-                    value={templateName}
-                    onChange={(e) => setTemplateName(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                    placeholder="z. B. Meine neue Vorlage"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-neutral-200">{copy.descriptionLabel}</span>
-                  <input
-                    value={templateDescription}
-                    onChange={(e) => setTemplateDescription(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                    placeholder="Kurzer Teaser für Nutzer"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm md:col-span-2">
-                  <span className="text-neutral-200">{copy.projectNameLabel}</span>
-                  <input
-                    value={templateProjectName}
-                    onChange={(e) => setTemplateProjectName(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm"
-                    placeholder="Name des angelegten Projekts"
-                  />
-                </label>
-              </div>
-              <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-                {copy.hintCustom}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={saveTemplateFromProject}
-                  disabled={savingTemplate}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                    savingTemplate
-                      ? 'bg-white/5 text-neutral-500 cursor-wait'
-                      : 'bg-emerald-500/20 text-emerald-100 border border-emerald-400/50 hover:bg-emerald-500/30'
-                  }`}
-                >
-                  {savingTemplate ? copy.savingButton : copy.saveButton}
-                </button>
-              </div>
-            </section>
-          )}
 
           <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
             {visibleTemplates.map((tpl) => (
               <div key={tpl.id} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-lg font-medium text-neutral-100">{tpl.name ?? (lang === 'en' ? 'Template' : 'Vorlage')}</div>
-                  {tpl.source === 'custom' && (
-                    <span className="text-[11px] rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100">{copy.customBadge}</span>
-                  )}
                 </div>
                 <div className="mt-1 text-sm text-neutral-400">{tpl.description ?? ''}</div>
                 <button
