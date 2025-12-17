@@ -13,6 +13,12 @@ import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 import { useI18n } from '@/lib/i18n';
 
+const BUILD_TAG =
+  process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
+
+const BUILD_TAG =
+  process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
+
 type Template = {
   id: string;
   name: string;
@@ -1760,6 +1766,10 @@ function TemplatesPageComponent() {
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
+    console.info('templates build', BUILD_TAG);
+  }, []);
+
+  useEffect(() => {
     const loadCustomTemplates = async () => {
       if (!user) return;
 
@@ -2183,6 +2193,7 @@ function TemplatesPageComponent() {
           <header className="space-y-1" data-tour-id="templates-intro">
             <h1 className="text-3xl font-semibold">{copy.headerTitle}</h1>
             <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Build: {BUILD_TAG}</p>
             {templatesLoading && <p className="text-xs text-neutral-500">{copy.loadingAdmin}</p>}
           </header>
 
