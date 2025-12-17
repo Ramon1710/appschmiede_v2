@@ -1,6 +1,7 @@
 // src/app/tools/templates/page.tsx
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -1661,7 +1662,7 @@ const visibleBuiltinTemplates: Template[] = builtinTemplates
   .filter((tpl): tpl is Template => Boolean(tpl));
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
-export default function TemplatesPage() {
+function TemplatesPageComponent() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [customTemplates, setCustomTemplates] = useState<Template[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
@@ -2335,3 +2336,7 @@ export default function TemplatesPage() {
     </div>
   );
 }
+
+const TemplatesPage = dynamic(() => Promise.resolve(TemplatesPageComponent), { ssr: false });
+
+export default TemplatesPage;
