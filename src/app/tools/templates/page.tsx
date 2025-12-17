@@ -1678,6 +1678,7 @@ function TemplatesPageComponent() {
   const [templateProjectName, setTemplateProjectName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const router = useRouter();
   const { lang } = useI18n();
 
@@ -1747,7 +1748,14 @@ function TemplatesPageComponent() {
     [lang]
   );
 
-  useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, (u) => {
+        setUser(u ? { uid: u.uid, email: u.email } : null);
+        setAuthReady(true);
+      }),
+    []
+  );
 
   useEffect(() => setMounted(true), []);
 
@@ -2130,7 +2138,7 @@ function TemplatesPageComponent() {
     []
   );
 
-  if (!mounted) {
+  if (!mounted || !authReady) {
     return null;
   }
 
