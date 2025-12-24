@@ -2308,7 +2308,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
       applyTreeUpdate(
         () => ({
-          id,
+          id: id ?? undefined,
           name: options?.placeholderName ?? 'Neue Seite',
           tree: {
             id: 'root',
@@ -2681,7 +2681,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
                         const id = await createPage(_projectId, `Seite ${idx}`);
-                        handlePageSelection(id ?? null, { placeholderName: `Seite ${idx}` });
+                        handlePageSelection(id || null, { placeholderName: `Seite ${idx}` });
                       }}
                     >
                       + Seite
@@ -2806,7 +2806,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
                       const id = await createPage(_projectId, `Seite ${idx}`);
-                      handlePageSelection(id ?? null, { placeholderName: `Seite ${idx}` });
+                      handlePageSelection(id || null, { placeholderName: `Seite ${idx}` });
                     }}
                   >
                     + Seite
