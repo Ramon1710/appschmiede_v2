@@ -159,6 +159,10 @@ const UNDO_STACK_LIMIT = 10;
 const CANVAS_FRAME = { width: 414, height: 896 } as const;
 const MIN_NODE_WIDTH = 40;
 const MIN_NODE_HEIGHT = 32;
+const makeId = () =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
 const clampToRange = (value: number, min: number, max: number) => {
   if (Number.isNaN(value)) return min;
   if (max < min) return min;
@@ -1330,7 +1334,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
     const clone: EditorNode = {
       ...copiedNode,
-      id: crypto.randomUUID(),
+      id: makeId(),
       props: copiedNode.props ? JSON.parse(JSON.stringify(copiedNode.props)) : undefined,
       style: copiedNode.style ? JSON.parse(JSON.stringify(copiedNode.style)) : undefined,
       children: copiedNode.children ? JSON.parse(JSON.stringify(copiedNode.children)) : undefined,
@@ -1611,7 +1615,7 @@ export default function EditorShell({ initialPageId }: Props) {
     };
 
     const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
-      id: crypto.randomUUID(),
+      id: makeId(),
       type,
       x: overrides.x ?? 32,
       y: overrides.y ?? 96,
@@ -1978,7 +1982,7 @@ export default function EditorShell({ initialPageId }: Props) {
     }
 
     const newNode: EditorNode = {
-      id: crypto.randomUUID(),
+      id: makeId(),
       type,
       x: 100,
       y: 100,
