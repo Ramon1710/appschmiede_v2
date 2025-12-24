@@ -1933,18 +1933,6 @@ function TemplatesPageComponent() {
     []
   );
 
-  if (!mounted || !authReady) {
-    return null;
-  }
-
-  if (!user)
-    return (
-      <UnauthenticatedScreen
-        badge={copy.badge}
-        description={copy.unauthDesc}
-      />
-    );
-
   const visibleTemplates: Template[] = useMemo(
     () =>
       visibleBuiltinTemplates.map((tpl) => {
@@ -1969,6 +1957,18 @@ function TemplatesPageComponent() {
       }),
     [lang, templateMeta]
   );
+
+  if (!mounted || !authReady) {
+    return null;
+  }
+
+  if (!user)
+    return (
+      <UnauthenticatedScreen
+        badge={copy.badge}
+        description={copy.unauthDesc}
+      />
+    );
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
