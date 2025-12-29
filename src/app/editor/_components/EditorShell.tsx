@@ -833,6 +833,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
   const isAdmin = isAdminEmail(user?.email);
 
+  const queryAppTemplateId = searchParams.get('appTemplateId')?.trim() || null;
+
   // Unterstütze sowohl ?projectId= als auch ?id=
   const [storedProjectId, setStoredProjectId] = useState<string | null>(null);
 
@@ -848,6 +850,13 @@ export default function EditorShell({ initialPageId }: Props) {
   const [manualProjectId, setManualProjectId] = useState<string | null>(null);
   const derivedProjectId = queryProjectId ?? paramsProjectId ?? storedProjectId ?? null;
   const _projectId = derivedProjectId ?? manualProjectId ?? null;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (!queryAppTemplateId) return;
+    setEditingPageTemplateId(null);
+    setEditingAppTemplateId(queryAppTemplateId);
+  }, [isAdmin, queryAppTemplateId]);
 
   useEffect(() => {
     if (!_projectId) {
@@ -2005,10 +2014,22 @@ export default function EditorShell({ initialPageId }: Props) {
     setSavingTemplateOverwrite('page');
     try {
       const sanitizedTree = sanitizeNode(tree.tree);
-      await updateDoc(doc(db, 'pageTemplates', editingPageTemplateId), {
-        tree: sanitizedTree,
-        updatedAt: serverTimestamp(),
-      });
+      const ref = doc(db, 'pageTemplates', editingPageTemplateId);
+      try {
+        await updateDoc(ref, {
+          tree: sanitizedTree,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (innerError) {
+        await setDoc(
+          ref,
+          {
+            tree: sanitizedTree,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
       setPageTemplates((prev) =>
         prev.map((tpl) => (tpl.id === editingPageTemplateId ? { ...tpl, tree: sanitizedTree } : tpl))
       );
@@ -2107,10 +2128,22 @@ export default function EditorShell({ initialPageId }: Props) {
         tree: sanitizeNode(page.tree as any),
       }));
 
-      await updateDoc(doc(db, 'templates', editingAppTemplateId), {
-        pages: payloadPages,
-        updatedAt: serverTimestamp(),
-      });
+      const ref = doc(db, 'templates', editingAppTemplateId);
+      try {
+        await updateDoc(ref, {
+          pages: payloadPages,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (innerError) {
+        await setDoc(
+          ref,
+          {
+            pages: payloadPages,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
 
       setAppTemplates((prev) =>
         prev.map((tpl) => (tpl.id === editingAppTemplateId ? { ...tpl, pages: payloadPages as any } : tpl))

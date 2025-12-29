@@ -5,13 +5,14 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Node, PageTree } from '@/lib/editorTypes';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 import { useI18n } from '@/lib/i18n';
+import { isAdminEmail } from '@/lib/user-utils';
 
 const BUILD_TAG =
   process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
@@ -1770,6 +1771,28 @@ function TemplatesPageComponent() {
         return;
       }
 
+      const adminMode = isAdminEmail(user.email);
+      if (adminMode) {
+        try {
+          const templateRef = doc(db, 'templates', tpl.id);
+          const snap = await getDoc(templateRef);
+          if (!snap.exists()) {
+            await setDoc(templateRef, {
+              name: tpl.name,
+              description: tpl.description,
+              projectName: tpl.projectName,
+              pages: tpl.pages,
+              source: tpl.source ?? 'builtin',
+              createdBy: user.uid,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        } catch (seedError) {
+          console.warn('Konnte Vorlage nicht initial in Firestore anlegen', seedError);
+        }
+      }
+
       if (typeof window !== 'undefined') {
         try {
           window.localStorage.setItem(LAST_PROJECT_STORAGE_KEY, projectId);
@@ -1777,15 +1800,18 @@ function TemplatesPageComponent() {
           console.warn('Konnte letztes Projekt nicht speichern', storageError);
         }
         try {
-          router.push(`/editor?projectId=${projectId}`);
+          const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
+          router.push(`/editor?projectId=${projectId}${suffix}`);
         } catch (navigationError) {
           console.warn('Router-Navigation fehlgeschlagen, falle auf window.location zurück.', navigationError);
-          window.location.href = `/editor?projectId=${projectId}`;
+          const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
+          window.location.href = `/editor?projectId=${projectId}${suffix}`;
         }
         return;
       }
 
-      router.push(`/editor?projectId=${projectId}`);
+      const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
+      router.push(`/editor?projectId=${projectId}${suffix}`);
     };
 
   const templatesTourSteps = [
