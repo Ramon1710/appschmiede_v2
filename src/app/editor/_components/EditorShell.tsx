@@ -11,7 +11,7 @@ import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
-import { savePage, subscribePages, createPage, deletePage, renamePage, loadPage } from '@/lib/db-editor';
+import { savePage, subscribePages, createPage, createPageWithContent, deletePage, renamePage, loadPage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
@@ -1013,6 +1013,13 @@ export default function EditorShell({ initialPageId }: Props) {
   const [loadingPageTemplates, setLoadingPageTemplates] = useState(false);
   const [savingPageTemplate, setSavingPageTemplate] = useState(false);
   const [savingAppTemplate, setSavingAppTemplate] = useState(false);
+  const [appTemplates, setAppTemplates] = useState<StoredAppTemplate[]>([]);
+  const [loadingAppTemplates, setLoadingAppTemplates] = useState(false);
+
+  const [editingPageTemplateId, setEditingPageTemplateId] = useState<string | null>(null);
+  const [editingAppTemplateId, setEditingAppTemplateId] = useState<string | null>(null);
+  const [savingTemplateOverwrite, setSavingTemplateOverwrite] = useState<'page' | 'app' | null>(null);
+  const [appTemplateApplying, setAppTemplateApplying] = useState(false);
   const [canvasZoom, setCanvasZoom] = useState(DEFAULT_CANVAS_ZOOM);
   const [layoutInitialized, setLayoutInitialized] = useState(false);
   const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1158,6 +1165,48 @@ export default function EditorShell({ initialPageId }: Props) {
     void fetchPageTemplates();
   }, []);
 
+  useEffect(() => {
+    const fetchAppTemplates = async () => {
+      setLoadingAppTemplates(true);
+      try {
+        const snap = await getDocs(collection(db, 'templates'));
+        const next = snap.docs.map((docSnap) => {
+          const data = docSnap.data() as any;
+          const pages = Array.isArray(data?.pages) ? data.pages : [];
+          const sanitizedPages = pages
+            .map((page: any) => {
+              if (!page || typeof page !== 'object') return null;
+              const name = typeof page?.name === 'string' ? page.name : 'Seite';
+              const folder = typeof page?.folder === 'string' || page?.folder === null ? page.folder : null;
+              const tree = page?.tree as PageTree['tree'] | undefined;
+              if (!tree || typeof tree !== 'object') return null;
+              return {
+                name,
+                folder,
+                tree,
+              } satisfies Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
+            })
+            .filter(Boolean) as Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+
+          return {
+            id: docSnap.id,
+            name: typeof data?.name === 'string' ? data.name : 'Ohne Titel',
+            description: typeof data?.description === 'string' ? data.description : null,
+            projectName: typeof data?.projectName === 'string' ? data.projectName : 'App',
+            pages: sanitizedPages,
+            createdBy: typeof data?.createdBy === 'string' ? data.createdBy : null,
+          } satisfies StoredAppTemplate;
+        });
+        setAppTemplates(next);
+      } catch (error) {
+        console.error('App-Templates konnten nicht geladen werden', error);
+      } finally {
+        setLoadingAppTemplates(false);
+      }
+    };
+    void fetchAppTemplates();
+  }, []);
+
   const downloadAnchor = useRef<HTMLAnchorElement | null>(null);
   const [exporting, setExporting] = useState<'web' | 'apk' | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -1274,11 +1323,23 @@ export default function EditorShell({ initialPageId }: Props) {
     setPages([]);
     setSelectedId(null);
     setTemplateNotice(null);
+    setEditingPageTemplateId(null);
+    setEditingAppTemplateId(null);
     applyTreeUpdate(() => sanitizePage(emptyTree), { markDirty: false });
     pendingSyncHash.current = null;
     isDirty.current = false;
     clearUndoHistory();
   }, [_projectId, applyTreeUpdate, clearUndoHistory]);
+
+  const editingPageTemplate = useMemo(
+    () => (editingPageTemplateId ? pageTemplates.find((tpl) => tpl.id === editingPageTemplateId) ?? null : null),
+    [editingPageTemplateId, pageTemplates]
+  );
+
+  const editingAppTemplate = useMemo(
+    () => (editingAppTemplateId ? appTemplates.find((tpl) => tpl.id === editingAppTemplateId) ?? null : null),
+    [editingAppTemplateId, appTemplates]
+  );
 
   useEffect(() => {
     return () => {
@@ -1927,6 +1988,39 @@ export default function EditorShell({ initialPageId }: Props) {
     }
   }, [isAdmin, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice]);
 
+  const handleOverwritePageTemplate = useCallback(async () => {
+    if (!isAdmin) {
+      setTemplateNotice('Nur Admins dürfen Seitenvorlagen speichern.');
+      return;
+    }
+    if (!editingPageTemplateId) {
+      setTemplateNotice('Keine Vorlage zum Überschreiben ausgewählt.');
+      return;
+    }
+    if (!(_projectId && currentPageId)) {
+      setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.');
+      return;
+    }
+
+    setSavingTemplateOverwrite('page');
+    try {
+      const sanitizedTree = sanitizeNode(tree.tree);
+      await updateDoc(doc(db, 'pageTemplates', editingPageTemplateId), {
+        tree: sanitizedTree,
+        updatedAt: serverTimestamp(),
+      });
+      setPageTemplates((prev) =>
+        prev.map((tpl) => (tpl.id === editingPageTemplateId ? { ...tpl, tree: sanitizedTree } : tpl))
+      );
+      setTemplateNotice('Vorlage gespeichert.');
+    } catch (error) {
+      console.error('Vorlage konnte nicht überschrieben werden', error);
+      setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    } finally {
+      setSavingTemplateOverwrite((prev) => (prev === 'page' ? null : prev));
+    }
+  }, [isAdmin, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice]);
+
   const handleSaveAppTemplate = useCallback(async () => {
     if (!isAdmin) {
       setTemplateNotice('Nur Admins dürfen App-Vorlagen speichern.');
@@ -1967,6 +2061,114 @@ export default function EditorShell({ initialPageId }: Props) {
       setSavingAppTemplate(false);
     }
   }, [isAdmin, _projectId, pages, project?.name, user?.uid, setTemplateNotice]);
+
+  const handleOverwriteAppTemplate = useCallback(async () => {
+    if (!isAdmin) {
+      setTemplateNotice('Nur Admins dürfen App-Vorlagen speichern.');
+      return;
+    }
+    if (!editingAppTemplateId) {
+      setTemplateNotice('Keine App-Vorlage zum Überschreiben ausgewählt.');
+      return;
+    }
+    if (!_projectId || !pages.length) {
+      setTemplateNotice('Bitte öffne ein Projekt mit mindestens einer Seite.');
+      return;
+    }
+
+    setSavingTemplateOverwrite('app');
+    try {
+      const snapshot = buildPagesSnapshot();
+      const payloadPages = snapshot.map((page) => ({
+        name: page.name,
+        folder: page.folder ?? null,
+        tree: sanitizeNode(page.tree as any),
+      }));
+
+      await updateDoc(doc(db, 'templates', editingAppTemplateId), {
+        pages: payloadPages,
+        updatedAt: serverTimestamp(),
+      });
+
+      setAppTemplates((prev) =>
+        prev.map((tpl) => (tpl.id === editingAppTemplateId ? { ...tpl, pages: payloadPages as any } : tpl))
+      );
+
+      setTemplateNotice('Vorlage gespeichert.');
+    } catch (error) {
+      console.error('App-Vorlage konnte nicht überschrieben werden', error);
+      setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+    } finally {
+      setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
+    }
+  }, [isAdmin, editingAppTemplateId, _projectId, pages.length, buildPagesSnapshot, setTemplateNotice]);
+
+  const startEditingPageTemplate = useCallback(
+    (template: StoredPageTemplate) => {
+      const applied = applySavedPageTemplate(template);
+      if (!applied) return;
+      setEditingAppTemplateId(null);
+      setEditingPageTemplateId(template.id);
+      setTemplateNotice(`Bearbeite Vorlage: ${template.name}`);
+    },
+    [applySavedPageTemplate]
+  );
+
+  const applySavedAppTemplateToProject = useCallback(
+    async (template: StoredAppTemplate) => {
+      if (!isAdmin) {
+        setTemplateNotice('Nur Admins dürfen App-Vorlagen bearbeiten.');
+        return;
+      }
+      if (!_projectId) {
+        setTemplateNotice('Bitte öffne zuerst ein Projekt.');
+        return;
+      }
+      if (!template.pages.length) {
+        setTemplateNotice('Diese Vorlage enthält keine Seiten.');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        'Achtung: Diese Aktion ersetzt alle Seiten im aktuellen Projekt. Fortfahren?'
+      );
+      if (!confirmed) return;
+
+      setAppTemplateApplying(true);
+      setTemplateNotice(null);
+      setEditingPageTemplateId(null);
+
+      try {
+        setCurrentPageId(null);
+        setSelectedId(null);
+        clearUndoHistory();
+        pendingSyncHash.current = null;
+        isDirty.current = false;
+
+        await Promise.allSettled(pages.map((p) => deletePage(_projectId, p.id)));
+
+        await Promise.all(
+          template.pages.map(async (page) => {
+            await createPageWithContent(_projectId, {
+              name: page.name,
+              folder: page.folder ?? null,
+              tree: sanitizeNode(page.tree as any),
+            });
+          })
+        );
+
+        await touchProject(_projectId, 'edited');
+        setEditingAppTemplateId(template.id);
+        setTemplateNotice(`Bearbeite Vorlage: ${template.name}`);
+      } catch (error) {
+        console.error('App-Vorlage konnte nicht angewendet werden', error);
+        setTemplateNotice('App-Vorlage konnte nicht geladen werden. Bitte versuche es erneut.');
+      } finally {
+        setAppTemplateApplying(false);
+      }
+    },
+    [isAdmin, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject]
+  );
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
@@ -2373,6 +2575,13 @@ export default function EditorShell({ initialPageId }: Props) {
         <div className="space-y-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-50">
           <div className="font-semibold text-emerald-100">Admin-Aktionen</div>
           <p className="text-[11px] text-emerald-100/80">Speichere eigene Seiten- oder App-Vorlagen für alle Nutzer.</p>
+          {(editingPageTemplate || editingAppTemplate) && (
+            <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-50">
+              <div className="font-semibold text-emerald-100">Aktive Vorlagen-Bearbeitung</div>
+              {editingPageTemplate && <div>Seitenvorlage: <span className="font-semibold">{editingPageTemplate.name}</span></div>}
+              {editingAppTemplate && <div>App-Vorlage: <span className="font-semibold">{editingAppTemplate.name}</span></div>}
+            </div>
+          )}
           <div className="flex flex-col gap-2 text-sm">
             <button
               type="button"
@@ -2382,6 +2591,16 @@ export default function EditorShell({ initialPageId }: Props) {
             >
               {savingPageTemplate ? 'Speichere Seitenvorlage…' : 'Aktuelle Seite als Vorlage speichern'}
             </button>
+            {editingPageTemplateId && !editingAppTemplateId && (
+              <button
+                type="button"
+                className="rounded-lg border border-emerald-400/60 bg-emerald-500/20 px-3 py-2 font-semibold text-emerald-50 transition hover:bg-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={handleOverwritePageTemplate}
+                disabled={templateControlsDisabled || savingTemplateOverwrite === 'page'}
+              >
+                {savingTemplateOverwrite === 'page' ? 'Speichere Vorlage…' : 'Vorlage speichern'}
+              </button>
+            )}
             <button
               type="button"
               className="rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-3 py-2 font-semibold text-cyan-50 transition hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
@@ -2390,6 +2609,16 @@ export default function EditorShell({ initialPageId }: Props) {
             >
               {savingAppTemplate ? 'Speichere App-Vorlage…' : 'Projekt als App-Vorlage speichern'}
             </button>
+            {editingAppTemplateId && (
+              <button
+                type="button"
+                className="rounded-lg border border-cyan-400/60 bg-cyan-500/20 px-3 py-2 font-semibold text-cyan-50 transition hover:bg-cyan-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={handleOverwriteAppTemplate}
+                disabled={!_projectId || !pages.length || savingTemplateOverwrite === 'app'}
+              >
+                {savingTemplateOverwrite === 'app' ? 'Speichere Vorlage…' : 'Vorlage speichern'}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -2454,6 +2683,20 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
                 <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
                 {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
+                {isAdmin && !templateControlsDisabled && (
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        startEditingPageTemplate(tpl);
+                      }}
+                      className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-100 transition hover:bg-emerald-500/20"
+                    >
+                      Bearbeiten
+                    </button>
+                  </div>
+                )}
                 <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-cyan-200">
                   Vorlage anwenden
                   <span className="ml-1 transition group-hover:translate-x-1">→</span>
@@ -2463,6 +2706,44 @@ export default function EditorShell({ initialPageId }: Props) {
           </div>
         )}
       </div>
+
+      {isAdmin && (
+        <div className="space-y-2">
+          <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Gespeicherte App-Vorlagen</div>
+          {loadingAppTemplates ? (
+            <p className="text-xs text-neutral-400">Lade gespeicherte App-Vorlagen…</p>
+          ) : appTemplates.length === 0 ? (
+            <p className="text-xs text-neutral-500">Noch keine App-Vorlagen verfügbar.</p>
+          ) : (
+            <div className="space-y-3">
+              {appTemplates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  disabled={appTemplateApplying || !_projectId}
+                  onClick={() => void applySavedAppTemplateToProject(tpl)}
+                  className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
+                    appTemplateApplying || !_projectId
+                      ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500 opacity-60'
+                      : 'border-white/10 bg-white/5 hover:border-emerald-400/50 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-[11px] font-semibold text-emerald-100">
+                    <span>📦</span>
+                    <span>App-Vorlage</span>
+                  </div>
+                  <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
+                  {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
+                  <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-200">
+                    {appTemplateApplying ? 'Lade Vorlage…' : 'Vorlage zum Bearbeiten laden'}
+                    <span className="ml-1 transition group-hover:translate-x-1">→</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
