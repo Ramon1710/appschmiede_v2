@@ -2078,7 +2078,29 @@ export default function EditorShell({ initialPageId }: Props) {
 
     setSavingTemplateOverwrite('app');
     try {
-      const snapshot = buildPagesSnapshot();
+      const active = latestTree.current;
+      const snapshot = pages.map((page) => {
+        if (!page) return page as unknown as ExportablePage;
+        const isCurrent = Boolean(
+          active &&
+            ((active.id && page.id && active.id === page.id) || (currentPageId && page.id === currentPageId))
+        );
+        if (isCurrent && active) {
+          return {
+            id: active.id ?? page.id,
+            name: active.name ?? page.name ?? 'Seite',
+            folder: active.folder ?? page.folder ?? null,
+            tree: active.tree ?? page.tree,
+          };
+        }
+        return {
+          id: page.id,
+          name: page.name ?? 'Seite',
+          folder: page.folder ?? null,
+          tree: page.tree,
+        };
+      });
+
       const payloadPages = snapshot.map((page) => ({
         name: page.name,
         folder: page.folder ?? null,
@@ -2101,7 +2123,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
     }
-  }, [isAdmin, editingAppTemplateId, _projectId, pages.length, buildPagesSnapshot, setTemplateNotice]);
+  }, [isAdmin, editingAppTemplateId, _projectId, pages, currentPageId, setTemplateNotice]);
 
   const startEditingPageTemplate = useCallback(
     (template: StoredPageTemplate) => {
