@@ -99,6 +99,8 @@ const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
 const clampLayerSize = (value: number) => Math.min(300, Math.max(20, value));
 const clampOpacityValue = (value: number) => Math.min(1, Math.max(0.05, value));
 
+const CANVAS_FRAME = { width: 414, height: 896 } as const;
+
 const tokenToPercent = (token: string | undefined, axis: 'x' | 'y'): number => {
   if (!token) return 50;
   const normalized = token.trim().toLowerCase();
@@ -740,6 +742,34 @@ export default function PropertiesPanel({
     if (!node) return;
     if (!Number.isFinite(value)) return;
     onUpdate({ [key]: Math.round(value) } as Partial<EditorNode>);
+  };
+
+  const alignNodePreset = (preset: 'left-middle' | 'center' | 'right-middle' | 'top-middle' | 'bottom-middle') => {
+    if (!node) return;
+    const width = Math.max(0, Math.round(node.w ?? 120));
+    const height = Math.max(0, Math.round(node.h ?? 40));
+    const maxX = Math.max(0, CANVAS_FRAME.width - width);
+    const maxY = Math.max(0, CANVAS_FRAME.height - height);
+    const centerX = Math.round(maxX / 2);
+    const centerY = Math.round(maxY / 2);
+
+    if (preset === 'left-middle') {
+      onUpdate({ x: 0, y: centerY });
+      return;
+    }
+    if (preset === 'center') {
+      onUpdate({ x: centerX, y: centerY });
+      return;
+    }
+    if (preset === 'right-middle') {
+      onUpdate({ x: maxX, y: centerY });
+      return;
+    }
+    if (preset === 'top-middle') {
+      onUpdate({ x: centerX, y: 0 });
+      return;
+    }
+    onUpdate({ x: centerX, y: maxY });
   };
 
   const setStyle = (patch: Partial<NodeStyle>) => {
@@ -1867,6 +1897,39 @@ export default function PropertiesPanel({
                   value={node.h ?? 40}
                   onChange={(e) => setFrame('h', Number(e.target.value))}
                 />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ausrichten</div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <button
+                  type="button"
+                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                  onClick={() => alignNodePreset('left-middle')}
+                >Links Mitte</button>
+                <button
+                  type="button"
+                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                  onClick={() => alignNodePreset('center')}
+                >Mitte</button>
+                <button
+                  type="button"
+                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                  onClick={() => alignNodePreset('right-middle')}
+                >Rechts Mitte</button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                  onClick={() => alignNodePreset('top-middle')}
+                >Oben Mitte</button>
+                <button
+                  type="button"
+                  className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
+                  onClick={() => alignNodePreset('bottom-middle')}
+                >Unten Mitte</button>
               </div>
             </div>
           </div>
