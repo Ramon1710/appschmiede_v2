@@ -5,17 +5,17 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
-import type { Node, PageTree } from '@/lib/editorTypes';
+import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
+import { auth, db } from '@/lib/firebase';
+import type { PageTree } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
 import { isAdminEmail } from '@/lib/user-utils';
 
-const BUILD_TAG =
-  process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
+const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
+const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
 type Template = {
   id: string;
@@ -23,7 +23,6 @@ type Template = {
   description: string;
   projectName: string;
   pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
-  source?: 'builtin' | 'custom';
   createdBy?: string | null;
 };
 
@@ -32,11 +31,268 @@ const fallbackId = () =>
     ? crypto.randomUUID()
     : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
 
-const defaultBackground = 'linear-gradient(135deg, #0b1220, #111827)';
-
 const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 
-const nodeSize: Record<Node['type'], { w: number; h: number }> = {
+function TemplatesPageComponent() {
+  const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
+  const { lang } = useI18n();
+
+  const copy = useMemo(
+    () =>
+      lang === 'en'
+        ? {
+            badge: 'Templates',
+            unauthDesc: 'Sign in to copy templates and create projects directly from the catalog.',
+            headerTitle: 'Template Library',
+            headerDesc:
+              'Templates are loaded from Firebase. Create your own project in the editor and save it as an app template (admin).',
+            tourTitle: 'Template Library',
+            tourGrid: 'All templates come from Firebase (no hardcoded templates).',
+            tourCreate: 'Create a project in one click and open it in the editor.',
+            createProject: 'Create project',
+            creatingProject: 'Creating…',
+            empty: 'No templates available yet.',
+          }
+        : {
+            badge: 'Vorlagen',
+            unauthDesc: 'Melde dich an, um Vorlagen zu kopieren und neue Projekte direkt aus dem Katalog zu erstellen.',
+            headerTitle: 'Vorlagenbibliothek',
+            headerDesc:
+              'Vorlagen werden aus Firebase geladen. Erstelle im Editor ein Projekt und speichere es als App-Vorlage (Admin).',
+            tourTitle: 'Vorlagenbibliothek',
+            tourGrid: 'Alle Vorlagen kommen aus Firebase (keine hardcodierten Vorlagen).',
+            tourCreate: 'Mit einem Klick Projekt anlegen und direkt im Editor öffnen.',
+            createProject: 'Projekt erstellen',
+            creatingProject: 'Wird erstellt…',
+            empty: 'Noch keine Vorlagen verfügbar.',
+          },
+    [lang]
+  );
+
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, (u) => {
+        setUser(u ? { uid: u.uid, email: u.email } : null);
+        setAuthReady(true);
+      }),
+    []
+  );
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!user) {
+      setTemplates([]);
+      return;
+    }
+
+    let cancelled = false;
+    const loadTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const snap = await getDocs(collection(db, 'templates'));
+        const next: Template[] = snap.docs
+          .map((docSnap) => {
+            const data = docSnap.data() as any;
+            const pagesRaw = Array.isArray(data?.pages) ? data.pages : [];
+            const pages = pagesRaw
+              .map((p: any) => {
+                if (!p || typeof p !== 'object') return null;
+                if (!p.tree || typeof p.tree !== 'object') return null;
+                return {
+                  name: safeString(p.name, 'Seite'),
+                  folder: typeof p.folder === 'string' || p.folder === null ? p.folder : null,
+                  tree: p.tree as PageTree['tree'],
+                } satisfies Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
+              })
+              .filter(Boolean) as Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+
+            const name = safeString(data?.name, 'Vorlage');
+            return {
+              id: docSnap.id,
+              name,
+              description: safeString(data?.description, ''),
+              projectName: safeString(data?.projectName, name),
+              pages,
+              createdBy: typeof data?.createdBy === 'string' ? data.createdBy : null,
+            } satisfies Template;
+          })
+          .filter((tpl) => Boolean(tpl.id) && tpl.pages.length > 0);
+
+        if (!cancelled) setTemplates(next);
+      } catch (e) {
+        console.warn('Konnte Templates nicht laden', e);
+        if (!cancelled) setTemplates([]);
+      } finally {
+        if (!cancelled) setLoadingTemplates(false);
+      }
+    };
+
+    void loadTemplates();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const templatesTourSteps = useMemo(
+    () => [
+      {
+        id: 'templates-intro',
+        title: copy.tourTitle,
+        description:
+          lang === 'en'
+            ? 'Templates are loaded from Firebase so you can manage them centrally.'
+            : 'Vorlagen werden aus Firebase geladen und lassen sich zentral verwalten.',
+      },
+      {
+        id: 'templates-grid',
+        title: copy.tourGrid,
+        description:
+          lang === 'en'
+            ? 'Save templates from the editor (admin) and they appear here for everyone.'
+            : 'Speichere Vorlagen im Editor (Admin) und sie erscheinen hier für alle Nutzer.',
+      },
+      {
+        id: 'templates-create',
+        title: copy.tourCreate,
+        description:
+          lang === 'en'
+            ? 'Create a new project from any template.'
+            : 'Erstelle aus jeder Vorlage ein neues Projekt.',
+      },
+    ],
+    [copy.tourCreate, copy.tourGrid, copy.tourTitle, lang]
+  );
+
+  const createFromTemplate = async (tpl: Template) => {
+    if (!user) return;
+    setError(null);
+    setCreatingTemplateId(tpl.id);
+
+    const projectId = fallbackId();
+
+    try {
+      await setDoc(doc(db, 'projects', projectId), {
+        name: tpl.projectName,
+        ownerId: user.uid,
+        ownerUid: user.uid,
+        members: [user.uid],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await Promise.all(
+        tpl.pages.map(async (templatePage) => {
+          const pageId = fallbackId();
+          await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
+            name: templatePage.name,
+            folder: templatePage.folder ?? null,
+            tree: templatePage.tree,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        })
+      );
+
+      try {
+        window.localStorage.setItem(LAST_PROJECT_STORAGE_KEY, projectId);
+      } catch {
+        // ignore
+      }
+
+      const adminMode = isAdminEmail(user.email);
+      const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
+      router.push(`/editor?projectId=${projectId}${suffix}`);
+    } catch (e) {
+      console.error('Template project creation failed', e);
+      setError(lang === 'en' ? 'Project could not be created. Please try again.' : 'Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+    } finally {
+      setCreatingTemplateId(null);
+    }
+  };
+
+  if (!mounted || !authReady) {
+    return null;
+  }
+
+  if (!user) {
+    return <UnauthenticatedScreen badge={copy.badge} description={copy.unauthDesc} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col">
+      <Header />
+      <main className="flex-1 w-full px-4 py-10 lg:px-10">
+        <div className="flex flex-col gap-6">
+          <header className="space-y-1" data-tour-id="templates-intro">
+            <h1 className="text-3xl font-semibold">{copy.headerTitle}</h1>
+            <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Build: {BUILD_TAG}</p>
+          </header>
+
+          <GuidedTour storageKey="tour-templates" steps={templatesTourSteps} restartLabel="Vorlagen Tutorial" />
+
+          {error && (
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div>
+          )}
+
+          {loadingTemplates ? (
+            <p className="text-xs text-neutral-500">Lade gespeicherte Vorlagen…</p>
+          ) : templates.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-4 text-sm text-neutral-300">{copy.empty}</div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
+              {templates.map((tpl) => (
+                <div
+                  key={tpl.id}
+                  className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4 shadow-lg shadow-black/30"
+                >
+                  <div className="text-lg font-medium text-neutral-100">{tpl.name}</div>
+                  <div className="mt-1 text-sm text-neutral-400">{tpl.description}</div>
+                  <button
+                    type="button"
+                    onClick={() => void createFromTemplate(tpl)}
+                    disabled={creatingTemplateId === tpl.id}
+                    className={`mt-4 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                      creatingTemplateId === tpl.id
+                        ? 'bg-white/5 text-neutral-500 cursor-wait'
+                        : 'bg-white/10 text-neutral-100 hover:bg-white/20'
+                    }`}
+                    data-tour-id="templates-create"
+                  >
+                    {creatingTemplateId === tpl.id ? copy.creatingProject : copy.createProject}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const TemplatesPage = dynamic(() => Promise.resolve(TemplatesPageComponent), { ssr: false });
+export default TemplatesPage;
+
+/*
+LEGACY (hardcodierte Vorlagen) wurde entfernt.
+Die Vorlagenbibliothek lädt jetzt ausschließlich aus Firestore: collection('templates').
+
+Der restliche alte Code bleibt hier temporär auskommentiert, damit der PR-Diff klein bleibt.
+Wenn du willst, entferne ich den Block komplett in einem separaten Cleanup.
+
+---
+
+text: { w: 296, h: 60 },
   text: { w: 296, h: 60 },
   button: { w: 220, h: 52 },
   image: { w: 296, h: 200 },
@@ -1670,6 +1926,8 @@ function TemplatesPageComponent() {
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [savedTemplatesById, setSavedTemplatesById] = useState<Record<string, Template>>({});
+  const [loadingSavedTemplates, setLoadingSavedTemplates] = useState(false);
   const router = useRouter();
   const { lang } = useI18n();
 
@@ -1711,6 +1969,63 @@ function TemplatesPageComponent() {
       }),
     []
   );
+
+  useEffect(() => {
+    if (!user) {
+      setSavedTemplatesById({});
+      return;
+    }
+    let cancelled = false;
+    const loadSavedTemplates = async () => {
+      setLoadingSavedTemplates(true);
+      try {
+        const snap = await getDocs(collection(db, 'templates'));
+        const next: Record<string, Template> = {};
+        snap.docs.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          const name = safeString(data?.name, 'Vorlage');
+          const description = safeString(data?.description, '');
+          const projectName = safeString(data?.projectName, name);
+          const pagesRaw = Array.isArray(data?.pages) ? data.pages : [];
+          const pages = pagesRaw
+            .map((p: any) => {
+              if (!p || typeof p !== 'object') return null;
+              if (!p.tree || typeof p.tree !== 'object') return null;
+              return {
+                name: safeString(p.name, 'Seite'),
+                folder: typeof p.folder === 'string' || p.folder === null ? p.folder : null,
+                tree: p.tree as PageTree['tree'],
+              } satisfies Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
+            })
+            .filter(Boolean) as Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
+
+          next[docSnap.id] = {
+            id: docSnap.id,
+            name,
+            description,
+            projectName,
+            pages,
+            source: 'custom',
+            createdBy: typeof data?.createdBy === 'string' ? data.createdBy : null,
+          };
+        });
+        if (!cancelled) {
+          setSavedTemplatesById(next);
+        }
+      } catch (e) {
+        console.warn('Konnte gespeicherte Templates nicht laden', e);
+        if (!cancelled) {
+          setSavedTemplatesById({});
+        }
+      } finally {
+        if (!cancelled) setLoadingSavedTemplates(false);
+      }
+    };
+    void loadSavedTemplates();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => setMounted(true), []);
 
@@ -1959,30 +2274,31 @@ function TemplatesPageComponent() {
     []
   );
 
-  const visibleTemplates: Template[] = useMemo(
-    () =>
-      visibleBuiltinTemplates.map((tpl) => {
-        if (lang !== 'en') return tpl;
-        const meta = templateMeta.en[tpl.id];
-        if (!meta) return tpl;
-        const pageTranslations = meta.pages ?? {};
-        const pages = tpl.pages.map((p) => ({
-          ...p,
-          name: pageTranslations[p.name as keyof typeof pageTranslations] ?? p.name,
-          folder: p.folder && pageTranslations[p.folder as keyof typeof pageTranslations]
-            ? (pageTranslations[p.folder as keyof typeof pageTranslations] as string)
-            : p.folder,
-        }));
-        return {
-          ...tpl,
-          name: meta.name ?? tpl.name,
-          description: meta.description ?? tpl.description,
-          projectName: meta.projectName ?? tpl.projectName,
-          pages,
-        };
-      }),
-    [lang, templateMeta]
-  );
+  const visibleTemplates: Template[] = useMemo(() => {
+    const merged = visibleBuiltinTemplates.map((tpl) => savedTemplatesById[tpl.id] ?? tpl);
+
+    if (lang !== 'en') return merged;
+
+    return merged.map((tpl) => {
+      const meta = templateMeta.en[tpl.id];
+      if (!meta) return tpl;
+      const pageTranslations = meta.pages ?? {};
+      const pages = tpl.pages.map((p) => ({
+        ...p,
+        name: pageTranslations[p.name as keyof typeof pageTranslations] ?? p.name,
+        folder: p.folder && pageTranslations[p.folder as keyof typeof pageTranslations]
+          ? (pageTranslations[p.folder as keyof typeof pageTranslations] as string)
+          : p.folder,
+      }));
+      return {
+        ...tpl,
+        name: meta.name ?? tpl.name,
+        description: meta.description ?? tpl.description,
+        projectName: meta.projectName ?? tpl.projectName,
+        pages,
+      };
+    });
+  }, [lang, templateMeta, savedTemplatesById]);
 
   if (!mounted || !authReady) {
     return null;
@@ -2006,6 +2322,10 @@ function TemplatesPageComponent() {
             <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
             <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Build: {BUILD_TAG}</p>
           </header>
+
+          {loadingSavedTemplates && (
+            <p className="text-xs text-neutral-500">Lade gespeicherte Vorlagen…</p>
+          )}
 
           <div className="grid gap-4 md:grid-cols-3" data-tour-id="templates-grid">
             {visibleTemplates.map((tpl) => (
@@ -2045,3 +2365,5 @@ function TemplatesPageComponent() {
 const TemplatesPage = dynamic(() => Promise.resolve(TemplatesPageComponent), { ssr: false });
 
 export default TemplatesPage;
+
+*/
