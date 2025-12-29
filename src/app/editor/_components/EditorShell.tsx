@@ -170,6 +170,22 @@ const clampToRange = (value: number, min: number, max: number) => {
 };
 const clampPercentValue = (value: number) => clampToRange(Number.isFinite(value) ? value : 50, 0, 100);
 const clampSizeValue = (value: number) => clampToRange(Number.isFinite(value) ? value : 100, 10, 300);
+
+const getFirebaseErrorCode = (error: unknown): string | null => {
+  if (!error || typeof error !== 'object') return null;
+  const anyErr = error as any;
+  const code = typeof anyErr.code === 'string' ? anyErr.code : null;
+  if (!code) return null;
+  return code;
+};
+
+const formatTemplateSaveError = (error: unknown, isAdmin: boolean) => {
+  const code = getFirebaseErrorCode(error);
+  if (isAdmin && code) {
+    return `Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`;
+  }
+  return 'Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.';
+};
 const normalizeBackgroundLayers = (raw?: unknown): BackgroundLayer[] => {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -1991,7 +2007,12 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice('Seitenvorlage gespeichert.');
     } catch (error) {
       console.error('Seitenvorlage konnte nicht gespeichert werden', error);
-      setTemplateNotice('Seitenvorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      const code = getFirebaseErrorCode(error);
+      if (isAdmin && code) {
+        setTemplateNotice(`Seitenvorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`);
+      } else {
+        setTemplateNotice('Seitenvorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      }
     } finally {
       setSavingPageTemplate(false);
     }
@@ -2036,7 +2057,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice('Vorlage gespeichert.');
     } catch (error) {
       console.error('Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      setTemplateNotice(formatTemplateSaveError(error, isAdmin));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'page' ? null : prev));
     }
@@ -2077,7 +2098,12 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice('App-Vorlage gespeichert.');
     } catch (error) {
       console.error('App-Vorlage konnte nicht gespeichert werden', error);
-      setTemplateNotice('App-Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      const code = getFirebaseErrorCode(error);
+      if (isAdmin && code) {
+        setTemplateNotice(`App-Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`);
+      } else {
+        setTemplateNotice('App-Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      }
     } finally {
       setSavingAppTemplate(false);
     }
@@ -2152,7 +2178,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice('Vorlage gespeichert.');
     } catch (error) {
       console.error('App-Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+      setTemplateNotice(formatTemplateSaveError(error, isAdmin));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
     }
