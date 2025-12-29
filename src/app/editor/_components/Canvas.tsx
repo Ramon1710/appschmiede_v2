@@ -138,7 +138,7 @@ const TimeTrackingWidget = ({
   };
 
   return (
-    <div className="h-full rounded-xl border border-purple-500/30 bg-[#130b1b] p-3 text-xs text-neutral-200">
+    <div className="h-full w-full rounded-xl border border-purple-500/30 bg-[#130b1b] p-3 text-xs text-neutral-200">
       <div className="flex items-center justify-between">
         <span className="uppercase tracking-widest text-purple-200/70">Zeiterfassung</span>
         <span className="font-mono text-sm text-purple-100">{formatDuration(elapsed)}</span>
@@ -207,7 +207,7 @@ const StatusBoardWidget = ({
   activeId: string | null;
   onSelect?: (id: string) => void;
 }) => (
-  <div className="h-full rounded-xl border border-cyan-500/40 bg-[#04121b] p-3 text-xs text-neutral-200">
+  <div className="h-full w-full rounded-xl border border-cyan-500/40 bg-[#04121b] p-3 text-xs text-neutral-200">
     <div className="flex items-center justify-between">
       <span className="uppercase tracking-widest text-cyan-200/80">{title || 'Status'}</span>
       <span className="text-[11px] text-neutral-500">{options.length} Stati</span>
@@ -335,7 +335,7 @@ const FolderStructureWidget = ({ nodes, onChange }: FolderTreeProps) => {
     });
 
   return (
-    <div className="h-full overflow-y-auto rounded-xl border border-blue-500/30 bg-[#0b1320] p-3 text-xs text-neutral-200">
+    <div className="h-full w-full overflow-y-auto rounded-xl border border-blue-500/30 bg-[#0b1320] p-3 text-xs text-neutral-200">
       <div className="flex items-center justify-between">
         <span className="uppercase tracking-widest text-blue-200/70">Ordnerstruktur</span>
         <button
@@ -380,7 +380,7 @@ const TaskManagerWidget = ({
   };
 
   return (
-    <div className="h-full rounded-xl border border-emerald-500/30 bg-[#0b1f19] p-3 text-xs text-neutral-200">
+    <div className="h-full w-full rounded-xl border border-emerald-500/30 bg-[#0b1f19] p-3 text-xs text-neutral-200">
       <div className="flex items-center justify-between">
         <span className="uppercase tracking-widest text-emerald-200/70">{title}</span>
         <button
@@ -425,7 +425,7 @@ const SupportWidget = ({
   onCreateTicket: (ticket: SupportTicket) => void;
   channel: string;
 }) => (
-  <div className="h-full rounded-xl border border-cyan-500/30 bg-[#0b1f24] p-3 text-xs text-neutral-100">
+  <div className="h-full w-full rounded-xl border border-cyan-500/30 bg-[#0b1f24] p-3 text-xs text-neutral-100">
     <div className="flex items-center justify-between">
       <div>
         <span className="block text-[10px] uppercase tracking-widest text-cyan-200/70">Support & Tickets</span>
@@ -496,7 +496,7 @@ const CalendarWidget = ({ date, onChangeDate }: { date: Date; onChangeDate: (nex
     onChangeDate(next);
   };
   return (
-    <div className="flex h-full flex-col rounded-xl border border-orange-500/30 bg-[#21150b] p-3 text-xs text-neutral-100">
+    <div className="flex h-full w-full flex-col rounded-xl border border-orange-500/30 bg-[#21150b] p-3 text-xs text-neutral-100">
       <div className="flex items-center justify-between">
         <button type="button" className="text-lg" onClick={() => goOffset(-1)} onMouseDown={(event) => event.stopPropagation()}>‹</button>
         <div className="text-sm font-semibold">{date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</div>
@@ -580,7 +580,7 @@ const MapWidget = ({ location, mode, modeLabel, info, actionLabel }: MapWidgetPr
   const description = typeof info === 'string' && info.trim() ? info.trim() : variant.description;
   const buttonLabel = typeof actionLabel === 'string' && actionLabel.trim() ? actionLabel.trim() : variant.action;
   return (
-    <div className="relative h-full overflow-hidden rounded-xl border border-cyan-500/40 bg-[#041820]">
+    <div className="relative h-full w-full overflow-hidden rounded-xl border border-cyan-500/40 bg-[#041820]">
       <iframe
         title={`Karte für ${location}`}
         src={`https://maps.google.com/maps?q=${encoded}&z=14&output=embed`}
@@ -611,7 +611,7 @@ const MapWidget = ({ location, mode, modeLabel, info, actionLabel }: MapWidgetPr
 const VideoPlayerWidget = ({ url }: { url: string | undefined }) => {
   if (!url) {
     return (
-      <div className="grid h-full place-items-center rounded-xl border border-red-500/30 bg-[#230b0b] text-xs text-red-200">
+      <div className="grid h-full w-full place-items-center rounded-xl border border-red-500/30 bg-[#230b0b] text-xs text-red-200">
         Kein Video-Link hinterlegt.
       </div>
     );
@@ -623,7 +623,7 @@ const VideoPlayerWidget = ({ url }: { url: string | undefined }) => {
     const videoId = videoIdMatch ? videoIdMatch[1] : '';
     const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
     return (
-      <div className="relative h-full overflow-hidden rounded-xl border border-red-500/30 bg-black">
+      <div className="relative h-full w-full overflow-hidden rounded-xl border border-red-500/30 bg-black">
         {thumbnail ? (
           <img src={thumbnail} alt="YouTube Vorschau" className="h-full w-full object-cover opacity-70" draggable={false} />
         ) : (
@@ -639,7 +639,7 @@ const VideoPlayerWidget = ({ url }: { url: string | undefined }) => {
   }
 
   return (
-    <div className="grid h-full place-items-center rounded-xl border border-red-500/30 bg-[#120808] p-3 text-center text-xs text-neutral-200">
+    <div className="grid h-full w-full place-items-center rounded-xl border border-red-500/30 bg-[#120808] p-3 text-center text-xs text-neutral-200">
       <div>
         Video wird im Preview-Modus abgespielt.
         <div className="mt-1 break-all text-[10px] text-neutral-500">{url}</div>
@@ -701,7 +701,7 @@ const AudioRecorderWidget = ({
   };
 
   return (
-    <div className="flex h-full flex-col rounded-xl border border-pink-500/30 bg-[#1f0b1f] p-3 text-xs text-neutral-200">
+    <div className="flex h-full w-full flex-col rounded-xl border border-pink-500/30 bg-[#1f0b1f] p-3 text-xs text-neutral-200">
       <div className="flex items-center justify-between">
         <span className="uppercase tracking-widest text-pink-200/70">Audio Recorder</span>
         <div className="flex gap-2">
@@ -759,7 +759,7 @@ const DiceWidget = () => {
     setHistory((prev) => [...prev.slice(-4), value]);
   };
   return (
-    <div className="grid h-full place-items-center rounded-xl border border-amber-500/30 bg-[#26190b] p-3 text-neutral-200">
+    <div className="grid h-full w-full place-items-center rounded-xl border border-amber-500/30 bg-[#26190b] p-3 text-neutral-200">
       <div className="space-y-3 text-center">
         <div className="text-4xl">🎲</div>
         <div className="text-xs uppercase tracking-widest text-amber-200/80">Würfel</div>
@@ -812,7 +812,7 @@ const TicTacToeWidget = () => {
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-pink-500/30 bg-[#240b1f] p-3 text-neutral-100">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-xl border border-pink-500/30 bg-[#240b1f] p-3 text-neutral-100">
       <div className="grid w-full max-w-[240px] grid-cols-3 gap-1">
         {board.map((cell, idx) => (
           <button
@@ -1011,7 +1011,7 @@ const SnakeWidget = () => {
   );
 
   return (
-    <div className="flex h-full flex-col gap-3 rounded-xl border border-lime-500/30 bg-[#081207] p-3 text-lime-50">
+    <div className="flex h-full w-full flex-col gap-3 rounded-xl border border-lime-500/30 bg-[#081207] p-3 text-lime-50">
       <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-lime-300">
         <span>Snake 3210</span>
         <span>Score {score}</span>
