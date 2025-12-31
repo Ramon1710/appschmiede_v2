@@ -16,6 +16,7 @@ import type {
   SupportTicket,
   AnalyticsMetric,
   TableConfig,
+  NewsItem,
   MapMode,
   AvatarTrait,
   AvatarAction,
@@ -385,6 +386,37 @@ const normalizeTableConfig = (config?: unknown): TableConfig => {
   };
 };
 
+const NEWS_ITEM_PRESETS: Array<Omit<NewsItem, 'id'>> = [
+  {
+    title: 'Willkommen im News-Bereich',
+    body: 'Hier kannst du interne Updates und Hinweise veröffentlichen. Bilder lassen sich per URL verlinken.',
+    imageUrl: 'https://placehold.co/600x360/0b0b0f/f1f5f9?text=News',
+    date: new Date().toISOString(),
+  },
+];
+
+type NormalizedNewsFeed = {
+  title: string;
+  items: NewsItem[];
+};
+
+const normalizeNewsFeed = (feed?: unknown): NormalizedNewsFeed => {
+  const raw = (feed as { title?: unknown; items?: unknown }) ?? undefined;
+  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'News';
+  const itemsSource = Array.isArray(raw?.items) ? (raw.items as unknown[]) : null;
+  const items = (itemsSource ?? NEWS_ITEM_PRESETS).map((candidate, index) => {
+    const item = (candidate as Partial<NewsItem>) ?? {};
+    return {
+      id: typeof item.id === 'string' ? item.id : createGenericId(),
+      title: typeof item.title === 'string' && item.title.trim() ? item.title.trim() : `Eintrag ${index + 1}`,
+      body: typeof item.body === 'string' ? item.body : undefined,
+      imageUrl: typeof item.imageUrl === 'string' && item.imageUrl.trim() ? item.imageUrl.trim() : undefined,
+      date: typeof item.date === 'string' && item.date.trim() ? item.date.trim() : undefined,
+    };
+  });
+  return { title, items };
+};
+
 const AVATAR_TRAIT_PRESETS: Array<Omit<AvatarTrait, 'id'>> = [
   { label: 'Mood', value: 'Focused', icon: '🧠' },
   { label: 'Style', value: 'Neon', icon: '✨' },
@@ -571,6 +603,7 @@ export default function PropertiesPanel({
   const isAnalyticsContainer = node?.type === 'container' && node.props?.component === 'analytics';
   const isSupportContainer = node?.type === 'container' && node.props?.component === 'support';
   const isTableContainer = node?.type === 'container' && node.props?.component === 'table';
+  const isNewsContainer = node?.type === 'container' && node.props?.component === 'news';
   const isAvatarCreator = node?.type === 'container' && node.props?.component === 'avatar-creator';
   const showPageBackgroundControls = !isButtonSelected;
   const normalizedBackgroundColor = HEX_COLOR_REGEX.test(pageBackgroundColor.trim())
@@ -642,6 +675,10 @@ export default function PropertiesPanel({
   const tableConfig = useMemo(
     () => (isTableContainer ? normalizeTableConfig(node?.props?.tableConfig) : null),
     [isTableContainer, node?.props?.tableConfig]
+  );
+  const newsFeed = useMemo(
+    () => (isNewsContainer ? normalizeNewsFeed(node?.props?.newsFeed) : null),
+    [isNewsContainer, node?.props?.newsFeed]
   );
   const mapModeValue = useMemo(
     () => (isMapContainer ? normalizeMapModeValue(node?.props?.mapMode) : 'static'),
@@ -1461,6 +1498,51 @@ export default function PropertiesPanel({
     if (!tableConfig || !isTableContainer) return;
     const nextRows = tableConfig.rows.filter((row) => row.id !== rowId);
     commitTableConfig({ ...tableConfig, rows: nextRows });
+  };
+
+  const commitNewsFeed = (next: NormalizedNewsFeed) => {
+    if (!isNewsContainer) return;
+    setProps({
+      newsFeed: {
+        title: next.title,
+        items: next.items,
+      },
+    });
+  };
+
+  const handleNewsTitleChange = (value: string) => {
+    if (!newsFeed || !isNewsContainer) return;
+    commitNewsFeed({ ...newsFeed, title: value });
+  };
+
+  const handleAddNewsItem = () => {
+    if (!newsFeed || !isNewsContainer) return;
+    commitNewsFeed({
+      ...newsFeed,
+      items: [
+        ...newsFeed.items,
+        {
+          id: createGenericId(),
+          title: `Eintrag ${newsFeed.items.length + 1}`,
+          body: '',
+          imageUrl: '',
+          date: new Date().toISOString(),
+        },
+      ],
+    });
+  };
+
+  const handleRemoveNewsItem = (id: string) => {
+    if (!newsFeed || !isNewsContainer) return;
+    commitNewsFeed({ ...newsFeed, items: newsFeed.items.filter((item) => item.id !== id) });
+  };
+
+  const handleNewsItemChange = (id: string, patch: Partial<NewsItem>) => {
+    if (!newsFeed || !isNewsContainer) return;
+    commitNewsFeed({
+      ...newsFeed,
+      items: newsFeed.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    });
   };
 
   return (
@@ -3557,6 +3639,88 @@ export default function PropertiesPanel({
                               onChange={(event) => handleTableRowChange(row.id, columnIndex, event.target.value)}
                             />
                           ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {isNewsContainer && newsFeed && (
+                <div className="space-y-3 rounded-xl border border-rose-500/40 bg-rose-500/5 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-200">News</div>
+                  <div>
+                    <label className="text-xs text-gray-400">Titel</label>
+                    <input
+                      className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                      value={newsFeed.title}
+                      onChange={(event) => handleNewsTitleChange(event.target.value)}
+                      placeholder="News"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-neutral-400">
+                      <span>Einträge</span>
+                      <button
+                        type="button"
+                        className="text-rose-200 transition hover:text-rose-100"
+                        onClick={handleAddNewsItem}
+                      >+ Eintrag</button>
+                    </div>
+                    {newsFeed.items.length === 0 && (
+                      <div className="rounded border border-dashed border-white/10 px-3 py-2 text-[11px] text-neutral-400">Noch keine Einträge.</div>
+                    )}
+
+                    {newsFeed.items.map((item, index) => (
+                      <div key={item.id} className="space-y-2 rounded-lg border border-white/10 bg-black/30 p-3">
+                        <div className="flex items-center justify-between text-[11px] text-neutral-400">
+                          <span>Eintrag {index + 1}</span>
+                          <button
+                            type="button"
+                            className="text-rose-300 transition hover:text-rose-200"
+                            onClick={() => handleRemoveNewsItem(item.id)}
+                          >Entfernen</button>
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-gray-400">Titel</label>
+                          <input
+                            className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                            value={item.title}
+                            onChange={(event) => handleNewsItemChange(item.id, { title: event.target.value })}
+                            placeholder="Titel"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-gray-400">Datum (optional)</label>
+                          <input
+                            className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                            value={item.date ?? ''}
+                            onChange={(event) => handleNewsItemChange(item.id, { date: event.target.value })}
+                            placeholder="2025-01-31"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-gray-400">Bild-URL (optional)</label>
+                          <input
+                            className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm"
+                            value={item.imageUrl ?? ''}
+                            onChange={(event) => handleNewsItemChange(item.id, { imageUrl: event.target.value })}
+                            placeholder="https://..."
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs text-gray-400">Text (optional)</label>
+                          <textarea
+                            className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm min-h-[70px]"
+                            value={item.body ?? ''}
+                            onChange={(event) => handleNewsItemChange(item.id, { body: event.target.value })}
+                            placeholder="Kurzbeschreibung..."
+                          />
                         </div>
                       </div>
                     ))}

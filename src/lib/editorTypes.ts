@@ -85,6 +85,14 @@ export type TableConfig = {
   rows: TableRow[];
 };
 
+export type NewsItem = {
+  id: string;
+  title: string;
+  body?: string;
+  imageUrl?: string;
+  date?: string;
+};
+
 export type MapMode = 'static' | 'live-tracking' | 'route-recording' | 'geofence';
 
 export type TimeEntry = {
@@ -209,6 +217,10 @@ export type NodeProps = {
   analyticsMetrics?: AnalyticsMetric[];
   analyticsHighlight?: string;
   tableConfig?: TableConfig;
+  newsFeed?: {
+    title?: string;
+    items: NewsItem[];
+  };
   avatarTitle?: string;
   avatarDescription?: string;
   avatarPreviewUrl?: string;

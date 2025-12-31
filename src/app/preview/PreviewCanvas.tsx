@@ -22,9 +22,10 @@ import type {
 import { buildContainerBackgroundStyle } from '@/lib/containerBackground';
 
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
-const FRAME = { width: 414, height: 896 } as const;
+  NewsItem,
 const AI_CHAT_FALLBACK_BACKGROUND = 'linear-gradient(135deg,#0f172a,#020617,#000000)';
 const CHAT_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#0f172a,#111827,#020617)';
+const NEWS_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#1f0a11,#0b0b0f,#111827)';
 
 const normalizeExternalUrl = (raw?: string | null): string | null => {
   if (!raw) return null;
@@ -1747,6 +1748,43 @@ function mergeNodePatch(node: EditorNode, patch: Partial<EditorNode>): EditorNod
     style: patch.style ? { ...(node.style ?? {}), ...patch.style } : node.style,
     children: patch.children ?? node.children,
   };
+      if (component === 'news') {
+        const feed = ensureNewsFeed(node.props?.newsFeed);
+        const backgroundStyle = buildContainerBackgroundStyle(node.props, NEWS_FALLBACK_BACKGROUND);
+        return (
+          <div className={`${base} flex h-full w-full flex-col gap-2 rounded-xl border border-rose-500/30 p-3 text-xs text-neutral-200`} style={backgroundStyle}>
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-rose-200/80">News</div>
+              <div className="text-[10px] text-neutral-400">{feed.items.length} Einträge</div>
+            </div>
+            <div className="text-sm font-semibold text-white">{feed.title}</div>
+            <div className="flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/20 p-2">
+              {feed.items.length === 0 ? (
+                <div className="rounded border border-dashed border-white/10 px-3 py-2 text-[11px] text-neutral-400">Noch keine News-Einträge.</div>
+              ) : (
+                feed.items.map((item) => (
+                  <div key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.title || 'News Bild'} className="h-24 w-full object-cover" />
+                    ) : null}
+                    <div className="space-y-1 px-2 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-[12px] font-semibold leading-snug text-white">{item.title || 'News'}</div>
+                        {item.date ? (
+                          <div className="shrink-0 text-[10px] text-neutral-400">{formatNewsDate(item.date)}</div>
+                        ) : null}
+                      </div>
+                      {item.body ? (
+                        <div className="text-[11px] leading-relaxed text-neutral-300">{item.body}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      }
 }
 
 function applyPatch(tree: EditorNode, targetId: string, patch: Partial<EditorNode>): EditorNode {
@@ -2023,6 +2061,37 @@ const TABLE_ROW_PRESET = [
 ];
 
 function ensureTableConfig(config?: TableConfig | null): TableConfig {
+
+  function ensureNewsFeed(feed?: unknown): { title: string; items: NewsItem[] } {
+    const raw = (feed as { title?: unknown; items?: unknown }) ?? undefined;
+    const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'News';
+    const itemsSource = Array.isArray(raw?.items) ? (raw.items as unknown[]) : [];
+    const items: NewsItem[] = itemsSource
+      .map((candidate, index) => {
+        const item = (candidate as Partial<NewsItem>) ?? {};
+        return {
+          id: typeof item.id === 'string' ? item.id : createId(),
+          title: typeof item.title === 'string' && item.title.trim() ? item.title.trim() : `Eintrag ${index + 1}`,
+          body: typeof item.body === 'string' && item.body.trim() ? item.body.trim() : undefined,
+          imageUrl: typeof item.imageUrl === 'string' && item.imageUrl.trim() ? item.imageUrl.trim() : undefined,
+          date: typeof item.date === 'string' && item.date.trim() ? item.date.trim() : undefined,
+        };
+      })
+      .filter(Boolean);
+
+    return { title, items };
+  }
+
+  function formatNewsDate(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return trimmed;
+  }
   const columns = Array.isArray(config?.columns) && config.columns.length > 0
     ? config.columns.map((column, index) => ({
         id: typeof column?.id === 'string' ? column.id : createId(),

@@ -103,6 +103,26 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       items: [
         {
           type: 'container',
+          label: 'Schichtplan',
+          icon: '🗓️',
+          defaultProps: {
+            component: 'table',
+            tableConfig: {
+              title: 'Schichtplan',
+              columns: [
+                { id: crypto.randomUUID(), label: 'Tag' },
+                { id: crypto.randomUUID(), label: 'Schicht' },
+                { id: crypto.randomUUID(), label: 'Team' },
+              ],
+              rows: [
+                { id: crypto.randomUUID(), values: ['Mo', 'Früh', 'Team A'] },
+                { id: crypto.randomUUID(), values: ['Di', 'Spät', 'Team B'] },
+              ],
+            },
+          },
+        },
+        {
+          type: 'container',
           label: 'Zeiterfassung',
           icon: '⏱️',
           defaultProps: {
@@ -208,6 +228,26 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Medien & Inhalte',
       icon: '📹',
       items: [
+        {
+          type: 'container',
+          label: 'News',
+          icon: '📰',
+          defaultProps: {
+            component: 'news',
+            newsFeed: {
+              title: 'News',
+              items: [
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Neuer Beitrag',
+                  body: 'Hier kannst du aktuelle Informationen eintragen – optional mit Bild.',
+                  imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+                  date: new Date().toISOString().slice(0, 10),
+                },
+              ],
+            },
+          },
+        },
         { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
         {
           type: 'container',

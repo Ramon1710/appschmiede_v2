@@ -2809,6 +2809,16 @@ export default function EditorShell({ initialPageId }: Props) {
 
       const background = 'linear-gradient(140deg,#0b0b0f,#111827)';
 
+      const presetMeta: Record<QuickButtonPresetKey, { label: string; icon?: string }> = {
+        'contact-list': { label: 'Kontaktliste', icon: '📇' },
+        'opening-hours': { label: 'Öffnungszeiten', icon: '⏰' },
+        'important-links': { label: 'Wichtige Links', icon: '🔗' },
+        news: { label: 'News', icon: '📰' },
+        'shift-plan': { label: 'Schichtplan', icon: '📅' },
+        benefits: { label: 'Benefits', icon: '🎁' },
+        contacts: { label: 'Ansprechpartner', icon: '👥' },
+      };
+
       let pageName = 'Neue Seite';
       let nodes: EditorNode[] = [];
 
@@ -2928,10 +2938,27 @@ export default function EditorShell({ initialPageId }: Props) {
           createNode('text', {
             y: 120,
             h: 80,
-            props: {
-              text: '• Betriebsrat News & BV\n• Interne Updates\n• Wichtige Hinweise\n\nErsetze diese Liste durch eure echten Meldungen.',
-            },
+            props: { text: 'Pflege hier eure aktuellen Meldungen inkl. Bildern.' },
             style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 620,
+            props: {
+              component: 'news',
+              newsFeed: {
+                title: 'Aktuelle News',
+                items: [
+                  {
+                    id: makeId(),
+                    title: 'Neue Info',
+                    body: 'Beispieltext – ändere Titel, Text und Bild im Eigenschaften-Panel.',
+                    imageUrl: 'https://placehold.co/600x360/0b0b0f/f1f5f9?text=News',
+                    date: new Date().toISOString(),
+                  },
+                ],
+              },
+            },
           }),
         ];
       } else if (preset === 'shift-plan') {
@@ -3018,6 +3045,53 @@ export default function EditorShell({ initialPageId }: Props) {
 
       try {
         const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree });
+
+        const meta = presetMeta[preset];
+
+        if (currentPageId) {
+          const buttonId = makeId();
+          const buttonLabel = meta?.label ?? pageName;
+          const buttonIcon = meta?.icon;
+
+          applyTreeUpdate((prev) => {
+            const children = prev.tree.children ?? [];
+            const maxBottom = children.reduce((acc, child) => {
+              const y = typeof child.y === 'number' ? child.y : 0;
+              const h = typeof child.h === 'number' ? child.h : 0;
+              return Math.max(acc, y + h);
+            }, 0);
+            const nextY = Math.min(820, Math.max(80, maxBottom + 16));
+
+            const navButton: EditorNode = {
+              id: buttonId,
+              type: 'button',
+              x: 32,
+              y: nextY,
+              w: 296,
+              h: 56,
+              props: {
+                label: buttonLabel,
+                icon: buttonIcon,
+                action: 'navigate',
+                targetPage: pageId,
+              },
+            };
+
+            return {
+              ...prev,
+              tree: {
+                ...prev.tree,
+                children: [...children, navButton],
+              },
+            };
+          });
+
+          setSelectedId(buttonId);
+          setTemplateNotice(null);
+          return;
+        }
+
+        // Fallback: keine aktuelle Seite offen -> auf die neu erstellte Seite wechseln
         handlePageSelection(pageId, { placeholderName: pageName });
         setTemplateNotice(null);
       } catch (error) {
@@ -3025,7 +3099,7 @@ export default function EditorShell({ initialPageId }: Props) {
         setTemplateNotice('Seite konnte nicht erstellt werden. Bitte versuche es erneut.');
       }
     },
-    [_projectId, handlePageSelection, setTemplateNotice]
+    [_projectId, applyTreeUpdate, createPageWithContent, currentPageId, handlePageSelection, setSelectedId, setTemplateNotice]
   );
 
   const handleDeleteCurrentPage = useCallback(async () => {
