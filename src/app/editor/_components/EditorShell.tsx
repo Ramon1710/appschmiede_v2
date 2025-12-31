@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
+import QuickButtonsPanel from './QuickButtonsPanel';
 import QRCodeButton from '../_extensions/QRCodeButton';
 import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
@@ -1031,7 +1032,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
   const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
   const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
-  const [toolboxTab, setToolboxTab] = useState<'components' | 'templates'>('components');
+  const [toolboxTab, setToolboxTab] = useState<'components' | 'quick-buttons' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
   const [pageTemplates, setPageTemplates] = useState<StoredPageTemplate[]>([]);
@@ -3071,15 +3072,16 @@ export default function EditorShell({ initialPageId }: Props) {
                     </div>
                   </div>
                   <div className="mt-4 flex flex-1 flex-col overflow-hidden">
-                    <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: 'Bausteine' },
+                        { id: 'quick-buttons', label: 'Fertige Buttons' },
                         { id: 'templates', label: 'Vorlagen' },
                       ].map((tab) => (
                         <button
                           key={tab.id}
                           type="button"
-                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
+                          onClick={() => setToolboxTab(tab.id as 'components' | 'quick-buttons' | 'templates')}
                           className={`rounded-lg border px-3 py-2 transition ${
                             toolboxTab === tab.id
                               ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
@@ -3092,6 +3094,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     </div>
                     <div className="mt-4 flex-1 overflow-hidden">
                       {toolboxTab === 'components' && toolboxContent}
+                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onAdd={addNode} />}
                       {toolboxTab === 'templates' && (
                         <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
                       )}
@@ -3227,15 +3230,16 @@ export default function EditorShell({ initialPageId }: Props) {
                       </div>
                       <span className="text-[11px] text-neutral-400">Tippen zum Einfügen</span>
                     </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-semibold">
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: 'Bausteine' },
+                        { id: 'quick-buttons', label: 'Fertige Buttons' },
                         { id: 'templates', label: 'Vorlagen' },
                       ].map((tab) => (
                         <button
                           key={tab.id}
                           type="button"
-                          onClick={() => setToolboxTab(tab.id as 'components' | 'templates')}
+                          onClick={() => setToolboxTab(tab.id as 'components' | 'quick-buttons' | 'templates')}
                           className={`rounded-lg border px-3 py-2 transition ${
                             toolboxTab === tab.id
                               ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100'
@@ -3248,6 +3252,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     </div>
                     <div className="mt-4 space-y-3 overflow-y-auto pr-1">
                       {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
+                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onAdd={addNode} />}
                       {toolboxTab === 'templates' && templateContent}
                     </div>
                   </div>
