@@ -14,34 +14,39 @@ import GoogleAdSlot from '@/components/GoogleAdSlot';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import { getStoredProjectId } from '@/lib/editor-storage';
-
-const dashboardAdsLeft = [
-  {
-    slotKey: 'DASH_LEFT_PRIMARY',
-    title: 'Productivity Stack',
-    description: 'Buche dir Add-ons für dein Team – Integrationen, Support, Co-Piloten.',
-  },
-  {
-    slotKey: 'DASH_LEFT_SECONDARY',
-    title: 'Deal der Woche',
-    description: 'KI-gestützte Illustrationen für deine Apps 15 % günstiger.',
-  },
-];
-
-const dashboardAdsRight = [
-  {
-    slotKey: 'DASH_RIGHT_PRIMARY',
-    title: 'App-Launch Promo',
-    description: 'Schalte deine erste Kampagne direkt aus der AppSchmiede.',
-  },
-  {
-    slotKey: 'DASH_RIGHT_SECONDARY',
-    title: 'Cloud Ressourcen',
-    description: 'Skaliere Infrastruktur & Analysen mit Partner-Angeboten.',
-  },
-];
+import { useI18n } from '@/lib/i18n';
 
 export default function DashboardPage() {
+  const { lang } = useI18n();
+  const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const locale = lang === 'en' ? 'en-US' : 'de-DE';
+
+  const dashboardAdsLeft = [
+    {
+      slotKey: 'DASH_LEFT_PRIMARY',
+      title: tr('Produktivität', 'Productivity'),
+      description: tr('Buche dir Add-ons für dein Team – Integrationen, Support, Co-Piloten.', 'Add-ons for your team — integrations, support, co-pilots.'),
+    },
+    {
+      slotKey: 'DASH_LEFT_SECONDARY',
+      title: tr('Deal der Woche', 'Deal of the week'),
+      description: tr('KI-gestützte Illustrationen für deine Apps 15 % günstiger.', 'AI-generated illustrations for your apps — 15% off.'),
+    },
+  ];
+
+  const dashboardAdsRight = [
+    {
+      slotKey: 'DASH_RIGHT_PRIMARY',
+      title: tr('App-Launch Promo', 'App launch promo'),
+      description: tr('Schalte deine erste Kampagne direkt aus der AppSchmiede.', 'Launch your first campaign directly from AppSchmiede.'),
+    },
+    {
+      slotKey: 'DASH_RIGHT_SECONDARY',
+      title: tr('Cloud Ressourcen', 'Cloud resources'),
+      description: tr('Skaliere Infrastruktur & Analysen mit Partner-Angeboten.', 'Scale infrastructure & analytics with partner offers.'),
+    },
+  ];
+
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
@@ -64,26 +69,35 @@ export default function DashboardPage() {
   if (!user)
     return (
       <UnauthenticatedScreen
-        badge="Dashboard"
-        description="Melde dich an, um dein Dashboard zu sehen, Projekte zu öffnen oder neue Apps zu starten."
+        badge={tr('Dashboard', 'Dashboard')}
+        description={tr(
+          'Melde dich an, um dein Dashboard zu sehen, Projekte zu öffnen oder neue Apps zu starten.',
+          'Sign in to see your dashboard, open projects, or start new apps.'
+        )}
       />
     );
 
   const tourSteps = [
     {
       id: 'dashboard-cta',
-      title: 'Loslegen mit Projekten',
-      description: 'Hier startest du entweder ein neues Projekt oder springst direkt zu bestehenden Arbeitsflächen.',
+      title: tr('Loslegen mit Projekten', 'Get started with projects'),
+      description: tr(
+        'Hier startest du entweder ein neues Projekt oder springst direkt zu bestehenden Arbeitsflächen.',
+        'Start a new project or jump into existing workspaces.'
+      ),
     },
     {
       id: 'dashboard-shortcuts',
-      title: 'Schnellzugriffe',
-      description: 'Diese Kacheln bringen dich ohne Umwege in Projekte, Editor oder Vorlagen.',
+      title: tr('Schnellzugriffe', 'Shortcuts'),
+      description: tr('Diese Kacheln bringen dich ohne Umwege in Projekte, Editor oder Vorlagen.', 'These tiles take you straight to projects, the editor, or templates.'),
     },
     {
       id: 'dashboard-recent',
-      title: 'Zuletzt bearbeitet',
-      description: 'Hier findest du die Projekte, die du zuletzt geöffnet hast – perfekt zum Weiterarbeiten.',
+      title: tr('Zuletzt bearbeitet', 'Recently edited'),
+      description: tr(
+        'Hier findest du die Projekte, die du zuletzt geöffnet hast – perfekt zum Weiterarbeiten.',
+        'Pick up where you left off with your most recently opened projects.'
+      ),
     },
   ] as const;
 
@@ -95,7 +109,7 @@ export default function DashboardPage() {
           {/* Left Ad Space */}
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
-              <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
+              <div className="text-xs uppercase tracking-wider text-neutral-400">{tr('Werbung', 'Ads')}</div>
               {dashboardAdsLeft.map((ad) => (
                 <GoogleAdSlot
                   key={ad.slotKey}
@@ -122,10 +136,13 @@ export default function DashboardPage() {
 
             <section className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-md p-6 shadow-2xl md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.35em] text-cyan-400/80">Willkommen zurück</p>
-                <h2 className="text-4xl font-semibold leading-tight">Baue deine nächste App in Minuten.</h2>
+                <p className="text-xs uppercase tracking-[0.35em] text-cyan-400/80">{tr('Willkommen zurück', 'Welcome back')}</p>
+                <h2 className="text-4xl font-semibold leading-tight">{tr('Baue deine nächste App in Minuten.', 'Build your next app in minutes.')}</h2>
                 <p className="text-sm text-neutral-400">
-                  Verwalte deine Projekte, teste neue Ideen im Editor und teile Prototypen mit deinem Team – alles in einem Workspace.
+                  {tr(
+                    'Verwalte deine Projekte, teste neue Ideen im Editor und teile Prototypen mit deinem Team – alles in einem Workspace.',
+                    'Manage projects, test ideas in the editor, and share prototypes with your team — all in one workspace.'
+                  )}
                 </p>
                 <div className="flex gap-3 pt-2 text-sm">
                   <Link
@@ -133,13 +150,13 @@ export default function DashboardPage() {
                     data-tour-id="dashboard-cta"
                     className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 font-semibold text-white shadow-lg transition hover:from-cyan-400 hover:to-blue-400"
                   >
-                    Projekte öffnen
+                    {tr('Projekte öffnen', 'Open projects')}
                   </Link>
                   <Link
                     href="/editor"
                     className="rounded-full border border-white/30 px-4 py-2 font-semibold text-neutral-100 hover:bg-white/10"
                   >
-                    Direkt zum Editor
+                    {tr('Direkt zum Editor', 'Go to editor')}
                   </Link>
                 </div>
               </div>
@@ -156,32 +173,34 @@ export default function DashboardPage() {
                 className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 transition hover:bg-neutral-800/80"
               >
                 <div className="text-4xl">📁</div>
-                <span className="font-semibold">Projekte</span>
-                <span className="text-xs text-neutral-400">Alle Projekte verwalten</span>
+                <span className="font-semibold">{tr('Projekte', 'Projects')}</span>
+                <span className="text-xs text-neutral-400">{tr('Alle Projekte verwalten', 'Manage all projects')}</span>
               </Link>
               <Link
                 href="/editor"
                 className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 transition hover:bg-neutral-800/80"
               >
                 <div className="text-4xl">✏️</div>
-                <span className="font-semibold">Editor</span>
-                <span className="text-xs text-neutral-400">Neues Projekt erstellen</span>
+                <span className="font-semibold">{tr('Editor', 'Editor')}</span>
+                <span className="text-xs text-neutral-400">{tr('Neues Projekt erstellen', 'Create a new project')}</span>
               </Link>
               <Link
                 href="/tools/templates"
                 className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-6 transition hover:bg-neutral-800/80"
               >
                 <div className="text-4xl">🧩</div>
-                <span className="font-semibold">Vorlagen</span>
-                <span className="text-xs text-neutral-400">Fertige Apps kopieren</span>
+                <span className="font-semibold">{tr('Vorlagen', 'Templates')}</span>
+                <span className="text-xs text-neutral-400">{tr('Fertige Apps kopieren', 'Copy ready-made apps')}</span>
               </Link>
             </section>
 
             {/* Recent Projects */}
             <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3" data-tour-id="dashboard-recent">
-              <h2 className="font-semibold">Zuletzt bearbeitet</h2>
+              <h2 className="font-semibold">{tr('Zuletzt bearbeitet', 'Recently edited')}</h2>
               {projects.length === 0 ? (
-                <div className="text-sm opacity-70">Keine Projekte gefunden. Erstelle ein neues Projekt über "Projekte".</div>
+                <div className="text-sm opacity-70">
+                  {tr('Keine Projekte gefunden. Erstelle ein neues Projekt über "Projekte".', 'No projects found. Create one via “Projects”.')}
+                </div>
               ) : (
                 <div className="space-y-2">
                   {[...projects]
@@ -200,13 +219,13 @@ export default function DashboardPage() {
                       const isActive = p.id === activeProjectId;
                       const icon = p.icon?.trim() || '📱';
                       const dateLabel = p.updatedAt?.toDate
-                        ? new Date(p.updatedAt.toDate()).toLocaleDateString('de-DE', {
+                        ? new Date(p.updatedAt.toDate()).toLocaleDateString(locale, {
                             day: '2-digit',
                             month: '2-digit',
                             hour: '2-digit',
                             minute: '2-digit',
                           })
-                        : 'Neu';
+                        : tr('Neu', 'New');
                       return (
                         <Link
                           key={p.id}
@@ -219,7 +238,7 @@ export default function DashboardPage() {
                             <div className="text-xs text-neutral-400">{dateLabel}</div>
                           </div>
                           <div className="text-xs font-semibold uppercase tracking-wide text-cyan-300">
-                            {isActive ? 'Aktiv' : 'Weiter'}
+                            {isActive ? tr('Aktiv', 'Active') : tr('Weiter', 'Continue')}
                           </div>
                         </Link>
                       );
@@ -232,7 +251,7 @@ export default function DashboardPage() {
           {/* Right Ad Space */}
           <aside className="hidden lg:block">
             <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
-              <div className="text-xs uppercase tracking-wider text-neutral-400">Werbung</div>
+              <div className="text-xs uppercase tracking-wider text-neutral-400">{tr('Werbung', 'Ads')}</div>
               {dashboardAdsRight.map((ad) => (
                 <GoogleAdSlot
                   key={ad.slotKey}

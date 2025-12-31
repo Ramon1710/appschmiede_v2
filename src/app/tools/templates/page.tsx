@@ -117,14 +117,14 @@ function TemplatesPageComponent() {
                 if (!p || typeof p !== 'object') return null;
                 if (!p.tree || typeof p.tree !== 'object') return null;
                 return {
-                  name: safeString(p.name, 'Seite'),
+                  name: safeString(p.name, lang === 'en' ? 'Page' : 'Seite'),
                   folder: typeof p.folder === 'string' || p.folder === null ? p.folder : null,
                   tree: p.tree as PageTree['tree'],
                 } satisfies Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
               })
               .filter(Boolean) as Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
 
-            const name = safeString(data?.name, 'Vorlage');
+            const name = safeString(data?.name, lang === 'en' ? 'Template' : 'Vorlage');
             return {
               id: docSnap.id,
               name,
@@ -138,7 +138,7 @@ function TemplatesPageComponent() {
 
         if (!cancelled) setTemplates(next);
       } catch (e) {
-        console.warn('Konnte Templates nicht laden', e);
+        console.warn(lang === 'en' ? 'Could not load templates' : 'Konnte Templates nicht laden', e);
         if (!cancelled) setTemplates([]);
       } finally {
         if (!cancelled) setLoadingTemplates(false);
@@ -149,7 +149,7 @@ function TemplatesPageComponent() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [lang, user]);
 
   const templatesTourSteps = useMemo(
     () => [
