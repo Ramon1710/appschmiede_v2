@@ -2472,20 +2472,25 @@ export default function EditorShell({ initialPageId }: Props) {
               folder: page.folder ?? null,
               tree: sanitizeNode(page.tree as any),
             });
-          },
-          [isAdmin, _projectId, setTemplateNotice, tr]
+          })
+        );
 
         await touchProject(_projectId, 'edited');
         setEditingAppTemplateId(template.id);
-        setTemplateNotice(`Bearbeite Vorlage: ${template.name}`);
+        setTemplateNotice(`${tr('Bearbeite Vorlage:', 'Editing template:')} ${template.name}`);
       } catch (error) {
         console.error('App-Vorlage konnte nicht angewendet werden', error);
-        setTemplateNotice('App-Vorlage konnte nicht geladen werden. Bitte versuche es erneut.');
+        setTemplateNotice(
+          tr(
+            'App-Vorlage konnte nicht geladen werden. Bitte versuche es erneut.',
+            'App template could not be loaded. Please try again.'
+          )
+        );
       } finally {
         setAppTemplateApplying(false);
       }
     },
-    [isAdmin, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject]
+    [isAdmin, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr]
   );
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
