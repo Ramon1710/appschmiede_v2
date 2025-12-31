@@ -58,7 +58,7 @@ export default function HomePage() {
               </h1>
               <p className="mt-5 text-lg text-neutral-200">
                 {tr(
-                  'Melde dich an, wähle ein Template, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.',
+                  'Melde dich an, wähle eine Vorlage, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.',
                   'Sign up, pick a template, let AI help you, and fine-tune everything in the editor — right in the browser, no prior knowledge required. Test your app ideas faster than ever.'
                 )}
               </p>

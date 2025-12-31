@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+
 const PROVIDER_URL = 'https://image.pollinations.ai/prompt/';
 const MAX_PROMPT_LENGTH = 180;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const getOpenAiApiKey = () => {
+  const raw =
+    process.env.OPENAI_API_KEY ??
+    process.env.OPENAI_KEY ??
+    process.env.OPENAI_TOKEN ??
+    '';
+  const key = raw.trim();
+  return key.length > 0 ? key : null;
+};
 
 const buildProviderUrl = (prompt: string) => {
   const url = new URL(`${PROVIDER_URL}${encodeURIComponent(prompt)}`);
@@ -14,6 +24,7 @@ const buildProviderUrl = (prompt: string) => {
 
 export async function POST(request: Request) {
   try {
+    const OPENAI_API_KEY = getOpenAiApiKey();
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
     if (!prompt) {

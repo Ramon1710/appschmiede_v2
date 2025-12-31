@@ -51,7 +51,7 @@ const subscriptionPlanOrder: SubscriptionPlanId[] = ['free', 'starter', 'pro', '
 const de: HomeContent = {
   workflowSteps: [
     {
-      title: 'Template auswählen',
+      title: 'Vorlage auswählen',
       description:
         'Starte mit einer Vorlage für dein Use-Case: Support-Chat, Aufgabenverwaltung, Zeiterfassung, Analytics, Dokumentation und mehr. Ein Klick – und dein erstes Projekt ist angelegt.',
     },
@@ -129,7 +129,7 @@ const de: HomeContent = {
     {
       title: 'Schneller Start statt leere Leinwand',
       description:
-        'Templates und Tool-Seiten geben dir Struktur, bevor du überhaupt eine Zeile Text geschrieben hast.',
+        'Vorlagen und Tool-Seiten geben dir Struktur, bevor du überhaupt eine Zeile Text geschrieben hast.',
     },
     {
       title: 'Alles in einer Plattform',
@@ -166,7 +166,7 @@ const de: HomeContent = {
     },
     {
       slotKey: 'HOME_RIGHT_SECONDARY',
-      title: 'Template-Marktplatz',
+      title: 'Vorlagen-Marktplatz',
       description: 'Verkaufe deine App-Schablonen direkt in der AppSchmiede Community.',
     },
   ],
@@ -185,7 +185,7 @@ const de: HomeContent = {
       title: '80 Coins',
       price: '8,99 €',
       description: 'Für kleine Projekte, die jede Woche neue Ideen ausprobieren.',
-      highlights: ['Mehr Seiten für weniger Euro', 'Templates & KI beliebig kombinieren', 'Coins verfallen nicht'],
+      highlights: ['Mehr Seiten für weniger Euro', 'Vorlagen & KI beliebig kombinieren', 'Coins verfallen nicht'],
     },
     {
       id: 'coins-100',
@@ -208,7 +208,7 @@ const de: HomeContent = {
       badge: 'Scale',
       title: '300 Coins',
       price: '26,99 €',
-      description: 'Wenn mehrere Teams parallel an Templates & KI arbeiten.',
+      description: 'Wenn mehrere Teams parallel an Vorlagen & KI arbeiten.',
       highlights: ['Günstigster Coin-Preis pro Einheit', 'Perfekt für Agenturen', 'Sofort nach Kauf verfügbar'],
     },
   ],
@@ -227,7 +227,7 @@ const de: HomeContent = {
       title: 'Spar Abo',
       price: '9,99 € pro Monat',
       description: 'Regelmäßige Coin-Aufladung für Solo-Maker:innen und kleine Teams.',
-      highlights: ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Templates & KI-Tools'],
+      highlights: ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools'],
     },
     {
       id: 'pro',
@@ -270,7 +270,7 @@ const de: HomeContent = {
       feature: 'Vorlagen & Bausteine',
       values: {
         free: 'Basis-Bibliothek',
-        starter: 'Alle Templates',
+        starter: 'Alle Vorlagen',
         pro: 'Alle + KI-Varianten',
         business: 'Alle + Custom Libraries',
       },

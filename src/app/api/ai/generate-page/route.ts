@@ -2,7 +2,17 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import type { PageTree, Node, NodeProps } from '@/lib/editorTypes';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+export const runtime = 'nodejs';
+
+const getOpenAiApiKey = () => {
+  const raw =
+    process.env.OPENAI_API_KEY ??
+    process.env.OPENAI_KEY ??
+    process.env.OPENAI_TOKEN ??
+    '';
+  const key = raw.trim();
+  return key.length > 0 ? key : null;
+};
 
 const defaultWidths: Record<Node['type'], number> = {
   text: 296,
@@ -274,6 +284,8 @@ type GeneratePageBody = {
 };
 
 export async function POST(request: Request) {
+  const OPENAI_API_KEY = getOpenAiApiKey();
+
   let body: GeneratePageBody = {};
   try {
     body = await request.json();
@@ -307,7 +319,14 @@ export async function POST(request: Request) {
         : wantsChat
           ? buildSimpleChatPage(pageName ?? userPrompt)
           : buildGenericPage(userPrompt, pageName);
-    return NextResponse.json({ page: singlePage, source: 'fallback', diagnostics: { reason: !OPENAI_API_KEY ? 'missing_api_key' : 'missing_prompt' } });
+    return NextResponse.json({
+      page: singlePage,
+      source: 'fallback',
+      diagnostics: {
+        reason: !OPENAI_API_KEY ? 'missing_api_key' : 'missing_prompt',
+        expectedEnv: 'OPENAI_API_KEY',
+      },
+    });
   }
 
   try {
