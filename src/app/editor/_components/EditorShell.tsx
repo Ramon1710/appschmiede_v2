@@ -2644,7 +2644,11 @@ export default function EditorShell({ initialPageId }: Props) {
       if (!response.ok) {
         throw new Error('Die KI konnte die Seite nicht aktualisieren.');
       }
-      const data = (await response.json()) as { page?: PageTree; source?: 'openai' | 'fallback'; diagnostics?: { reason?: string } };
+      const data = (await response.json()) as {
+        page?: PageTree;
+        source?: 'openai' | 'fallback';
+        diagnostics?: { reason?: string; expectedEnv?: string; vercelEnv?: string | null; keySource?: string | null; runtime?: string };
+      };
       if (!data.page || !data.page.tree) {
         throw new Error('Keine Seitenergebnisse erhalten.');
       }
@@ -2666,7 +2670,11 @@ export default function EditorShell({ initialPageId }: Props) {
       isDirty.current = false;
 
       if (data.source === 'fallback') {
-        const reason = data.diagnostics?.reason ? ` (${data.diagnostics.reason})` : '';
+        const diagnosticsParts: string[] = [];
+        if (data.diagnostics?.reason) diagnosticsParts.push(data.diagnostics.reason);
+        if (data.diagnostics?.vercelEnv) diagnosticsParts.push(`vercelEnv=${data.diagnostics.vercelEnv}`);
+        if (data.diagnostics?.runtime) diagnosticsParts.push(`runtime=${data.diagnostics.runtime}`);
+        const reason = diagnosticsParts.length ? ` (${diagnosticsParts.join(', ')})` : '';
         setAiError(
           `Hinweis: OpenAI wurde nicht genutzt${reason}. Die Seite wurde mit einem lokalen Fallback-Template erstellt. ` +
             `Wenn du OpenAI nutzen möchtest, setze OPENAI_API_KEY in deiner Umgebung (lokal: .env.local, Deployment: Vercel Environment Variables) und deploye neu.`

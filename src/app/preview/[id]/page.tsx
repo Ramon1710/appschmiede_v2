@@ -7,6 +7,7 @@ import PreviewCanvas from '../PreviewCanvas';
 import { db } from '@/lib/firebase';
 import { listPages } from '@/lib/db-editor';
 import type { PageTree } from '@/lib/editorTypes';
+import useAuth from '@/hooks/useAuth';
 
 type LoadState =
 	| { status: 'loading' }
@@ -18,9 +19,18 @@ export default function Preview({ params }: { params: { id: string } }) {
 	const search = useSearchParams();
 	const requestedPageId = search.get('page');
 	const [state, setState] = useState<LoadState>({ status: 'loading' });
+	const { loading: authLoading } = useAuth();
+
+	const getFirebaseErrorCode = (error: unknown): string | null => {
+		if (!error || typeof error !== 'object') return null;
+		const anyErr = error as any;
+		return typeof anyErr.code === 'string' ? anyErr.code : null;
+	};
 
 	useEffect(() => {
 		let cancelled = false;
+
+		if (authLoading) return;
 
 		const load = async () => {
 			setState({ status: 'loading' });
@@ -69,9 +79,13 @@ export default function Preview({ params }: { params: { id: string } }) {
 			} catch (error) {
 				console.error('Preview load failed', error);
 				if (cancelled) return;
+				const code = getFirebaseErrorCode(error);
 				setState({
 					status: 'error',
-					message: 'Die Vorschau konnte nicht geladen werden. Bitte nochmals speichern oder später erneut versuchen.',
+					message:
+						code === 'permission-denied'
+							? 'Die Vorschau konnte nicht geladen werden, da die Berechtigung fehlt (permission-denied). Bitte melde dich an oder prüfe deine Firestore-Regeln für Vorschau-Zugriffe.'
+							: 'Die Vorschau konnte nicht geladen werden. Bitte nochmals speichern oder später erneut versuchen.',
 				});
 			}
 		};
@@ -81,7 +95,7 @@ export default function Preview({ params }: { params: { id: string } }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [params.id, requestedPageId]);
+	}, [params.id, requestedPageId, authLoading]);
 
 	if (state.status === 'loading') {
 		return (

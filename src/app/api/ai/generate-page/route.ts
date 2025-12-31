@@ -5,13 +5,20 @@ import type { PageTree, Node, NodeProps } from '@/lib/editorTypes';
 export const runtime = 'nodejs';
 
 const getOpenAiApiKey = () => {
-  const raw =
-    process.env.OPENAI_API_KEY ??
-    process.env.OPENAI_KEY ??
-    process.env.OPENAI_TOKEN ??
-    '';
-  const key = raw.trim();
-  return key.length > 0 ? key : null;
+  const candidates: Array<[string, string | undefined]> = [
+    ['OPENAI_API_KEY', process.env.OPENAI_API_KEY],
+    ['OPENAI_KEY', process.env.OPENAI_KEY],
+    ['OPENAI_TOKEN', process.env.OPENAI_TOKEN],
+    ['OPENAI_APIKEY', (process.env as any).OPENAI_APIKEY],
+  ];
+
+  for (const [name, value] of candidates) {
+    const key = (value ?? '').trim();
+    if (key) {
+      return { key, source: name };
+    }
+  }
+  return { key: null as string | null, source: null as string | null };
 };
 
 const defaultWidths: Record<Node['type'], number> = {
@@ -284,7 +291,7 @@ type GeneratePageBody = {
 };
 
 export async function POST(request: Request) {
-  const OPENAI_API_KEY = getOpenAiApiKey();
+  const { key: OPENAI_API_KEY, source: openAiKeySource } = getOpenAiApiKey();
 
   let body: GeneratePageBody = {};
   try {
@@ -325,6 +332,9 @@ export async function POST(request: Request) {
       diagnostics: {
         reason: !OPENAI_API_KEY ? 'missing_api_key' : 'missing_prompt',
         expectedEnv: 'OPENAI_API_KEY',
+        keySource: openAiKeySource,
+        vercelEnv: process.env.VERCEL_ENV ?? null,
+        runtime: 'nodejs',
       },
     });
   }
