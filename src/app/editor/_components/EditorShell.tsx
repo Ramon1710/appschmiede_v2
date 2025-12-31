@@ -2628,7 +2628,8 @@ export default function EditorShell({ initialPageId }: Props) {
       if (data.source === 'fallback') {
         const reason = data.diagnostics?.reason ? ` (${data.diagnostics.reason})` : '';
         setAiError(
-          `Hinweis: OpenAI wurde nicht genutzt${reason}. Die Seite wurde mit einem lokalen Fallback-Template erstellt. Prüfe OPENAI_API_KEY und Server-Logs.`
+          `Hinweis: OpenAI wurde nicht genutzt${reason}. Die Seite wurde mit einem lokalen Fallback-Template erstellt. ` +
+            `Wenn du OpenAI nutzen möchtest, setze OPENAI_API_KEY in deiner Umgebung (lokal: .env.local, Deployment: Vercel Environment Variables) und deploye neu.`
         );
       } else {
         setAiPrompt('');
@@ -2859,6 +2860,8 @@ export default function EditorShell({ initialPageId }: Props) {
         'shift-plan': { label: 'Schichtplan', icon: '📅' },
         benefits: { label: 'Benefits', icon: '🎁' },
         contacts: { label: 'Ansprechpartner', icon: '👥' },
+        bautagebuch: { label: 'Bautagebuch', icon: '🧱' },
+        phasenboard: { label: 'Phasenboard', icon: '🧩' },
       };
 
       let pageName = 'Neue Seite';
@@ -3072,6 +3075,77 @@ export default function EditorShell({ initialPageId }: Props) {
                   makeTableRow(['HR', 'Sam', 'hr@example.com']),
                   makeTableRow(['Facility', 'Pat', '+49 111 222']),
                 ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'bautagebuch') {
+        pageName = 'Bautagebuch';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Bautagebuch' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Erstelle tägliche Einträge (Datum + Notizen). Du kannst Einträge direkt im Baustein hinzufügen.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 640,
+            props: {
+              component: 'bautagebuch',
+              bautagebuch: {
+                title: 'Tagesberichte',
+                entries: [
+                  {
+                    id: makeId(),
+                    date: new Date().toISOString().slice(0, 10),
+                    note: 'Beispiel: Fundament gegossen, Material geliefert, Wetter sonnig.',
+                  },
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'phasenboard') {
+        pageName = 'Phasenboard';
+        const phasePlan = [
+          { id: makeId(), title: 'Planung' },
+          { id: makeId(), title: 'Ausführung' },
+          { id: makeId(), title: 'Abnahme' },
+        ];
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Phasenboard' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Organisiere Karten nach Bauphasen. Karten lassen sich im Baustein hinzufügen und einer Phase zuordnen.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 640,
+            props: {
+              component: 'phasenboard',
+              phasenboard: {
+                title: 'Bauphasen',
+                phases: phasePlan,
+                cards: [
+                  {
+                    id: makeId(),
+                    phaseId: phasePlan[0]?.id,
+                    title: 'Beispielkarte: Angebot prüfen',
+                    description: 'Optional: Details im Baustein ergänzen.',
+                  },
+                ].filter((card) => typeof card.phaseId === 'string' && card.phaseId.length > 0),
               },
             },
           }),

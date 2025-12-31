@@ -103,6 +103,41 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       items: [
         {
           type: 'container',
+          label: 'Bautagebuch',
+          icon: '🧱',
+          defaultProps: {
+            component: 'bautagebuch',
+            bautagebuch: {
+              title: 'Tagesberichte',
+              entries: [
+                {
+                  id: crypto.randomUUID(),
+                  date: new Date().toISOString().slice(0, 10),
+                  note: 'Beispiel: Material geliefert, Arbeiten begonnen.',
+                },
+              ],
+            },
+          },
+        },
+        {
+          type: 'container',
+          label: 'Phasenboard',
+          icon: '🧩',
+          defaultProps: {
+            component: 'phasenboard',
+            phasenboard: {
+              title: 'Bauphasen',
+              phases: [
+                { id: crypto.randomUUID(), title: 'Planung' },
+                { id: crypto.randomUUID(), title: 'Ausführung' },
+                { id: crypto.randomUUID(), title: 'Abnahme' },
+              ],
+              cards: [],
+            },
+          },
+        },
+        {
+          type: 'container',
           label: 'Schichtplan',
           icon: '🗓️',
           defaultProps: {

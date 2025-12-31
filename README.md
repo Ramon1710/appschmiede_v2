@@ -16,6 +16,14 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## KI: OpenAI / missing_api_key
+
+Der KI-Seitengenerator (`/api/ai/generate-page`) nutzt OpenAI nur, wenn `OPENAI_API_KEY` gesetzt ist.
+Wenn der Key fehlt (häufig in Deployments), wird automatisch ein lokales Fallback-Template verwendet und im Editor erscheint ein Hinweis mit `missing_api_key`.
+
+- Lokal: `.env.local` anlegen (siehe `.env.example`) und `OPENAI_API_KEY=...` setzen.
+- Vercel: Project → Settings → Environment Variables → `OPENAI_API_KEY` setzen und neu deployen.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

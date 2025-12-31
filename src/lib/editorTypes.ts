@@ -117,6 +117,24 @@ export type AudioNote = {
   url: string;
 };
 
+export type BautagebuchEntry = {
+  id: string;
+  date: string; // ISO (YYYY-MM-DD)
+  note: string;
+};
+
+export type PhaseItem = {
+  id: string;
+  title: string;
+};
+
+export type PhaseCard = {
+  id: string;
+  phaseId: string;
+  title: string;
+  description?: string;
+};
+
 export type BackgroundLayer = {
   id: string;
   url: string;
@@ -228,6 +246,15 @@ export type NodeProps = {
   avatarBackgroundColor?: string;
   avatarTraits?: AvatarTrait[];
   avatarActions?: AvatarAction[];
+  bautagebuch?: {
+    title?: string;
+    entries: BautagebuchEntry[];
+  };
+  phasenboard?: {
+    title?: string;
+    phases: PhaseItem[];
+    cards: PhaseCard[];
+  };
   [key: string]: unknown;
 };
 

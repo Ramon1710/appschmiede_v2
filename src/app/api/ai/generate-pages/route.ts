@@ -247,7 +247,7 @@ function buildAuthPages(prompt: string, palette: Palette): GeneratedPage[] {
 }
 
 function buildChatPages(prompt: string, palette: Palette): GeneratedPage[] {
-  if (!/chat|messag|support|nachrichten?/.test(prompt.toLowerCase())) return [];
+  if (!/chat|messag|nachrichten?/.test(prompt.toLowerCase())) return [];
   const nodes = [
     makeNode('text', {
       y: 40,
@@ -270,6 +270,222 @@ function buildChatPages(prompt: string, palette: Palette): GeneratedPage[] {
   ];
 
   return [page('Chat', palette, nodes, 'Kommunikation')];
+}
+
+function buildSupportPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
+  if (!/support|ticket|helpdesk|hilfe|kontakt\s*support/.test(normalized)) return [];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: 'Support & Hilfe' },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 72,
+      props: { text: 'Erstelle ein Ticket, lade Bilder hoch oder kontaktiere uns direkt.' },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 176,
+      h: 220,
+      props: {
+        component: 'support',
+        supportChannel: 'ticket',
+        supportTarget: 'support@example.com',
+      },
+    }),
+    makeNode('button', {
+      y: 412,
+      props: { label: 'Foto hochladen', action: 'upload-photo' },
+    }),
+    makeNode('button', {
+      y: 476,
+      props: { label: 'E-Mail schreiben', action: 'email', emailAddress: 'support@example.com' },
+    }),
+    makeNode('button', {
+      y: 540,
+      props: { label: 'Anrufen', action: 'call', phoneNumber: '+491234567890' },
+    }),
+  ];
+
+  return [page('Support', palette, nodes, 'Kommunikation')];
+}
+
+function buildBookingPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
+  if (!/termin|buchung|booking|reservier|reservation/.test(normalized)) return [];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: 'Termine & Buchung' },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 72,
+      props: { text: 'Wähle einen Termin und sende eine Anfrage. (Demo – im echten Projekt an dein Backend anbinden)' },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 176,
+      h: 240,
+      props: { component: 'calendar', calendarFocusDate: new Date().toISOString() },
+    }),
+    makeNode('input', {
+      y: 432,
+      props: { placeholder: 'Name', inputType: 'text' },
+    }),
+    makeNode('input', {
+      y: 496,
+      props: { placeholder: 'Telefon oder E-Mail', inputType: 'text' },
+    }),
+    makeNode('input', {
+      y: 560,
+      props: { placeholder: 'Wunschdatum / Uhrzeit', inputType: 'text' },
+    }),
+    makeNode('button', {
+      y: 628,
+      props: { label: 'Anfrage senden', action: 'support-ticket', supportTarget: 'booking@example.com' },
+    }),
+  ];
+
+  return [page('Termine', palette, nodes, 'Service')];
+}
+
+function buildCatalogPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
+  if (!/men\u00fc|menu|speisekarte|katalog|produkte|produkt|shop|catalog/.test(normalized)) return [];
+
+  const isMenu = /men\u00fc|menu|speisekarte/.test(normalized);
+  const title = isMenu ? 'Menü' : 'Katalog';
+  const tableTitle = isMenu ? 'Speisekarte' : 'Produkte & Leistungen';
+  const columns = isMenu
+    ? [
+        { id: makeId(), label: 'Gericht' },
+        { id: makeId(), label: 'Info' },
+        { id: makeId(), label: 'Preis' },
+      ]
+    : [
+        { id: makeId(), label: 'Name' },
+        { id: makeId(), label: 'Kurzinfo' },
+        { id: makeId(), label: 'Preis' },
+      ];
+  const rows = isMenu
+    ? [
+        { id: makeId(), values: ['Pasta', 'Hausgemacht', '12,90 €'] },
+        { id: makeId(), values: ['Salat', 'Saisonal', '9,50 €'] },
+        { id: makeId(), values: ['Dessert', 'Frisch', '6,20 €'] },
+      ]
+    : [
+        { id: makeId(), values: ['Leistung A', 'Beschreibung', 'ab 49 €'] },
+        { id: makeId(), values: ['Leistung B', 'Beschreibung', 'ab 79 €'] },
+        { id: makeId(), values: ['Produkt C', 'Beschreibung', '19,90 €'] },
+      ];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: title },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 64,
+      props: { text: 'Pflege hier deine Angebote. Tabelle ist editierbar im Eigenschaften-Panel.' },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 168,
+      h: 320,
+      props: {
+        component: 'table',
+        tableConfig: {
+          title: tableTitle,
+          columns,
+          rows,
+        },
+      },
+    }),
+    makeNode('button', {
+      y: 504,
+      props: { label: isMenu ? 'Reservierung' : 'Anfrage', action: 'support-ticket', supportTarget: 'sales@example.com' },
+    }),
+  ];
+
+  return [page(title, palette, nodes, 'Angebot')];
+}
+
+function buildNewsPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
+  if (!/news|neuigkeiten|update|updates/.test(normalized)) return [];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: 'News' },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 72,
+      props: { text: 'Veröffentliche Updates mit Text, Datum und Bild.' },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 176,
+      h: 560,
+      props: {
+        component: 'news',
+        newsFeed: {
+          title: 'Aktuelle News',
+          items: [
+            {
+              id: makeId(),
+              title: 'Neues Update',
+              body: 'Beispieltext – ändere Titel, Text und Bild im Eigenschaften-Panel.',
+              imageUrl: 'https://placehold.co/600x360/0b0b0f/f1f5f9?text=News',
+              date: new Date().toISOString(),
+            },
+          ],
+        },
+      },
+    }),
+  ];
+
+  return [page('News', palette, nodes, 'Aktuell')];
+}
+
+function buildQrPages(prompt: string, palette: Palette): GeneratedPage[] {
+  const normalized = prompt.toLowerCase();
+  if (!/qr|qrcode|qr-code/.test(normalized)) return [];
+
+  const nodes: Node[] = [
+    makeNode('text', {
+      y: 40,
+      props: { text: 'QR-Code' },
+      style: { fontSize: 26, fontWeight: 600 },
+    }),
+    makeNode('text', {
+      y: 92,
+      h: 64,
+      props: { text: 'Scanne den Code, um die App/Seite schnell zu \u00f6ffnen.' },
+      style: { fontSize: 15, lineHeight: 1.5, color: '#f9c2dc' },
+    }),
+    makeNode('container', {
+      y: 168,
+      h: 240,
+      props: {
+        component: 'qr-code',
+        qrUrl: 'https://appschmiede.dev',
+      },
+    }),
+  ];
+
+  return [page('QR', palette, nodes, 'Tools')];
 }
 
 function buildPresencePage(prompt: string, palette: Palette): GeneratedPage[] {
@@ -796,6 +1012,11 @@ function buildPages(prompt: string): GeneratedPage[] {
   buildCompanySuitePages(prompt, palette).forEach((p) => result.push(p));
   buildAuthPages(prompt, palette).forEach((p) => result.push(p));
   buildChatPages(prompt, palette).forEach((p) => result.push(p));
+  buildSupportPages(prompt, palette).forEach((p) => result.push(p));
+  buildBookingPages(prompt, palette).forEach((p) => result.push(p));
+  buildCatalogPages(prompt, palette).forEach((p) => result.push(p));
+  buildNewsPages(prompt, palette).forEach((p) => result.push(p));
+  buildQrPages(prompt, palette).forEach((p) => result.push(p));
   buildLocationPage(prompt, palette).forEach((p) => result.push(p));
   buildPresencePage(prompt, palette).forEach((p) => result.push(p));
 

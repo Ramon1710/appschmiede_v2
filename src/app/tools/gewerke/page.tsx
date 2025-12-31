@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import Header from '@/components/Header';
@@ -33,9 +33,23 @@ type Industry = {
 
 type WizardAnswers = {
   projectName: string;
-  wantsChat: boolean;
+  audience: 'customers' | 'team';
   wantsLogin: boolean;
-  wantsUpload: boolean;
+  wantsRegister: boolean;
+  wantsPasswordReset: boolean;
+  wantsChat: boolean;
+  wantsSupport: boolean;
+  wantsUploads: boolean;
+  wantsBooking: boolean;
+  wantsCatalog: boolean;
+  wantsNews: boolean;
+  wantsMap: boolean;
+  wantsOnlineStatus: boolean;
+  wantsQr: boolean;
+  wantsTimeTracking: boolean;
+  wantsTasks: boolean;
+  wantsProjects: boolean;
+  wantsNotifications: boolean;
 };
 
 type GeneratedPage = Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
@@ -137,40 +151,93 @@ function buildPrompt(args: {
       ? `Create an app for the industry: ${industry.label.en}. App type: ${VARIANTS[variant].label.en}.`
       : `Erstelle eine App für das Gewerk: ${industry.label.de}. App-Typ: ${VARIANTS[variant].label.de}.`;
 
-  const features = [
-    answers.wantsLogin ? (lang === 'en' ? 'include login & register' : 'inklusive Login & Registrierung') : null,
-    answers.wantsChat ? (lang === 'en' ? 'include a chat page' : 'inklusive Chat-Seite') : null,
-    answers.wantsUpload ? (lang === 'en' ? 'include uploads/support ticket' : 'inklusive Upload/Support') : null,
-  ].filter(Boolean);
+  const keywords: string[] = [];
 
-  const hint =
-    features.length > 0
-      ? lang === 'en'
-        ? `Required: ${features.join(', ')}.`
-        : `Wichtig: ${features.join(', ')}.`
-      : lang === 'en'
-        ? 'Keep it simple and usable.'
-        : 'Halte es simpel und direkt nutzbar.';
+  // Audience drives company-suite page generation
+  if (answers.audience === 'team' || variant === 'team') {
+    keywords.push('unternehmen');
+  }
 
-  return `${base} ${hint}`.trim();
+  if (answers.wantsLogin) keywords.push('login');
+  if (answers.wantsRegister) keywords.push('registrieren');
+  if (answers.wantsPasswordReset) keywords.push('passwort reset');
+
+  if (answers.wantsChat) keywords.push('chat');
+  if (answers.wantsSupport) keywords.push('support ticket hilfe');
+  if (answers.wantsUploads) keywords.push('upload foto');
+
+  if (answers.wantsBooking) keywords.push('termin buchung reservierung');
+  if (answers.wantsCatalog) {
+    keywords.push(industry.id === 'gastronomie' ? 'menü speisekarte' : 'katalog shop produkte');
+  }
+  if (answers.wantsNews) keywords.push('news updates');
+  if (answers.wantsMap) keywords.push('standort map');
+  if (answers.wantsOnlineStatus) keywords.push('online status');
+  if (answers.wantsQr) keywords.push('qr code');
+
+  // Company suite modules
+  if (answers.wantsTimeTracking) keywords.push('zeit tracking');
+  if (answers.wantsTasks) keywords.push('aufgaben todo');
+  if (answers.wantsProjects) keywords.push('projekt');
+  if (answers.wantsNotifications) keywords.push('benachrichtigung');
+
+  const needs = keywords.length
+    ? lang === 'en'
+      ? `Include pages and features for: ${keywords.join(', ')}.`
+      : `Erzeuge Seiten & Funktionen für: ${keywords.join(', ')}.`
+    : lang === 'en'
+      ? 'Keep it simple and usable.'
+      : 'Halte es simpel und direkt nutzbar.';
+
+  return `${base} ${needs}`.trim();
 }
+
+type WizardStep = 0 | 1 | 2 | 3;
+
+const isIndustryId = (value: string): value is IndustryId => {
+  return INDUSTRIES.some((i) => i.id === value);
+};
+
+const getWizardRouteState = (pathname: string): { step: WizardStep; industryId: IndustryId | null } => {
+  if (pathname.startsWith('/wizard/name-it')) return { step: 0, industryId: null };
+  if (pathname === '/wizard/choose-it') return { step: 1, industryId: null };
+  const match = pathname.match(/^\/wizard\/choose-it\/([^/]+)\/?$/);
+  if (match && isIndustryId(match[1])) return { step: 2, industryId: match[1] };
+  return { step: 0, industryId: null };
+};
 
 export default function TradesWizardPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { lang } = useI18n();
 
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
-  const [selectedIndustryId, setSelectedIndustryId] = useState<IndustryId | null>(null);
+  const initialRoute = useMemo(() => getWizardRouteState(pathname ?? ''), [pathname]);
+  const [step, setStep] = useState<WizardStep>(() => initialRoute.step);
+  const [selectedIndustryId, setSelectedIndustryId] = useState<IndustryId | null>(() => initialRoute.industryId);
   const [selectedVariant, setSelectedVariant] = useState<AppVariantId | null>(null);
 
   const [answers, setAnswers] = useState<WizardAnswers>({
     projectName: lang === 'en' ? 'My App' : 'Meine App',
-    wantsChat: true,
+    audience: 'customers',
     wantsLogin: true,
-    wantsUpload: false,
+    wantsRegister: true,
+    wantsPasswordReset: false,
+    wantsChat: false,
+    wantsSupport: true,
+    wantsUploads: false,
+    wantsBooking: false,
+    wantsCatalog: true,
+    wantsNews: false,
+    wantsMap: false,
+    wantsOnlineStatus: false,
+    wantsQr: false,
+    wantsTimeTracking: false,
+    wantsTasks: false,
+    wantsProjects: false,
+    wantsNotifications: false,
   });
 
   const [creating, setCreating] = useState(false);
@@ -192,9 +259,26 @@ export default function TradesWizardPage() {
             back: 'Back',
             next: 'Next',
             projectName: 'Project name',
-            wantsLogin: 'Login / Register pages',
+            audience: 'Audience',
+            audienceCustomers: 'Customers / Public',
+            audienceTeam: 'Team / Internal',
+            wantsLogin: 'Login page',
+            wantsRegister: 'Register page',
+            wantsPasswordReset: 'Password reset',
             wantsChat: 'Chat page',
-            wantsUpload: 'Upload / Support flow',
+            wantsSupport: 'Support / Tickets',
+            wantsUploads: 'Photo uploads',
+            wantsBooking: 'Booking / Appointments',
+            wantsCatalog: 'Catalog / Menu',
+            wantsNews: 'News / Updates',
+            wantsMap: 'Map / Locations',
+            wantsOnlineStatus: 'Online status / presence',
+            wantsQr: 'QR code page',
+            companyModules: 'Internal modules',
+            wantsTimeTracking: 'Time tracking',
+            wantsTasks: 'Tasks / Todo',
+            wantsProjects: 'Projects / folders',
+            wantsNotifications: 'Notifications',
           }
         : {
             badge: 'Gewerke',
@@ -209,9 +293,26 @@ export default function TradesWizardPage() {
             back: 'Zurück',
             next: 'Weiter',
             projectName: 'Projektname',
-            wantsLogin: 'Login / Registrierung',
+            audience: 'Zielgruppe',
+            audienceCustomers: 'Kund:innen / Öffentlich',
+            audienceTeam: 'Team / Intern',
+            wantsLogin: 'Login-Seite',
+            wantsRegister: 'Registrierung',
+            wantsPasswordReset: 'Passwort zurücksetzen',
             wantsChat: 'Chat-Seite',
-            wantsUpload: 'Upload / Support',
+            wantsSupport: 'Support / Tickets',
+            wantsUploads: 'Foto-Uploads',
+            wantsBooking: 'Termin / Buchung',
+            wantsCatalog: 'Katalog / Menü',
+            wantsNews: 'News / Updates',
+            wantsMap: 'Karte / Standorte',
+            wantsOnlineStatus: 'Online-Status / Anwesenheit',
+            wantsQr: 'QR-Code Seite',
+            companyModules: 'Interne Module',
+            wantsTimeTracking: 'Zeiterfassung',
+            wantsTasks: 'Aufgaben / Todo',
+            wantsProjects: 'Projekte / Ordner',
+            wantsNotifications: 'Benachrichtigungen',
           },
     [lang]
   );
@@ -220,6 +321,12 @@ export default function TradesWizardPage() {
     () => (selectedIndustryId ? INDUSTRIES.find((i) => i.id === selectedIndustryId) ?? null : null),
     [selectedIndustryId]
   );
+
+  useEffect(() => {
+    const next = getWizardRouteState(pathname ?? '');
+    setStep(next.step);
+    if (next.industryId) setSelectedIndustryId(next.industryId);
+  }, [pathname]);
 
   useEffect(
     () =>
@@ -237,18 +344,19 @@ export default function TradesWizardPage() {
     });
   }, [lang]);
 
-  const resetToIndustry = () => {
+  const goNameIt = () => {
     setSelectedVariant(null);
-    setStep(0);
+    router.push('/wizard/name-it');
   };
 
-  const resetToVariant = () => {
-    setStep(1);
+  const goChooseIt = () => {
+    setSelectedVariant(null);
+    router.push('/wizard/choose-it');
   };
 
-  const proceed = () => {
-    if (step === 0 && selectedIndustryId) setStep(1);
-    if (step === 1 && selectedVariant) setStep(2);
+  const goChooseItIndustry = (industryId: IndustryId) => {
+    setSelectedVariant(null);
+    router.push(`/wizard/choose-it/${industryId}`);
   };
 
   const createProject = async () => {
@@ -353,7 +461,38 @@ export default function TradesWizardPage() {
         <section className="mt-8 rounded-2xl border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-sm">
           {step === 0 && (
             <div className="space-y-4">
-              <div className="text-sm font-semibold">{copy.stepIndustry}</div>
+              <div className="text-sm font-semibold">{lang === 'en' ? 'Name it' : 'Name it'}</div>
+              <label className="space-y-2 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.projectName}</div>
+                <input
+                  value={answers.projectName}
+                  onChange={(e) => setAnswers((prev) => ({ ...prev, projectName: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+                  placeholder={lang === 'en' ? 'e.g. Hair Studio' : 'z.B. Haarstudio'}
+                />
+              </label>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={goChooseIt}
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold transition hover:bg-white/10"
+                >
+                  {copy.next}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">{copy.stepIndustry}</div>
+                <button type="button" className="text-sm text-neutral-300 hover:text-white" onClick={goNameIt}>
+                  {copy.back}
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {INDUSTRIES.map((industry) => {
                   const isActive = selectedIndustryId === industry.id;
@@ -381,7 +520,9 @@ export default function TradesWizardPage() {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={proceed}
+                  onClick={() => {
+                    if (selectedIndustryId) goChooseItIndustry(selectedIndustryId);
+                  }}
                   disabled={!selectedIndustryId}
                   className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
                 >
@@ -391,116 +532,278 @@ export default function TradesWizardPage() {
             </div>
           )}
 
-          {step === 1 && selectedIndustry && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">{copy.stepVariant}</div>
-                <button type="button" className="text-sm text-neutral-300 hover:text-white" onClick={resetToIndustry}>
-                  {copy.back}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {selectedIndustry.variants.map((variantId) => {
-                  const meta = VARIANTS[variantId];
-                  const isActive = selectedVariant === variantId;
-                  return (
-                    <button
-                      key={variantId}
-                      type="button"
-                      onClick={() => setSelectedVariant(variantId)}
-                      className={`flex flex-col gap-2 rounded-2xl border p-5 text-left transition hover:bg-white/5 ${
-                        isActive ? 'border-cyan-400/50 bg-white/5' : 'border-white/10 bg-neutral-950/40'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{meta.icon}</div>
-                        <div className="font-semibold">{lang === 'en' ? meta.label.en : meta.label.de}</div>
-                      </div>
-                      <div className="text-sm text-neutral-300">{lang === 'en' ? meta.description.en : meta.description.de}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={proceed}
-                  disabled={!selectedVariant}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold transition hover:bg-white/10 disabled:opacity-50"
-                >
-                  {copy.next}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && selectedIndustry && selectedVariant && (
+          {step === 2 && selectedIndustry && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">{copy.stepQa}</div>
-                <button type="button" className="text-sm text-neutral-300 hover:text-white" onClick={resetToVariant}>
+                <div className="text-sm font-semibold">{lang === 'en' ? 'Choose it' : 'Choose it'}</div>
+                <button type="button" className="text-sm text-neutral-300 hover:text-white" onClick={goChooseIt}>
                   {copy.back}
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <label className="space-y-2 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
-                  <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.projectName}</div>
-                  <input
-                    value={answers.projectName}
-                    onChange={(e) => setAnswers((prev) => ({ ...prev, projectName: e.target.value }))}
-                    className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
-                    placeholder={lang === 'en' ? 'e.g. Hair Studio' : 'z.B. Haarstudio'}
-                  />
-                </label>
-
-                <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
-                  <div className="text-xs uppercase tracking-widest text-neutral-500">Features</div>
-
-                  <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span>{copy.wantsLogin}</span>
-                    <input
-                      type="checkbox"
-                      checked={answers.wantsLogin}
-                      onChange={(e) => setAnswers((prev) => ({ ...prev, wantsLogin: e.target.checked }))}
-                      className="h-4 w-4"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span>{copy.wantsChat}</span>
-                    <input
-                      type="checkbox"
-                      checked={answers.wantsChat}
-                      onChange={(e) => setAnswers((prev) => ({ ...prev, wantsChat: e.target.checked }))}
-                      className="h-4 w-4"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
-                    <span>{copy.wantsUpload}</span>
-                    <input
-                      type="checkbox"
-                      checked={answers.wantsUpload}
-                      onChange={(e) => setAnswers((prev) => ({ ...prev, wantsUpload: e.target.checked }))}
-                      className="h-4 w-4"
-                    />
-                  </label>
+              <div className="space-y-3">
+                <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.stepVariant}</div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {selectedIndustry.variants.map((variantId) => {
+                    const meta = VARIANTS[variantId];
+                    const isActive = selectedVariant === variantId;
+                    return (
+                      <button
+                        key={variantId}
+                        type="button"
+                        onClick={() => setSelectedVariant(variantId)}
+                        className={`flex flex-col gap-2 rounded-2xl border p-5 text-left transition hover:bg-white/5 ${
+                          isActive ? 'border-cyan-400/50 bg-white/5' : 'border-white/10 bg-neutral-950/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">{meta.icon}</div>
+                          <div className="font-semibold">{lang === 'en' ? meta.label.en : meta.label.de}</div>
+                        </div>
+                        <div className="text-sm text-neutral-300">
+                          {lang === 'en' ? meta.description.en : meta.description.de}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={createProject}
-                  disabled={creating}
-                  className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20 disabled:opacity-60"
-                >
-                  {creating ? copy.creating : copy.create}
-                </button>
-              </div>
+              {selectedVariant && (
+                <>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                      <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.audience}</div>
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.audienceCustomers}</span>
+                        <input
+                          type="radio"
+                          name="audience"
+                          checked={answers.audience === 'customers'}
+                          onChange={() =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              audience: 'customers',
+                              wantsTimeTracking: false,
+                              wantsTasks: false,
+                              wantsProjects: false,
+                              wantsNotifications: false,
+                            }))
+                          }
+                          className="h-4 w-4"
+                        />
+                      </label>
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.audienceTeam}</span>
+                        <input
+                          type="radio"
+                          name="audience"
+                          checked={answers.audience === 'team'}
+                          onChange={() => setAnswers((prev) => ({ ...prev, audience: 'team' }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                      <div className="text-xs uppercase tracking-widest text-neutral-500">Pages</div>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsCatalog}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsCatalog}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsCatalog: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsBooking}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsBooking}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsBooking: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsNews}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsNews}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsNews: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsMap}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsMap}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsMap: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsQr}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsQr}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsQr: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                      <div className="text-xs uppercase tracking-widest text-neutral-500">Features</div>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsLogin}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsLogin}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsLogin: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsRegister}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsRegister}
+                          onChange={(e) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              wantsRegister: e.target.checked,
+                              wantsLogin: e.target.checked ? true : prev.wantsLogin,
+                            }))
+                          }
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsPasswordReset}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsPasswordReset}
+                          onChange={(e) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              wantsPasswordReset: e.target.checked,
+                              wantsLogin: e.target.checked ? true : prev.wantsLogin,
+                            }))
+                          }
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsChat}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsChat}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsChat: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsSupport}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsSupport}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsSupport: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsUploads}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsUploads}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsUploads: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                        <span>{copy.wantsOnlineStatus}</span>
+                        <input
+                          type="checkbox"
+                          checked={answers.wantsOnlineStatus}
+                          onChange={(e) => setAnswers((prev) => ({ ...prev, wantsOnlineStatus: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {(answers.audience === 'team' || selectedVariant === 'team') && (
+                    <div className="space-y-3 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                      <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.companyModules}</div>
+                      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                        <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                          <span>{copy.wantsTimeTracking}</span>
+                          <input
+                            type="checkbox"
+                            checked={answers.wantsTimeTracking}
+                            onChange={(e) => setAnswers((prev) => ({ ...prev, wantsTimeTracking: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                          <span>{copy.wantsTasks}</span>
+                          <input
+                            type="checkbox"
+                            checked={answers.wantsTasks}
+                            onChange={(e) => setAnswers((prev) => ({ ...prev, wantsTasks: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                          <span>{copy.wantsProjects}</span>
+                          <input
+                            type="checkbox"
+                            checked={answers.wantsProjects}
+                            onChange={(e) => setAnswers((prev) => ({ ...prev, wantsProjects: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm">
+                          <span>{copy.wantsNotifications}</span>
+                          <input
+                            type="checkbox"
+                            checked={answers.wantsNotifications}
+                            onChange={(e) => setAnswers((prev) => ({ ...prev, wantsNotifications: e.target.checked }))}
+                            className="h-4 w-4"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={createProject}
+                      disabled={creating || !selectedVariant}
+                      className="rounded-full border border-cyan-400/40 bg-cyan-500/10 px-5 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20 disabled:opacity-60"
+                    >
+                      {creating ? copy.creating : copy.create}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

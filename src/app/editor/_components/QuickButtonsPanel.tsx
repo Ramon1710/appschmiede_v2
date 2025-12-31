@@ -9,7 +9,9 @@ export type QuickButtonPresetKey =
   | 'news'
   | 'shift-plan'
   | 'benefits'
-  | 'contacts';
+  | 'contacts'
+  | 'bautagebuch'
+  | 'phasenboard';
 
 type PresetItem = {
   label: string;
@@ -54,6 +56,13 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
       name: 'Business',
       items: [
         { preset: 'benefits', label: 'Benefits', icon: '🎁' },
+      ],
+    },
+    {
+      name: 'Baustelle',
+      items: [
+        { preset: 'bautagebuch', label: 'Bautagebuch', icon: '🧱' },
+        { preset: 'phasenboard', label: 'Phasenboard', icon: '🧩' },
       ],
     },
   ];
