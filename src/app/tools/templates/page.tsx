@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
@@ -40,6 +40,7 @@ function TemplatesPageComponent() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [creatingTemplateId, setCreatingTemplateId] = useState<string | null>(null);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
@@ -59,7 +60,11 @@ function TemplatesPageComponent() {
             tourCreate: 'Create a project in one click and open it in the editor.',
             createProject: 'Create project',
             creatingProject: 'Creating…',
+            deleteTemplate: 'Delete template',
+            deletingTemplate: 'Deleting…',
             empty: 'No templates available yet.',
+            confirmDelete: 'Delete this template permanently?',
+            deleteFailed: 'Template could not be deleted. Please try again.',
           }
         : {
             badge: 'Vorlagen',
@@ -72,7 +77,11 @@ function TemplatesPageComponent() {
             tourCreate: 'Mit einem Klick Projekt anlegen und direkt im Editor öffnen.',
             createProject: 'Projekt erstellen',
             creatingProject: 'Wird erstellt…',
+            deleteTemplate: 'Vorlage löschen',
+            deletingTemplate: 'Wird gelöscht…',
             empty: 'Noch keine Vorlagen verfügbar.',
+            confirmDelete: 'Diese Vorlage wirklich dauerhaft löschen?',
+            deleteFailed: 'Vorlage konnte nicht gelöscht werden. Bitte versuche es erneut.',
           },
     [lang]
   );
@@ -219,6 +228,29 @@ function TemplatesPageComponent() {
     }
   };
 
+  const isAdmin = isAdminEmail(user?.email);
+
+  const deleteTemplate = async (tpl: Template) => {
+    if (!user) return;
+    if (!isAdmin) return;
+    if (!tpl.id) return;
+
+    setError(null);
+    const confirmed = typeof window !== 'undefined' ? window.confirm(copy.confirmDelete) : false;
+    if (!confirmed) return;
+
+    setDeletingTemplateId(tpl.id);
+    try {
+      await deleteDoc(doc(db, 'templates', tpl.id));
+      setTemplates((prev) => prev.filter((t) => t.id !== tpl.id));
+    } catch (e) {
+      console.error('Template delete failed', e);
+      setError(copy.deleteFailed);
+    } finally {
+      setDeletingTemplateId(null);
+    }
+  };
+
   if (!mounted || !authReady) {
     return null;
   }
@@ -260,9 +292,9 @@ function TemplatesPageComponent() {
                   <button
                     type="button"
                     onClick={() => void createFromTemplate(tpl)}
-                    disabled={creatingTemplateId === tpl.id}
+                    disabled={creatingTemplateId === tpl.id || deletingTemplateId === tpl.id}
                     className={`mt-4 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                      creatingTemplateId === tpl.id
+                      creatingTemplateId === tpl.id || deletingTemplateId === tpl.id
                         ? 'bg-white/5 text-neutral-500 cursor-wait'
                         : 'bg-white/10 text-neutral-100 hover:bg-white/20'
                     }`}
@@ -270,6 +302,21 @@ function TemplatesPageComponent() {
                   >
                     {creatingTemplateId === tpl.id ? copy.creatingProject : copy.createProject}
                   </button>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => void deleteTemplate(tpl)}
+                      disabled={creatingTemplateId === tpl.id || deletingTemplateId === tpl.id}
+                      className={`mt-2 w-full rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                        creatingTemplateId === tpl.id || deletingTemplateId === tpl.id
+                          ? 'bg-white/5 text-neutral-500 cursor-wait'
+                          : 'bg-rose-500/10 text-rose-100 hover:bg-rose-500/20'
+                      }`}
+                    >
+                      {deletingTemplateId === tpl.id ? copy.deletingTemplate : copy.deleteTemplate}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

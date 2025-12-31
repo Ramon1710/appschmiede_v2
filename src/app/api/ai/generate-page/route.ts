@@ -181,6 +181,93 @@ function buildSimpleChatPage(prompt: string): PageTree {
   };
 }
 
+function buildSimpleTimeTrackingPage(prompt: string, desiredName?: string): PageTree {
+  const background = pickBackground('time');
+  const normalized = (prompt || '').trim();
+  const headline = normalized && normalized.length > 3 ? normalized : 'Zeiterfassung';
+
+  const hero = stack(
+    [
+      {
+        type: 'text',
+        props: { text: headline },
+        style: { fontSize: 28, fontWeight: 700 },
+      },
+      {
+        type: 'text',
+        props: { text: 'Arbeitszeiten pro Projekt erfassen, starten und stoppen.' },
+        style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+        h: 68,
+      },
+    ],
+    86,
+    16
+  );
+
+  const blockStart = (hero.at(-1)?.y ?? 86) + (hero.at(-1)?.h ?? 60) + 22;
+  const content = stack(
+    [
+      { type: 'input', props: { placeholder: 'Projekt / Tätigkeit', inputType: 'text' } },
+      {
+        type: 'container',
+        props: {
+          component: 'time-tracking',
+          timeTracking: {
+            entries: [
+              { id: makeId(), label: 'Projekt Alpha – Konzept', seconds: 5400, endedAt: new Date().toISOString() },
+              { id: makeId(), label: 'Projekt Beta – Entwicklung', seconds: 1800, startedAt: new Date().toISOString() },
+            ],
+          },
+        },
+        h: 220,
+      },
+      { type: 'button', props: { label: 'Start', action: 'none' } },
+      { type: 'button', props: { label: 'Stop', action: 'none' } },
+    ],
+    blockStart,
+    14
+  );
+
+  return {
+    name: desiredName?.trim() || 'Zeiterfassung',
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg: background },
+      children: [...hero, ...content],
+    },
+  };
+}
+
+function buildGenericPage(prompt: string, desiredName?: string): PageTree {
+  const background = pickBackground(prompt || 'generic');
+  const title = (desiredName?.trim() || '').trim() || 'Seite';
+  const headline = prompt && prompt.length > 3 ? prompt : title;
+  const nodes = stack(
+    [
+      { type: 'text', props: { text: headline }, style: { fontSize: 28, fontWeight: 700 } },
+      {
+        type: 'text',
+        props: { text: 'Beschreibe genauer, welche Inhalte du brauchst (z.B. Felder, Tabellen, Aktionen).' },
+        style: { fontSize: 15, lineHeight: 1.5, color: '#cbd5f5' },
+        h: 72,
+      },
+      { type: 'container', props: { component: 'content' }, h: 220 },
+    ],
+    86,
+    16
+  );
+  return {
+    name: title,
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg: background },
+      children: nodes,
+    },
+  };
+}
+
 type GeneratePageBody = {
   prompt?: unknown;
   pageName?: unknown;
@@ -197,14 +284,30 @@ export async function POST(request: Request) {
   const pageName = typeof body.pageName === 'string' ? body.pageName : undefined;
   const userPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 
-  // Fallback ohne OpenAI oder ohne Prompt, aber mit Heuristik auf Chat
+  const normalized = userPrompt.toLowerCase();
+  const wantsAuth = /\blogin\b|anmelden|sign\s*in|registr|sign\s*up|reset|passwort/.test(normalized);
+  const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
+  const wantsTime = /zeiterfassung|arbeitszeit|stunden|stundenzettel|time\s*tracking|tracking\b|timesheet/.test(normalized);
+
+  // Wenn die aktuelle Seite z.B. "Login" heißt, soll das die KI nicht in Richtung Auth ziehen.
+  const pageNameForModel = !pageName
+    ? undefined
+    : wantsAuth
+      ? pageName
+      : /^(login|anmelden|auth|authentication|sign\s*in)$/i.test(pageName.trim())
+        ? undefined
+        : pageName;
+
+  // Fallback ohne OpenAI oder ohne Prompt
   if (!OPENAI_API_KEY || !userPrompt) {
-    const normalized = userPrompt.toLowerCase();
-    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
-    const singlePage = wantsChat
-      ? buildSimpleChatPage(pageName ?? userPrompt)
-      : buildStandardLoginPage(pageName ?? userPrompt);
-    return NextResponse.json({ page: singlePage, source: 'fallback' });
+    const singlePage = wantsAuth
+      ? buildStandardLoginPage(pageName ?? userPrompt)
+      : wantsTime
+        ? buildSimpleTimeTrackingPage(userPrompt, pageName)
+        : wantsChat
+          ? buildSimpleChatPage(pageName ?? userPrompt)
+          : buildGenericPage(userPrompt, pageName);
+    return NextResponse.json({ page: singlePage, source: 'fallback', diagnostics: { reason: !OPENAI_API_KEY ? 'missing_api_key' : 'missing_prompt' } });
   }
 
   try {
@@ -216,6 +319,7 @@ export async function POST(request: Request) {
   - Antworte NUR mit JSON im Format {"name":"...","tree":{...}} ohne Markdown oder Kommentare.
   - Bevorzuge die geforderten Inhalte aus dem Nutzerprompt. Erzeuge KEINE Login- oder Auth-Seite, sofern der Nutzer nicht explizit nach Login/Registration fragt.
   - Falls der Nutzer nach einer Chat-Seite fragt, muss mindestens ein container mit component: "chat" enthalten sein und ein Eingabefeld für Nachrichten.`;
+  - Falls der Nutzer nach Zeiterfassung/Arbeitszeit/Stundenzettel fragt, MUSS mindestens ein container mit component: "time-tracking" enthalten sein und idealerweise Start/Stop-Buttons und ein Eingabefeld für Projekt/Tätigkeit.`;
 
     const completion = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -232,7 +336,7 @@ export async function POST(request: Request) {
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Baue eine Seite für: ${userPrompt}. Seitentitel: ${pageName ?? 'Seite'}. Verwende nur Login/Registrierung, wenn im Prompt gefordert. Wenn Chat gewünscht ist, füge eine Chat-Komponente, Eingabe und Senden-Button hinzu.`,
+            content: `Baue eine Seite für: ${userPrompt}. Seitentitel (falls sinnvoll): ${pageNameForModel ?? 'Seite'}. Verwende Login/Registrierung/Passwort-Felder nur, wenn im Prompt explizit gefordert. Wenn Zeiterfassung gewünscht ist, füge eine Time-Tracking-Komponente hinzu. Wenn Chat gewünscht ist, füge eine Chat-Komponente, Eingabe und Senden-Button hinzu.`,
           },
         ],
       }),
@@ -255,18 +359,26 @@ export async function POST(request: Request) {
       }
     }
 
-    const normalized = userPrompt.toLowerCase();
-    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
-    const page = parsed ?? (wantsChat ? buildSimpleChatPage(pageName ?? userPrompt) : buildStandardLoginPage(pageName ?? userPrompt));
+    const page =
+      parsed ??
+      (wantsAuth
+        ? buildStandardLoginPage(pageName ?? userPrompt)
+        : wantsTime
+          ? buildSimpleTimeTrackingPage(userPrompt, pageName)
+          : wantsChat
+            ? buildSimpleChatPage(pageName ?? userPrompt)
+            : buildGenericPage(userPrompt, pageName));
 
-    return NextResponse.json({ page, source: 'openai' });
+    return NextResponse.json({ page, source: parsed ? 'openai' : 'fallback', diagnostics: parsed ? undefined : { reason: 'parse_failed_or_empty' } });
   } catch (error) {
     console.error('AI generation failed, falling back', error);
-    const normalized = userPrompt.toLowerCase();
-    const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
-    const fallback = wantsChat
-      ? buildSimpleChatPage(pageName ?? userPrompt)
-      : buildStandardLoginPage(pageName ?? userPrompt);
-    return NextResponse.json({ page: fallback, source: 'fallback' });
+    const fallback = wantsAuth
+      ? buildStandardLoginPage(pageName ?? userPrompt)
+      : wantsTime
+        ? buildSimpleTimeTrackingPage(userPrompt, pageName)
+        : wantsChat
+          ? buildSimpleChatPage(pageName ?? userPrompt)
+          : buildGenericPage(userPrompt, pageName);
+    return NextResponse.json({ page: fallback, source: 'fallback', diagnostics: { reason: 'openai_error' } });
   }
 }

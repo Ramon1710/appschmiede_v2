@@ -2402,7 +2402,7 @@ export default function EditorShell({ initialPageId }: Props) {
       if (!response.ok) {
         throw new Error('Die KI konnte die Seite nicht aktualisieren.');
       }
-      const data = (await response.json()) as { page?: PageTree };
+      const data = (await response.json()) as { page?: PageTree; source?: 'openai' | 'fallback'; diagnostics?: { reason?: string } };
       if (!data.page || !data.page.tree) {
         throw new Error('Keine Seitenergebnisse erhalten.');
       }
@@ -2423,8 +2423,15 @@ export default function EditorShell({ initialPageId }: Props) {
       pendingSyncHash.current = hashPage(updatedTree);
       isDirty.current = false;
 
-      setAiPrompt('');
-      setAiOpen(false);
+      if (data.source === 'fallback') {
+        const reason = data.diagnostics?.reason ? ` (${data.diagnostics.reason})` : '';
+        setAiError(
+          `Hinweis: OpenAI wurde nicht genutzt${reason}. Die Seite wurde mit einem lokalen Fallback-Template erstellt. Prüfe OPENAI_API_KEY und Server-Logs.`
+        );
+      } else {
+        setAiPrompt('');
+        setAiOpen(false);
+      }
     } catch (error) {
       console.error('AI generation failed', error);
       setAiError(error instanceof Error ? error.message : 'Unbekannter Fehler bei der KI-Erstellung.');
