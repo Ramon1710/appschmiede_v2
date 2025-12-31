@@ -1,7 +1,7 @@
 // path: src/app/editor/_components/PropertiesPanel.tsx
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   Node as EditorNode,
   NodeProps,
