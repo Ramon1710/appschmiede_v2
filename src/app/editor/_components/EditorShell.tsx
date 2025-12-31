@@ -21,6 +21,7 @@ import useUserProfile from '@/hooks/useUserProfile';
 import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { EditorLayoutPreferences } from '@/types/user';
+import { useI18n } from '@/lib/i18n';
 import {
   clearStoredProjectId,
   getStoredProjectId,
@@ -910,6 +911,8 @@ export default function EditorShell({ initialPageId }: Props) {
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
   const isAdmin = isAdminEmail(user?.email);
+  const { lang } = useI18n();
+  const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
 
   const queryAppTemplateId = searchParams.get('appTemplateId')?.trim() || null;
 
@@ -3956,14 +3959,14 @@ export default function EditorShell({ initialPageId }: Props) {
                       setAiOpen(true);
                     }}
                   >
-                    KI
+                    {tr('KI', 'AI')}
                   </button>
                   {settingsHref ? (
                     <Link
                       href={settingsHref}
                       className="flex-1 min-w-[9rem] rounded border border-white/10 bg-white/5 px-3 py-2 text-center text-xs font-semibold transition hover:bg-white/10"
                     >
-                      ⚙️ Einstellungen
+                      {tr('⚙️ Einstellungen', '⚙️ Settings')}
                     </Link>
                   ) : (
                     <button
@@ -3971,13 +3974,13 @@ export default function EditorShell({ initialPageId }: Props) {
                       disabled
                       className="flex-1 min-w-[9rem] rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-400"
                     >
-                      ⚙️ Einstellungen
+                      {tr('⚙️ Einstellungen', '⚙️ Settings')}
                     </button>
                   )}
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
-                  <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
-                  <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? 'Kein Projekt geladen'}</div>
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Projekt', 'Project')}</p>
+                  <div className="mt-2 text-sm font-semibold text-neutral-50">{project?.name ?? tr('Kein Projekt geladen', 'No project loaded')}</div>
                   {project?.description && <p className="text-xs text-neutral-400">{project.description}</p>}
                   <div className="mt-3 flex gap-2">
                     <select
@@ -3987,7 +3990,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       disabled={!pages.length}
                     >
                       {pages.length === 0 ? (
-                        <option value="">Keine Seiten vorhanden</option>
+                        <option value="">{tr('Keine Seiten vorhanden', 'No pages available')}</option>
                       ) : (
                         pages.map((p) => (
                           <option key={p.id} value={p.id}>{p.name}</option>
@@ -4000,7 +4003,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       className="rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-neutral-200 transition hover:bg-white/10 disabled:opacity-40"
                       disabled={!currentPageId}
                     >
-                      Umbenennen
+                      {tr('Umbenennen', 'Rename')}
                     </button>
                   </div>
                   <div className="mt-2 flex items-center gap-2">
@@ -4009,18 +4012,19 @@ export default function EditorShell({ initialPageId }: Props) {
                       disabled={!_projectId || !currentPageId || pages.length <= 1 || deletingPage}
                       onClick={handleDeleteCurrentPage}
                     >
-                      {deletingPage ? 'Lösche…' : '- Seite'}
+                      {deletingPage ? tr('Lösche…', 'Deleting…') : tr('- Seite', '- Page')}
                     </button>
                     <button
                       className="flex-1 rounded border border-white/10 bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
                       onClick={async () => {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
-                        const id = await createPage(_projectId, `Seite ${idx}`);
-                        handlePageSelection(id || null, { placeholderName: `Seite ${idx}` });
+                        const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
+                        const id = await createPage(_projectId, defaultName);
+                        handlePageSelection(id || null, { placeholderName: defaultName });
                       }}
                     >
-                      + Seite
+                      {tr('+ Seite', '+ Page')}
                     </button>
                   </div>
                 </div>
@@ -4029,16 +4033,16 @@ export default function EditorShell({ initialPageId }: Props) {
                 <section className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-4" data-tour-id="editor-toolbox">
                   <div className="flex w-full items-center justify-between text-left">
                     <div>
-                      <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
-                      <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Elemente', 'Elements')}</p>
+                      <p className="text-sm font-semibold text-white">{tr('Bausteine & Vorlagen', 'Blocks & templates')}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-1 flex-col overflow-hidden">
                     <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
-                        { id: 'components', label: 'Bausteine' },
-                        { id: 'quick-buttons', label: 'Fertige Buttons' },
-                        { id: 'templates', label: 'Vorlagen' },
+                        { id: 'components', label: tr('Bausteine', 'Blocks') },
+                        { id: 'quick-buttons', label: tr('Fertige Buttons', 'Quick buttons') },
+                        { id: 'templates', label: tr('Vorlagen', 'Templates') },
                       ].map((tab) => (
                         <button
                           key={tab.id}
@@ -4081,8 +4085,8 @@ export default function EditorShell({ initialPageId }: Props) {
               <div className="sticky top-0 z-20 border-b border-white/10 bg-[#05070f]/95 px-4 py-4 text-white shadow-xl backdrop-blur" data-tour-id="editor-actions">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Projekt</p>
-                    <p className="text-base font-semibold text-white">{project?.name ?? 'Unbenanntes Projekt'}</p>
+                    <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Projekt', 'Project')}</p>
+                    <p className="text-base font-semibold text-white">{project?.name ?? tr('Unbenanntes Projekt', 'Untitled project')}</p>
                     {project?.description && <p className="text-xs text-neutral-400">{project.description}</p>}
                   </div>
                 </div>
@@ -4109,7 +4113,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     }}
                   >
                     <span className="text-base">✨</span>
-                    <span>KI</span>
+                    <span>{tr('KI', 'AI')}</span>
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 text-xs">
@@ -4136,11 +4140,12 @@ export default function EditorShell({ initialPageId }: Props) {
                     onClick={async () => {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
-                      const id = await createPage(_projectId, `Seite ${idx}`);
-                      handlePageSelection(id || null, { placeholderName: `Seite ${idx}` });
+                      const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
+                      const id = await createPage(_projectId, defaultName);
+                      handlePageSelection(id || null, { placeholderName: defaultName });
                     }}
                   >
-                    + Seite
+                    {tr('+ Seite', '+ Page')}
                   </button>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-xs">
@@ -4149,14 +4154,14 @@ export default function EditorShell({ initialPageId }: Props) {
                     disabled={!_projectId || !currentPageId || pages.length <= 1 || deletingPage}
                     onClick={handleDeleteCurrentPage}
                   >
-                    {deletingPage ? 'Lösche…' : '- Seite'}
+                    {deletingPage ? tr('Lösche…', 'Deleting…') : tr('- Seite', '- Page')}
                   </button>
                   {settingsHref ? (
                     <Link
                       href={settingsHref}
                       className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/10 px-3 py-2 font-semibold text-xs transition hover:bg-white/20"
                     >
-                      ⚙️ Einstellungen
+                      {tr('⚙️ Einstellungen', '⚙️ Settings')}
                     </Link>
                   ) : (
                     <button
@@ -4164,7 +4169,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       disabled
                       className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 font-semibold text-neutral-400"
                     >
-                      ⚙️ Einstellungen
+                      {tr('⚙️ Einstellungen', '⚙️ Settings')}
                     </button>
                   )}
                 </div>
@@ -4180,16 +4185,16 @@ export default function EditorShell({ initialPageId }: Props) {
                   <div className="rounded-2xl border border-white/10 bg-[#070a13]/90 p-4 shadow-2xl">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Elemente</p>
-                        <p className="text-sm font-semibold text-white">Bausteine & Vorlagen</p>
+                          <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Elemente', 'Elements')}</p>
+                          <p className="text-sm font-semibold text-white">{tr('Bausteine & Vorlagen', 'Blocks & templates')}</p>
                       </div>
-                      <span className="text-[11px] text-neutral-400">Tippen zum Einfügen</span>
+                        <span className="text-[11px] text-neutral-400">{tr('Tippen zum Einfügen', 'Tap to insert')}</span>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
-                        { id: 'components', label: 'Bausteine' },
-                        { id: 'quick-buttons', label: 'Fertige Buttons' },
-                        { id: 'templates', label: 'Vorlagen' },
+                          { id: 'components', label: tr('Bausteine', 'Blocks') },
+                          { id: 'quick-buttons', label: tr('Fertige Buttons', 'Quick buttons') },
+                          { id: 'templates', label: tr('Vorlagen', 'Templates') },
                       ].map((tab) => (
                         <button
                           key={tab.id}

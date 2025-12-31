@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n';
 import type {
   Node as EditorNode,
   NodeProps,
@@ -580,6 +581,9 @@ export default function PropertiesPanel({
   backgroundSyncEnabled,
   onToggleBackgroundSync,
 }: PropertiesPanelProps) {
+  const { lang } = useI18n();
+  const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
+
   const imageFileInput = useRef<HTMLInputElement | null>(null);
   const backgroundFileInput = useRef<HTMLInputElement | null>(null);
   const backgroundLayerInput = useRef<HTMLInputElement | null>(null);
@@ -617,7 +621,7 @@ export default function PropertiesPanel({
       pages
         .filter((page) => typeof page?.id === 'string' && page.id.length > 0)
         .map((page) => ({ id: page.id as string, name: page.name }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'de')),
+        .sort((a, b) => a.name.localeCompare(b.name, lang === 'en' ? 'en' : 'de')),
     [pages]
   );
 
@@ -1769,7 +1773,7 @@ export default function PropertiesPanel({
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between text-[11px] text-neutral-500">
-                        <span>Vertikal</span>
+                        <span>{tr('Vertikal', 'Vertical')}</span>
                         <span>{Math.round(backgroundPosYPercent)}%</span>
                       </div>
                       <input
@@ -1787,32 +1791,32 @@ export default function PropertiesPanel({
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(0, 0)}
-                      >Links oben</button>
+                      >{tr('Links oben', 'Top left')}</button>
                       <button
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(50, 50)}
-                      >Mitte</button>
+                      >{tr('Mitte', 'Center')}</button>
                       <button
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(100, 100)}
-                      >Rechts unten</button>
+                      >{tr('Rechts unten', 'Bottom right')}</button>
                       <button
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(0, 50)}
-                      >Links Mitte</button>
+                      >{tr('Links Mitte', 'Left middle')}</button>
                       <button
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(50, 0)}
-                      >Oben Mitte</button>
+                      >{tr('Oben Mitte', 'Top middle')}</button>
                       <button
                         type="button"
                         className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                         onClick={() => applyPositionPreset(100, 50)}
-                      >Rechts Mitte</button>
+                      >{tr('Rechts Mitte', 'Right middle')}</button>
                     </div>
                   </div>
                 </div>
@@ -1892,7 +1896,7 @@ export default function PropertiesPanel({
                         <div className="space-y-2 border-t border-white/10 pt-2">
                           <div className="space-y-1 text-[11px] text-neutral-400">
                             <div className="flex items-center justify-between">
-                              <span>Horizontal</span>
+                              <span>{tr('Horizontal', 'Horizontal')}</span>
                               <span>{layer.positionX}%</span>
                             </div>
                             <input
@@ -1907,7 +1911,7 @@ export default function PropertiesPanel({
                           </div>
                           <div className="space-y-1 text-[11px] text-neutral-400">
                             <div className="flex items-center justify-between">
-                              <span>Vertikal</span>
+                              <span>{tr('Vertikal', 'Vertical')}</span>
                               <span>{layer.positionY}%</span>
                             </div>
                             <input
@@ -1922,7 +1926,7 @@ export default function PropertiesPanel({
                           </div>
                           <div className="space-y-1 text-[11px] text-neutral-400">
                             <div className="flex items-center justify-between">
-                              <span>Skalierung</span>
+                              <span>{tr('Skalierung', 'Scale')}</span>
                               <span>{layer.size}%</span>
                             </div>
                             <input
@@ -1955,24 +1959,30 @@ export default function PropertiesPanel({
       {!node && (
         <div className="flex flex-col items-center justify-center h-64 text-neutral-400 text-center">
           <div className="text-4xl mb-2">🎨</div>
-          <div>Kein Element ausgewählt</div>
-          <div className="text-xs mt-2">Wähle ein Element aus oder passe oben den Seitenhintergrund an.</div>
+          <div>{tr('Kein Element ausgewählt', 'No element selected')}</div>
+          <div className="text-xs mt-2">
+            {tr('Wähle ein Element aus oder passe oben den Seitenhintergrund an.', 'Select an element or adjust the page background above.')}
+          </div>
         </div>
       )}
 
       {!node && <div className="border-t border-[#222]" />}
 
-      {!node && <div className="text-xs text-neutral-500">Tipp: Wähle ein Element auf der Leinwand, um weitere Eigenschaften anzuzeigen.</div>}
+      {!node && (
+        <div className="text-xs text-neutral-500">
+          {tr('Tipp: Wähle ein Element auf der Leinwand, um weitere Eigenschaften anzuzeigen.', 'Tip: Select an element on the canvas to see more properties.')}
+        </div>
+      )}
 
       {!node && <div className="h-px" />}
 
       {!node ? null : (
         <>
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Position & Größe</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tr('Position & Größe', 'Position & size')}</div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-gray-400">X</label>
+                <label className="text-xs text-gray-400">{tr('X', 'X')}</label>
                 <input
                   type="number"
                   className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -1981,7 +1991,7 @@ export default function PropertiesPanel({
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400">Y</label>
+                <label className="text-xs text-gray-400">{tr('Y', 'Y')}</label>
                 <input
                   type="number"
                   className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -1990,7 +2000,7 @@ export default function PropertiesPanel({
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400">Breite</label>
+                <label className="text-xs text-gray-400">{tr('Breite', 'Width')}</label>
                 <input
                   type="number"
                   className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -1999,7 +2009,7 @@ export default function PropertiesPanel({
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-400">Höhe</label>
+                <label className="text-xs text-gray-400">{tr('Höhe', 'Height')}</label>
                 <input
                   type="number"
                   className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -2010,45 +2020,45 @@ export default function PropertiesPanel({
             </div>
 
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ausrichten</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tr('Ausrichten', 'Align')}</div>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <button
                   type="button"
                   className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                   onClick={() => alignNodePreset('left-middle')}
-                >Links Mitte</button>
+                >{tr('Links Mitte', 'Left middle')}</button>
                 <button
                   type="button"
                   className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                   onClick={() => alignNodePreset('center')}
-                >Mitte</button>
+                >{tr('Mitte', 'Center')}</button>
                 <button
                   type="button"
                   className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                   onClick={() => alignNodePreset('right-middle')}
-                >Rechts Mitte</button>
+                >{tr('Rechts Mitte', 'Right middle')}</button>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
                   type="button"
                   className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                   onClick={() => alignNodePreset('top-middle')}
-                >Oben Mitte</button>
+                >{tr('Oben Mitte', 'Top middle')}</button>
                 <button
                   type="button"
                   className="rounded border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-neutral-100 hover:bg-white/10"
                   onClick={() => alignNodePreset('bottom-middle')}
-                >Unten Mitte</button>
+                >{tr('Unten Mitte', 'Bottom middle')}</button>
               </div>
             </div>
           </div>
 
           {node && (
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Transparenz</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tr('Transparenz', 'Transparency')}</div>
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>Deckkraft</span>
+                  <span>{tr('Deckkraft', 'Opacity')}</span>
                   <span>{nodeOpacityPercent}%</span>
                 </div>
                 <input
@@ -2074,18 +2084,18 @@ export default function PropertiesPanel({
                     type="button"
                     className="ml-auto rounded border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
                     onClick={() => handleOpacityUpdate(100)}
-                  >Reset</button>
+                  >{tr('Zurücksetzen', 'Reset')}</button>
                 </div>
-                <p className="text-[11px] text-neutral-500">Reduziere die Deckkraft für transparente Überlagerungen.</p>
+                <p className="text-[11px] text-neutral-500">{tr('Reduziere die Deckkraft für transparente Überlagerungen.', 'Reduce opacity for transparent overlays.')}</p>
               </div>
             </div>
           )}
 
           {node.type === 'text' && (
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text</div>
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tr('Text', 'Text')}</div>
               <div>
-                <label className="text-xs text-gray-400">Inhalt</label>
+                <label className="text-xs text-gray-400">{tr('Inhalt', 'Content')}</label>
                 <textarea
                   className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm min-h-[60px]"
                   value={node.props?.text ?? ''}
@@ -2631,7 +2641,7 @@ export default function PropertiesPanel({
                     onChange={handleContainerBackgroundFile}
                   />
                   <div>
-                    <label className="text-xs text-gray-400">Vorschau</label>
+                    <label className="text-xs text-gray-400">{tr('Vorschau', 'Preview')}</label>
                     <div
                       className="mt-1 h-20 rounded-lg border border-white/10 bg-neutral-900"
                       style={chatBackgroundPreviewStyle}
@@ -2642,7 +2652,7 @@ export default function PropertiesPanel({
                     <div className="space-y-2 border-t border-white/10 pt-2">
                       <div className="space-y-1 text-[11px] text-neutral-400">
                         <div className="flex items-center justify-between">
-                          <span>Horizontal</span>
+                          <span>{tr('Horizontal', 'Horizontal')}</span>
                           <span>{chatBackgroundPosX}%</span>
                         </div>
                         <input
@@ -2657,7 +2667,7 @@ export default function PropertiesPanel({
                       </div>
                       <div className="space-y-1 text-[11px] text-neutral-400">
                         <div className="flex items-center justify-between">
-                          <span>Vertikal</span>
+                          <span>{tr('Vertikal', 'Vertical')}</span>
                           <span>{chatBackgroundPosY}%</span>
                         </div>
                         <input
@@ -2672,7 +2682,7 @@ export default function PropertiesPanel({
                       </div>
                       <div className="space-y-1 text-[11px] text-neutral-400">
                         <div className="flex items-center justify-between">
-                          <span>Skalierung</span>
+                          <span>{tr('Skalierung', 'Scale')}</span>
                           <span>{chatBackgroundSize}%</span>
                         </div>
                         <input
@@ -2734,20 +2744,20 @@ export default function PropertiesPanel({
                         setProps({ qrImageOverride: nextValue.trim() ? nextValue : undefined });
                       }}
                     />
-                    <p className="text-[11px] text-neutral-500">Lade alternativ ein eigenes QR-Bild hoch.</p>
+                    <p className="text-[11px] text-neutral-500">{tr('Lade alternativ ein eigenes QR-Bild hoch.', 'Alternatively, upload your own QR image.')}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       className="flex-1 rounded border border-blue-400/40 bg-blue-500/20 px-3 py-1.5 text-xs font-semibold text-blue-50 transition hover:bg-blue-500/30"
                       onClick={() => qrImageFileInput.current?.click()}
-                    >Eigenes Bild hochladen</button>
+                    >{tr('Eigenes Bild hochladen', 'Upload your own image')}</button>
                     <button
                       type="button"
                       className="flex-1 rounded border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-neutral-200 transition enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                       onClick={() => setProps({ qrImageOverride: undefined })}
                       disabled={!qrHasCustomImage}
-                    >Auf automatisch zurücksetzen</button>
+                    >{tr('Auf automatisch zurücksetzen', 'Reset to automatic')}</button>
                   </div>
                   <input
                     ref={qrImageFileInput}
@@ -2757,7 +2767,7 @@ export default function PropertiesPanel({
                     onChange={handleQrImageFile}
                   />
                   <div>
-                    <label className="text-xs text-gray-400">Vorschau</label>
+                    <label className="text-xs text-gray-400">{tr('Vorschau', 'Preview')}</label>
                     <div
                       className="mt-2 flex flex-col items-center gap-2 rounded-lg border border-white/10 p-3"
                       style={{ backgroundColor: qrBackgroundColorValue }}
@@ -2765,17 +2775,17 @@ export default function PropertiesPanel({
                       <div className="rounded-xl bg-white p-2">
                         <img
                           src={qrPreviewImage}
-                          alt="QR Code Vorschau"
+                          alt={tr('QR Code Vorschau', 'QR code preview')}
                           className="h-32 w-32 object-contain"
                         />
                       </div>
                       {qrUrlValue?.trim() && (
                         <div className="text-center text-[10px] text-blue-100/80 break-all">
-                          Scan: {qrUrlValue.trim()}
+                          {tr('Scan:', 'Scan:')} {qrUrlValue.trim()}
                         </div>
                       )}
                       {qrHasCustomImage && (
-                        <div className="text-[10px] uppercase tracking-[0.2em] text-blue-200">Eigenes QR-Bild</div>
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-blue-200">{tr('Eigenes QR-Bild', 'Custom QR image')}</div>
                       )}
                     </div>
                   </div>

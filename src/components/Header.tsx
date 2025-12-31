@@ -14,11 +14,12 @@ export default function Header() {
   const { profile } = useUserProfile(user?.uid);
   const { t, lang, setLang } = useI18n();
   const coinsValue = profile?.coinsBalance;
+  const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
   const formattedCoins =
     typeof coinsValue === 'number'
       ? coinsValue >= Number.MAX_SAFE_INTEGER
         ? '∞'
-        : coinsValue.toLocaleString('de-DE')
+        : coinsValue.toLocaleString(numberLocale)
       : null;
   const [open, setOpen] = useState(false);
   const [hasProjects, setHasProjects] = useState(true);
@@ -48,6 +49,13 @@ export default function Header() {
   }, [user?.uid]);
 
   const editorDisabled = Boolean(user) && !hasProjects;
+  const editorDisabledTitle =
+    lang === 'en'
+      ? 'Create a project first before opening the editor.'
+      : 'Lege zuerst ein Projekt an, bevor du den Editor öffnest.';
+
+  const accountLabel = lang === 'en' ? 'Account' : 'Konto';
+  const profileLabel = lang === 'en' ? 'Personal details' : 'Persönliche Daten';
 
   return (
     <header className="relative z-40 w-full flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0b0b0f]/95 backdrop-blur-md shadow-lg">
@@ -77,7 +85,7 @@ export default function Header() {
           className={`hover:text-cyan-400 transition text-sm uppercase tracking-wide ${
             editorDisabled ? 'cursor-not-allowed text-neutral-500 opacity-60 hover:text-neutral-500' : ''
           }`}
-          title={editorDisabled ? 'Lege zuerst ein Projekt an, bevor du den Editor öffnest.' : undefined}
+          title={editorDisabled ? editorDisabledTitle : undefined}
         >
           {t('nav_editor')}
         </Link>
@@ -136,13 +144,13 @@ export default function Header() {
             </button>
             {open && (
               <div className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-[#10101a] p-3 shadow-2xl z-50">
-                <div className="px-2 pb-2 text-xs uppercase tracking-widest text-neutral-500">Konto</div>
+                <div className="px-2 pb-2 text-xs uppercase tracking-widest text-neutral-500">{accountLabel}</div>
                 <Link
                   href="/profile"
                   className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10 transition"
                   onClick={() => setOpen(false)}
                 >
-                  Persönliche Daten
+                  {profileLabel}
                 </Link>
                 <div className="mt-2 border-t border-white/10 pt-2">
                   <LogoutButton />

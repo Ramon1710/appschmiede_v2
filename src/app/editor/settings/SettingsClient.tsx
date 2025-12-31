@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
+import { useI18n } from '@/lib/i18n';
 
 type Role = "owner" | "admin" | "editor" | "viewer";
 type RegistrationMode = "open" | "invite" | "approval";
@@ -49,27 +50,51 @@ type Settings = {
   };
 };
 
-const roleLabels: Record<Role, { label: string; description: string }> = {
-  owner: { label: "Owner", description: "Alle Rechte inklusive Abrechnung." },
-  admin: { label: "Admin", description: "Projekte verwalten, Mitglieder einladen." },
-  editor: { label: "Editor", description: "Seiten bearbeiten & veröffentlichen." },
-  viewer: { label: "Viewer", description: "Nur lesen, keine Änderungen." },
-};
+const getRoleLabels = (lang: 'de' | 'en'): Record<Role, { label: string; description: string }> =>
+  lang === 'en'
+    ? {
+        owner: { label: 'Owner', description: 'All permissions including billing.' },
+        admin: { label: 'Admin', description: 'Manage projects, invite members.' },
+        editor: { label: 'Editor', description: 'Edit pages & publish.' },
+        viewer: { label: 'Viewer', description: 'Read-only, no changes.' },
+      }
+    : {
+        owner: { label: 'Owner', description: 'Alle Rechte inklusive Abrechnung.' },
+        admin: { label: 'Admin', description: 'Projekte verwalten, Mitglieder einladen.' },
+        editor: { label: 'Editor', description: 'Seiten bearbeiten & veröffentlichen.' },
+        viewer: { label: 'Viewer', description: 'Nur lesen, keine Änderungen.' },
+      };
 
-const registrationModes: Array<{ value: RegistrationMode; title: string; description: string }> = [
-  { value: "open", title: "Offene Registrierung", description: "Jeder mit dem Link darf sich registrieren." },
-  { value: "invite", title: "Nur Einladung", description: "Neue Nutzer:innen benötigen eine Einladung." },
-  { value: "approval", title: "Genehmigungspflicht", description: "Registrierungen müssen freigeschaltet werden." },
-];
+const getRegistrationModes = (
+  lang: 'de' | 'en'
+): Array<{ value: RegistrationMode; title: string; description: string }> =>
+  lang === 'en'
+    ? [
+        { value: 'open', title: 'Open registration', description: 'Anyone with the link can register.' },
+        { value: 'invite', title: 'Invite only', description: 'New users need an invitation.' },
+        { value: 'approval', title: 'Approval required', description: 'Registrations must be approved.' },
+      ]
+    : [
+        { value: 'open', title: 'Offene Registrierung', description: 'Jeder mit dem Link darf sich registrieren.' },
+        { value: 'invite', title: 'Nur Einladung', description: 'Neue Nutzer:innen benötigen eine Einladung.' },
+        { value: 'approval', title: 'Genehmigungspflicht', description: 'Registrierungen müssen freigeschaltet werden.' },
+      ];
 
-const notificationSummaries: Array<{ value: NotificationSummary; label: string }> = [
-  { value: "realtime", label: "Sofort" },
-  { value: "daily", label: "Täglich" },
-  { value: "weekly", label: "Wöchentlich" },
-];
+const getNotificationSummaries = (lang: 'de' | 'en'): Array<{ value: NotificationSummary; label: string }> =>
+  lang === 'en'
+    ? [
+        { value: 'realtime', label: 'Instant' },
+        { value: 'daily', label: 'Daily' },
+        { value: 'weekly', label: 'Weekly' },
+      ]
+    : [
+        { value: 'realtime', label: 'Sofort' },
+        { value: 'daily', label: 'Täglich' },
+        { value: 'weekly', label: 'Wöchentlich' },
+      ];
 
-const createDefaultSettings = (): Settings => ({
-  projectLabel: "Mein Projekt",
+const createDefaultSettings = (lang: 'de' | 'en' = 'de'): Settings => ({
+  projectLabel: lang === 'en' ? 'My project' : 'Mein Projekt',
   defaultRole: "editor",
   roles: { owner: true, admin: true, editor: true, viewer: true },
   registration: {
@@ -136,13 +161,19 @@ const mergeSettings = (incoming: Partial<Settings>): Settings => {
 };
 
 export default function SettingsClient() {
+  const { lang } = useI18n();
+  const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const roleLabels = useMemo(() => getRoleLabels(lang), [lang]);
+  const registrationModes = useMemo(() => getRegistrationModes(lang), [lang]);
+  const notificationSummaries = useMemo(() => getNotificationSummaries(lang), [lang]);
+
   const searchParams = useSearchParams();
   const projectId = searchParams.get("projectId");
   const storageKey = useMemo(
     () => `appschmiede-settings-${projectId ?? "global"}`,
     [projectId]
   );
-  const [settings, setSettings] = useState<Settings>(() => createDefaultSettings());
+  const [settings, setSettings] = useState<Settings>(() => createDefaultSettings(lang));
   const [savingState, setSavingState] = useState<"idle" | "saved">("idle");
   const [storageReady, setStorageReady] = useState(false);
 
@@ -155,11 +186,11 @@ export default function SettingsClient() {
         const parsed = JSON.parse(raw) as Partial<Settings>;
         setSettings(mergeSettings(parsed));
       } else {
-        setSettings(createDefaultSettings());
+        setSettings(createDefaultSettings(lang));
       }
     } catch (error) {
-      console.warn("Konnte gespeicherte Einstellungen nicht lesen", error);
-      setSettings(createDefaultSettings());
+      console.warn(lang === 'en' ? 'Could not read saved settings' : 'Konnte gespeicherte Einstellungen nicht lesen', error);
+      setSettings(createDefaultSettings(lang));
     } finally {
       setStorageReady(true);
     }
@@ -170,7 +201,7 @@ export default function SettingsClient() {
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(settings));
     } catch (error) {
-      console.warn("Konnte Einstellungen nicht speichern", error);
+      console.warn(lang === 'en' ? 'Could not save settings' : 'Konnte Einstellungen nicht speichern', error);
     }
   }, [settings, storageKey, storageReady]);
 
@@ -214,11 +245,41 @@ export default function SettingsClient() {
   };
 
   const handleReset = () => {
-    setSettings(createDefaultSettings());
+    setSettings(createDefaultSettings(lang));
     setSavingState("idle");
   };
 
   const editorHref = projectId ? `/editor?projectId=${projectId}` : "/editor";
+
+  const registrationFields = lang === 'en'
+    ? [
+        { key: 'requireCompany', label: 'Require company name' },
+        { key: 'requireAddress', label: 'Require address' },
+        { key: 'requirePhone', label: 'Require phone number' },
+        { key: 'requireTaxId', label: 'Store tax ID' },
+      ]
+    : [
+        { key: 'requireCompany', label: 'Firmennamen abfragen' },
+        { key: 'requireAddress', label: 'Adresse verpflichtend' },
+        { key: 'requirePhone', label: 'Telefonnummer anfordern' },
+        { key: 'requireTaxId', label: 'Steuer-ID speichern' },
+      ];
+
+  const loginOptions = lang === 'en'
+    ? [
+        { key: 'password', label: 'Email & password' },
+        { key: 'magicLink', label: 'Magic link' },
+        { key: 'passkey', label: 'Passkeys / FIDO2' },
+        { key: 'social', label: 'Social login' },
+        { key: 'twoFactor', label: 'Require 2FA' },
+      ]
+    : [
+        { key: 'password', label: 'E-Mail & Passwort' },
+        { key: 'magicLink', label: 'Magic Link' },
+        { key: 'passkey', label: 'Passkeys / FIDO2' },
+        { key: 'social', label: 'Social Login' },
+        { key: 'twoFactor', label: '2FA Pflicht' },
+      ];
 
   return (
     <div className="min-h-screen bg-[#05070e] text-neutral-100 flex flex-col">
@@ -227,10 +288,13 @@ export default function SettingsClient() {
         <div className="mx-auto max-w-5xl px-6 py-10 space-y-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-emerald-300/80">Globale App-Einstellungen</p>
-              <h1 className="text-3xl font-semibold">Projektweite Konfiguration</h1>
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-300/80">{tr('Globale App-Einstellungen', 'Global app settings')}</p>
+              <h1 className="text-3xl font-semibold">{tr('Projektweite Konfiguration', 'Project-wide configuration')}</h1>
               <p className="text-sm text-neutral-400">
-                Definiere Berechtigungen, Registrierungs- & Login-Formate sowie Push-Benachrichtigungen für deine App.
+                {tr(
+                  'Definiere Berechtigungen, Registrierungs- & Login-Formate sowie Push-Benachrichtigungen für deine App.',
+                  'Define permissions, registration & login formats, and push notifications for your app.'
+                )}
                 {projectId ? ` Aktuelles Projekt: ${projectId}` : ""}
               </p>
             </div>
@@ -238,7 +302,7 @@ export default function SettingsClient() {
               href={editorHref}
               className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
             >
-              ← Zurück zum Editor
+              {tr('← Zurück zum Editor', '← Back to editor')}
             </Link>
           </div>
 
@@ -246,8 +310,13 @@ export default function SettingsClient() {
             {/* Sections identical to previous implementation */}
             <section className="rounded-2xl border border-white/10 bg-[#0b0b12] p-6 space-y-4">
               <div className="flex flex-col gap-2">
-                <div className="text-sm font-semibold text-neutral-200">Rechte & Rollen</div>
-                <p className="text-sm text-neutral-400">Aktiviere die Rollen, die deinem Team zur Verfügung stehen sollen und definiere eine Standardrolle.</p>
+                <div className="text-sm font-semibold text-neutral-200">{tr('Rechte & Rollen', 'Permissions & roles')}</div>
+                <p className="text-sm text-neutral-400">
+                  {tr(
+                    'Aktiviere die Rollen, die deinem Team zur Verfügung stehen sollen und definiere eine Standardrolle.',
+                    'Enable the roles your team should have access to and define a default role.'
+                  )}
+                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {Object.entries(roleLabels).map(([key, meta]) => (
@@ -275,7 +344,7 @@ export default function SettingsClient() {
                 ))}
               </div>
               <div>
-                <label className="text-xs uppercase tracking-widest text-neutral-500">Standardrolle</label>
+                <label className="text-xs uppercase tracking-widest text-neutral-500">{tr('Standardrolle', 'Default role')}</label>
                 <select
                   className="mt-1 w-full rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-sm"
                   value={settings.defaultRole}
@@ -290,8 +359,13 @@ export default function SettingsClient() {
 
             <section className="rounded-2xl border border-white/10 bg-[#0b0b12] p-6 space-y-4">
               <div className="flex flex-col gap-2">
-                <div className="text-sm font-semibold text-neutral-200">Registrierungs-Workflow</div>
-                <p className="text-sm text-neutral-400">Lege fest, wie Nutzer:innen beitreten und welche Daten verpflichtend sind.</p>
+                <div className="text-sm font-semibold text-neutral-200">{tr('Registrierungs-Workflow', 'Registration workflow')}</div>
+                <p className="text-sm text-neutral-400">
+                  {tr(
+                    'Lege fest, wie Nutzer:innen beitreten und welche Daten verpflichtend sind.',
+                    'Define how users join and which data is required.'
+                  )}
+                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 {registrationModes.map((mode) => (
@@ -323,12 +397,7 @@ export default function SettingsClient() {
                 ))}
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { key: "requireCompany", label: "Firmennamen abfragen" },
-                  { key: "requireAddress", label: "Adresse verpflichtend" },
-                  { key: "requirePhone", label: "Telefonnummer anfordern" },
-                  { key: "requireTaxId", label: "Steuer-ID speichern" },
-                ].map((field) => (
+                {registrationFields.map((field) => (
                   <label key={field.key} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
@@ -351,17 +420,13 @@ export default function SettingsClient() {
 
             <section className="rounded-2xl border border-white/10 bg-[#0b0b12] p-6 space-y-4">
               <div className="flex flex-col gap-2">
-                <div className="text-sm font-semibold text-neutral-200">Login & Sicherheit</div>
-                <p className="text-sm text-neutral-400">Kombiniere die Login-Methoden, die deine App unterstützen soll.</p>
+                <div className="text-sm font-semibold text-neutral-200">{tr('Login & Sicherheit', 'Login & security')}</div>
+                <p className="text-sm text-neutral-400">
+                  {tr('Kombiniere die Login-Methoden, die deine App unterstützen soll.', 'Combine the login methods your app should support.')}
+                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                {[
-                  { key: "password", label: "E-Mail & Passwort" },
-                  { key: "magicLink", label: "Magic Link" },
-                  { key: "passkey", label: "Passkeys / FIDO2" },
-                  { key: "social", label: "Social Login" },
-                  { key: "twoFactor", label: "2FA Pflicht" },
-                ].map((option) => (
+                {loginOptions.map((option) => (
                   <label key={option.key} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm">
                     <input
                       type="checkbox"
@@ -381,7 +446,7 @@ export default function SettingsClient() {
                 ))}
               </div>
               <div>
-                <label className="text-xs uppercase tracking-widest text-neutral-500">Session-Timeout (Minuten)</label>
+                <label className="text-xs uppercase tracking-widest text-neutral-500">{tr('Session-Timeout (Minuten)', 'Session timeout (minutes)')}</label>
                 <input
                   type="number"
                   min={5}
@@ -400,8 +465,13 @@ export default function SettingsClient() {
 
             <section className="rounded-2xl border border-white/10 bg-[#0b0b12] p-6 space-y-4">
               <div className="flex flex-col gap-2">
-                <div className="text-sm font-semibold text-neutral-200">Push & Benachrichtigungen</div>
-                <p className="text-sm text-neutral-400">Steuere Kanäle, Themen und Ruhezeiten für globale Mitteilungen.</p>
+                <div className="text-sm font-semibold text-neutral-200">{tr('Push & Benachrichtigungen', 'Push & notifications')}</div>
+                <p className="text-sm text-neutral-400">
+                  {tr(
+                    'Steuere Kanäle, Themen und Ruhezeiten für globale Mitteilungen.',
+                    'Control channels, topics and quiet hours for global announcements.'
+                  )}
+                </p>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {(
@@ -437,7 +507,7 @@ export default function SettingsClient() {
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <label className="text-xs uppercase tracking-widest text-neutral-500">Zusammenfassung</label>
+                  <label className="text-xs uppercase tracking-widest text-neutral-500">{tr('Zusammenfassung', 'Summary')}</label>
                   <select
                     className="mt-1 w-full rounded-lg border border-white/10 bg-neutral-900 px-3 py-2 text-sm"
                     value={settings.notifications.summary}
@@ -457,7 +527,7 @@ export default function SettingsClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-widest text-neutral-500">Ruhezeit Start</label>
+                  <label className="text-xs uppercase tracking-widest text-neutral-500">{tr('Ruhezeit Start', 'Quiet hours start')}</label>
                   <input
                     type="time"
                     value={settings.notifications.quietHours.start}
@@ -474,7 +544,7 @@ export default function SettingsClient() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase tracking-widest text-neutral-500">Ruhezeit Ende</label>
+                  <label className="text-xs uppercase tracking-widest text-neutral-500">{tr('Ruhezeit Ende', 'Quiet hours end')}</label>
                   <input
                     type="time"
                     value={settings.notifications.quietHours.end}
@@ -496,9 +566,9 @@ export default function SettingsClient() {
             <div className="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1 text-sm text-neutral-400">
                 {savingState === "saved" ? (
-                  <span className="text-emerald-300">✓ Einstellungen gespeichert (lokal)</span>
+                  <span className="text-emerald-300">{tr('✓ Einstellungen gespeichert (lokal)', '✓ Settings saved (local)')}</span>
                 ) : (
-                  <span>Änderungen werden lokal im Browser gesichert.</span>
+                  <span>{tr('Änderungen werden lokal im Browser gesichert.', 'Changes are stored locally in your browser.')}</span>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
@@ -507,13 +577,13 @@ export default function SettingsClient() {
                   onClick={handleReset}
                   className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
                 >
-                  Zurücksetzen
+                  {tr('Zurücksetzen', 'Reset')}
                 </button>
                 <button
                   type="submit"
                   className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-5 py-2 text-sm font-semibold text-white shadow-lg transition hover:from-emerald-400 hover:to-cyan-400"
                 >
-                  Einstellungen speichern
+                  {tr('Einstellungen speichern', 'Save settings')}
                 </button>
               </div>
             </div>

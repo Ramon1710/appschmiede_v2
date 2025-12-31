@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import type { Page } from '@/types/editor';
+import { useI18n } from '@/lib/i18n';
 
 
 export default function TabsBar({
@@ -19,6 +20,8 @@ onRename: (id:string, name:string)=>void;
 onDelete: (id:string)=>void;
 }){
 const [edit, setEdit] = useState<string|null>(null);
+const { lang } = useI18n();
+const addLabel = lang === 'en' ? '+ Page' : '+ Seite';
 return (
 <div className="flex items-center gap-2 overflow-auto no-scrollbar">
 {pages.map(p=> (
@@ -32,7 +35,7 @@ return (
 <button onClick={()=>onDelete(p.id)} className="text-xs opacity-70 hover:opacity-100">✖</button>
 </div>
 ))}
-<button onClick={onAdd} className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20">+ Seite</button>
+<button onClick={onAdd} className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20">{addLabel}</button>
 </div>
 );
 }
