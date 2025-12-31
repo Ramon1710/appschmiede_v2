@@ -5,8 +5,8 @@ import I18nRoot from './I18nRoot';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
   const initialLang: Lang = raw === 'en' ? 'en' : 'de';
 
