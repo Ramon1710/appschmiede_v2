@@ -1777,10 +1777,20 @@ export default function EditorShell({ initialPageId }: Props) {
     const buildHomeGrid = (buttonCount: number, columns: number, labels: Array<{ label: string; icon: string }>) => {
       background = 'linear-gradient(155deg,#0b0b0f,#0b1220,#111827)';
 
+      const gapX = columns >= 4 ? 8 : 12;
+      const gapY = 12;
+      const pageWidth = CANVAS_FRAME.width;
+      const pageHeight = CANVAS_FRAME.height;
+      const minMarginX = 24;
+      const availableWidth = pageWidth - minMarginX * 2;
+      const tileW = Math.floor((availableWidth - gapX * (columns - 1)) / columns);
+      const gridWidth = tileW * columns + gapX * (columns - 1);
+      const marginX = Math.max(minMarginX, Math.round((pageWidth - gridWidth) / 2));
+
       const hero = createNode('image', {
-        x: 32,
+        x: marginX,
         y: 28,
-        w: 296,
+        w: gridWidth,
         h: 170,
         props: {
           src: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80',
@@ -1788,12 +1798,6 @@ export default function EditorShell({ initialPageId }: Props) {
       });
 
       const startY = (hero.y ?? 28) + (hero.h ?? 170) + 24;
-      const gapX = columns >= 4 ? 8 : 12;
-      const gapY = 12;
-      const marginX = 32;
-      const pageWidth = 360;
-      const pageHeight = CANVAS_FRAME.height;
-      const tileW = Math.floor((pageWidth - marginX * 2 - gapX * (columns - 1)) / columns);
 
       const rows = Math.max(1, Math.ceil(buttonCount / columns));
       const bottomPadding = 28;
@@ -1814,6 +1818,14 @@ export default function EditorShell({ initialPageId }: Props) {
             label,
             icon,
             action: 'none',
+          },
+          style: {
+            borderRadius: 18,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.16)',
+            boxShadow: '0 14px 40px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
           },
         });
       });

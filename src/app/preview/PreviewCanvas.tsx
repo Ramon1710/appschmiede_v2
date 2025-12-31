@@ -1258,13 +1258,22 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
         });
       };
 
+      const buttonStyle: React.CSSProperties = {
+        ...(node.style as React.CSSProperties | undefined),
+        width: '100%',
+        height: '100%',
+      };
+
+      const isTileButton = Boolean(node.props?.icon) && typeof node.h === 'number' && node.h >= 80;
+
       return (
         <button
           type="button"
           onClick={handleButtonClick}
-          className={`${base} flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 text-sm font-medium hover:bg-white/20`}
+          className={`${base} flex ${isTileButton ? 'flex-col' : 'flex-row'} items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 text-sm font-medium hover:bg-white/20`}
+          style={buttonStyle}
         >
-          {node.props?.icon && <span>{node.props.icon}</span>}
+          {node.props?.icon && <span className={isTileButton ? 'text-2xl leading-none' : undefined}>{node.props.icon}</span>}
           {node.props?.label ?? 'Button'}
         </button>
       );
