@@ -149,10 +149,10 @@ type MobilePanel = 'toolbox' | 'canvas' | 'properties';
 
 type PanelSide = 'left' | 'right';
 
-const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: string; icon: string }> = [
-  { id: 'toolbox', label: 'Bausteine', icon: '🧱' },
-  { id: 'canvas', label: 'Vorschau', icon: '📱' },
-  { id: 'properties', label: 'Style', icon: '🎨' },
+const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: { de: string; en: string }; icon: string }> = [
+  { id: 'toolbox', label: { de: 'Bausteine', en: 'Blocks' }, icon: '🧱' },
+  { id: 'canvas', label: { de: 'Vorschau', en: 'Preview' }, icon: '📱' },
+  { id: 'properties', label: { de: 'Style', en: 'Style' }, icon: '🎨' },
 ];
 
 const PANEL_LIMITS: Record<PanelSide, { min: number; max: number }> = {
@@ -197,12 +197,15 @@ const getFirebaseErrorCode = (error: unknown): string | null => {
   return code;
 };
 
-const formatTemplateSaveError = (error: unknown, isAdmin: boolean) => {
+const formatTemplateSaveError = (error: unknown, isAdmin: boolean, tr: (de: string, en: string) => string) => {
   const code = getFirebaseErrorCode(error);
   if (isAdmin && code) {
-    return `Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`;
+    return tr(
+      `Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`,
+      `Template could not be saved (${code}). Please try again.`
+    );
   }
-  return 'Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.';
+  return tr('Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.', 'Template could not be saved. Please try again.');
 };
 const normalizeBackgroundLayers = (raw?: unknown): BackgroundLayer[] => {
   if (!Array.isArray(raw)) return [];
@@ -806,9 +809,9 @@ type Props = {
 
 type AppTemplateDefinition = {
   id: string;
-  title: string;
-  subtitle: string;
-  description: string;
+  title: { de: string; en: string };
+  subtitle: { de: string; en: string };
+  description: { de: string; en: string };
   icon: string;
   template: string;
   gradient: string;
@@ -817,81 +820,81 @@ type AppTemplateDefinition = {
 const APP_TEMPLATES: AppTemplateDefinition[] = [
   {
     id: 'tpl-login',
-    title: 'Login',
-    subtitle: 'Authentifizierung',
-    description: 'Formulare mit Passwort-Logik und Buttons.',
+    title: { de: 'Login', en: 'Login' },
+    subtitle: { de: 'Authentifizierung', en: 'Authentication' },
+    description: { de: 'Formulare mit Passwort-Logik und Buttons.', en: 'Forms with password logic and buttons.' },
     icon: '🔐',
     template: 'login',
     gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
   },
   {
     id: 'tpl-register',
-    title: 'Registrierung',
-    subtitle: 'Onboarding',
-    description: 'Mehrere Eingabefelder und CTA-Buttons.',
+    title: { de: 'Registrierung', en: 'Registration' },
+    subtitle: { de: 'Onboarding', en: 'Onboarding' },
+    description: { de: 'Mehrere Eingabefelder und CTA-Buttons.', en: 'Multiple input fields and CTA buttons.' },
     icon: '📝',
     template: 'register',
     gradient: 'from-emerald-500/40 via-cyan-500/20 to-blue-500/40',
   },
   {
     id: 'tpl-password',
-    title: 'Passwort Reset',
-    subtitle: 'Support',
-    description: 'Reset-Erklärung, Eingabefeld & Call-to-Action.',
+    title: { de: 'Passwort Reset', en: 'Password reset' },
+    subtitle: { de: 'Support', en: 'Support' },
+    description: { de: 'Reset-Erklärung, Eingabefeld & Call-to-Action.', en: 'Reset explanation, input field & call to action.' },
     icon: '🔑',
     template: 'password-reset',
     gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
   },
   {
     id: 'tpl-chat',
-    title: 'Chat',
-    subtitle: 'Kommunikation',
-    description: 'Chatfenster plus Eingabefeld & Aktionen.',
+    title: { de: 'Chat', en: 'Chat' },
+    subtitle: { de: 'Kommunikation', en: 'Communication' },
+    description: { de: 'Chatfenster plus Eingabefeld & Aktionen.', en: 'Chat window plus input field & actions.' },
     icon: '💬',
     template: 'chat',
     gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
   },
   {
     id: 'tpl-home-4',
-    title: 'Startseite (4 Buttons)',
-    subtitle: 'Start',
-    description: '2×2 Kachel-Layout für eine kompakte Startseite.',
+    title: { de: 'Startseite (4 Buttons)', en: 'Home (4 buttons)' },
+    subtitle: { de: 'Start', en: 'Home' },
+    description: { de: '2×2 Kachel-Layout für eine kompakte Startseite.', en: '2×2 tile layout for a compact home screen.' },
     icon: '🏠',
     template: 'home-grid-4',
     gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
   },
   {
     id: 'tpl-home-6',
-    title: 'Startseite (6 Buttons)',
-    subtitle: 'Start',
-    description: '3×2 Kachel-Layout wie ein App-Dashboard.',
+    title: { de: 'Startseite (6 Buttons)', en: 'Home (6 buttons)' },
+    subtitle: { de: 'Start', en: 'Home' },
+    description: { de: '3×2 Kachel-Layout wie ein App-Dashboard.', en: '3×2 tile layout like an app dashboard.' },
     icon: '🏠',
     template: 'home-grid-6',
     gradient: 'from-cyan-500/40 via-sky-500/20 to-indigo-500/40',
   },
   {
     id: 'tpl-home-8',
-    title: 'Startseite (8 Buttons)',
-    subtitle: 'Start',
-    description: '4×2 Kachel-Layout für viele schnelle Aktionen.',
+    title: { de: 'Startseite (8 Buttons)', en: 'Home (8 buttons)' },
+    subtitle: { de: 'Start', en: 'Home' },
+    description: { de: '4×2 Kachel-Layout für viele schnelle Aktionen.', en: '4×2 tile layout for lots of quick actions.' },
     icon: '🏠',
     template: 'home-grid-8',
     gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
   },
   {
     id: 'tpl-home-10',
-    title: 'Startseite (10 Buttons)',
-    subtitle: 'Start',
-    description: '2×5 Kachel-Layout mit mehr Platz pro Button.',
+    title: { de: 'Startseite (10 Buttons)', en: 'Home (10 buttons)' },
+    subtitle: { de: 'Start', en: 'Home' },
+    description: { de: '2×5 Kachel-Layout mit mehr Platz pro Button.', en: '2×5 tile layout with more space per button.' },
     icon: '🏠',
     template: 'home-grid-10',
     gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
   },
   {
     id: 'tpl-home-12',
-    title: 'Startseite (12 Buttons)',
-    subtitle: 'Start',
-    description: '3×4 Kachel-Layout wie im Intranet-App Beispiel.',
+    title: { de: 'Startseite (12 Buttons)', en: 'Home (12 buttons)' },
+    subtitle: { de: 'Start', en: 'Home' },
+    description: { de: '3×4 Kachel-Layout wie im Intranet-App Beispiel.', en: '3×4 tile layout like the intranet app example.' },
     icon: '🏠',
     template: 'home-grid-12',
     gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
@@ -2158,14 +2161,19 @@ export default function EditorShell({ initialPageId }: Props) {
   const applySavedPageTemplate = useCallback(
     (template: StoredPageTemplate) => {
       if (!_projectId) {
-        setTemplateNotice('Bitte wähle zuerst ein Projekt oder lege eines im Dashboard an.');
+        setTemplateNotice(
+          tr(
+            'Bitte wähle zuerst ein Projekt oder lege eines im Dashboard an.',
+            'Please select a project first or create one in the dashboard.'
+          )
+        );
         return false;
       }
       if (!currentPageId) {
-        setTemplateNotice('Seiten werden noch geladen. Bitte einen Moment warten.');
+        setTemplateNotice(tr('Seiten werden noch geladen. Bitte einen Moment warten.', 'Pages are still loading. Please wait a moment.'));
         return false;
       }
-      const preservedName = currentPageMeta?.name ?? tree.name ?? 'Unbenannte Seite';
+      const preservedName = currentPageMeta?.name ?? tree.name ?? tr('Unbenannte Seite', 'Untitled page');
       const baseTree = template.tree ?? emptyTree.tree;
       const sanitizedTree = sanitizeNode({ ...baseTree, id: 'root' });
 
@@ -2177,23 +2185,25 @@ export default function EditorShell({ initialPageId }: Props) {
 
       return persistTemplateApplication(nextTree, preservedName);
     },
-    [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate, persistTemplateApplication, setTemplateNotice]
+    [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate, persistTemplateApplication, setTemplateNotice, tr]
   );
 
   const handleSavePageTemplate = useCallback(async () => {
     if (!isAdmin) {
-      setTemplateNotice('Nur Admins dürfen Seitenvorlagen speichern.');
+      setTemplateNotice(tr('Nur Admins dürfen Seitenvorlagen speichern.', 'Only admins can save page templates.'));
       return;
     }
     if (!(_projectId && currentPageId)) {
-      setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.');
+      setTemplateNotice(
+        tr('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.', 'Open a project and a page before saving a template.')
+      );
       return;
     }
 
-    const defaultName = currentPageMeta?.name ?? tree.name ?? 'Neue Seite';
-    const name = window.prompt('Name der Seitenvorlage', defaultName)?.trim();
+    const defaultName = currentPageMeta?.name ?? tree.name ?? tr('Neue Seite', 'New page');
+    const name = window.prompt(tr('Name der Seitenvorlage', 'Page template name'), defaultName)?.trim();
     if (!name) return;
-    const description = window.prompt('Kurzbeschreibung (optional)')?.trim() || null;
+    const description = window.prompt(tr('Kurzbeschreibung (optional)', 'Short description (optional)'))?.trim() || null;
 
     const sanitizedTree = sanitizeNode(tree.tree);
 
@@ -2209,31 +2219,43 @@ export default function EditorShell({ initialPageId }: Props) {
       };
       const ref = await addDoc(collection(db, 'pageTemplates'), payload);
       setPageTemplates((prev) => [{ id: ref.id, ...payload }, ...prev]);
-      setTemplateNotice('Seitenvorlage gespeichert.');
+      setTemplateNotice(tr('Seitenvorlage gespeichert.', 'Page template saved.'));
     } catch (error) {
       console.error('Seitenvorlage konnte nicht gespeichert werden', error);
       const code = getFirebaseErrorCode(error);
       if (isAdmin && code) {
-        setTemplateNotice(`Seitenvorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`);
+        setTemplateNotice(
+          tr(
+            `Seitenvorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`,
+            `Page template could not be saved (${code}). Please try again.`
+          )
+        );
       } else {
-        setTemplateNotice('Seitenvorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+        setTemplateNotice(
+          tr(
+            'Seitenvorlage konnte nicht gespeichert werden. Bitte versuche es erneut.',
+            'Page template could not be saved. Please try again.'
+          )
+        );
       }
     } finally {
       setSavingPageTemplate(false);
     }
-  }, [isAdmin, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice]);
+  }, [isAdmin, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice, tr]);
 
   const handleOverwritePageTemplate = useCallback(async () => {
     if (!isAdmin) {
-      setTemplateNotice('Nur Admins dürfen Seitenvorlagen speichern.');
+      setTemplateNotice(tr('Nur Admins dürfen Seitenvorlagen speichern.', 'Only admins can save page templates.'));
       return;
     }
     if (!editingPageTemplateId) {
-      setTemplateNotice('Keine Vorlage zum Überschreiben ausgewählt.');
+      setTemplateNotice(tr('Keine Vorlage zum Überschreiben ausgewählt.', 'No template selected to overwrite.'));
       return;
     }
     if (!(_projectId && currentPageId)) {
-      setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.');
+      setTemplateNotice(
+        tr('Bitte öffne ein Projekt und eine Seite, bevor du eine Vorlage speicherst.', 'Open a project and a page before saving a template.')
+      );
       return;
     }
 
@@ -2259,29 +2281,29 @@ export default function EditorShell({ initialPageId }: Props) {
       setPageTemplates((prev) =>
         prev.map((tpl) => (tpl.id === editingPageTemplateId ? { ...tpl, tree: sanitizedTree } : tpl))
       );
-      setTemplateNotice('Vorlage gespeichert.');
+      setTemplateNotice(tr('Vorlage gespeichert.', 'Template saved.'));
     } catch (error) {
       console.error('Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice(formatTemplateSaveError(error, isAdmin));
+      setTemplateNotice(formatTemplateSaveError(error, isAdmin, tr));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'page' ? null : prev));
     }
-  }, [isAdmin, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice]);
+  }, [isAdmin, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice, tr]);
 
   const handleSaveAppTemplate = useCallback(async () => {
     if (!isAdmin) {
-      setTemplateNotice('Nur Admins dürfen App-Vorlagen speichern.');
+      setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen speichern.', 'Only admins can save app templates.'));
       return;
     }
     if (!_projectId || !pages.length) {
-      setTemplateNotice('Bitte öffne ein Projekt mit mindestens einer Seite.');
+      setTemplateNotice(tr('Bitte öffne ein Projekt mit mindestens einer Seite.', 'Open a project with at least one page.'));
       return;
     }
 
-    const defaultName = project?.name ?? 'App-Vorlage';
-    const name = window.prompt('Name der App-Vorlage', defaultName)?.trim();
+    const defaultName = project?.name ?? tr('App-Vorlage', 'App template');
+    const name = window.prompt(tr('Name der App-Vorlage', 'App template name'), defaultName)?.trim();
     if (!name) return;
-    const description = window.prompt('Kurzbeschreibung (optional)')?.trim() || null;
+    const description = window.prompt(tr('Kurzbeschreibung (optional)', 'Short description (optional)'))?.trim() || null;
 
     const payloadPages = pages.map((page) => ({
       name: page.name,
@@ -2300,31 +2322,41 @@ export default function EditorShell({ initialPageId }: Props) {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      setTemplateNotice('App-Vorlage gespeichert.');
+      setTemplateNotice(tr('App-Vorlage gespeichert.', 'App template saved.'));
     } catch (error) {
       console.error('App-Vorlage konnte nicht gespeichert werden', error);
       const code = getFirebaseErrorCode(error);
       if (isAdmin && code) {
-        setTemplateNotice(`App-Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`);
+        setTemplateNotice(
+          tr(
+            `App-Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`,
+            `App template could not be saved (${code}). Please try again.`
+          )
+        );
       } else {
-        setTemplateNotice('App-Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.');
+        setTemplateNotice(
+          tr(
+            'App-Vorlage konnte nicht gespeichert werden. Bitte versuche es erneut.',
+            'App template could not be saved. Please try again.'
+          )
+        );
       }
     } finally {
       setSavingAppTemplate(false);
     }
-  }, [isAdmin, _projectId, pages, project?.name, user?.uid, setTemplateNotice]);
+  }, [isAdmin, _projectId, pages, project?.name, user?.uid, setTemplateNotice, tr]);
 
   const handleOverwriteAppTemplate = useCallback(async () => {
     if (!isAdmin) {
-      setTemplateNotice('Nur Admins dürfen App-Vorlagen speichern.');
+      setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen speichern.', 'Only admins can save app templates.'));
       return;
     }
     if (!editingAppTemplateId) {
-      setTemplateNotice('Keine App-Vorlage zum Überschreiben ausgewählt.');
+      setTemplateNotice(tr('Keine App-Vorlage zum Überschreiben ausgewählt.', 'No app template selected to overwrite.'));
       return;
     }
     if (!_projectId || !pages.length) {
-      setTemplateNotice('Bitte öffne ein Projekt mit mindestens einer Seite.');
+      setTemplateNotice(tr('Bitte öffne ein Projekt mit mindestens einer Seite.', 'Open a project with at least one page.'));
       return;
     }
 
@@ -2340,14 +2372,14 @@ export default function EditorShell({ initialPageId }: Props) {
         if (isCurrent && active) {
           return {
             id: active.id ?? page.id,
-            name: active.name ?? page.name ?? 'Seite',
+            name: active.name ?? page.name ?? tr('Seite', 'Page'),
             folder: active.folder ?? page.folder ?? null,
             tree: active.tree ?? page.tree,
           };
         }
         return {
           id: page.id,
-          name: page.name ?? 'Seite',
+          name: page.name ?? tr('Seite', 'Page'),
           folder: page.folder ?? null,
           tree: page.tree,
         };
@@ -2380,14 +2412,14 @@ export default function EditorShell({ initialPageId }: Props) {
         prev.map((tpl) => (tpl.id === editingAppTemplateId ? { ...tpl, pages: payloadPages as any } : tpl))
       );
 
-      setTemplateNotice('Vorlage gespeichert.');
+      setTemplateNotice(tr('Vorlage gespeichert.', 'Template saved.'));
     } catch (error) {
       console.error('App-Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice(formatTemplateSaveError(error, isAdmin));
+      setTemplateNotice(formatTemplateSaveError(error, isAdmin, tr));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
     }
-  }, [isAdmin, editingAppTemplateId, _projectId, pages, currentPageId, setTemplateNotice]);
+  }, [isAdmin, editingAppTemplateId, _projectId, pages, currentPageId, setTemplateNotice, tr]);
 
   const startEditingPageTemplate = useCallback(
     (template: StoredPageTemplate) => {
@@ -2395,28 +2427,28 @@ export default function EditorShell({ initialPageId }: Props) {
       if (!applied) return;
       setEditingAppTemplateId(null);
       setEditingPageTemplateId(template.id);
-      setTemplateNotice(`Bearbeite Vorlage: ${template.name}`);
+      setTemplateNotice(`${tr('Bearbeite Vorlage:', 'Editing template:')} ${template.name}`);
     },
-    [applySavedPageTemplate]
+    [applySavedPageTemplate, tr]
   );
 
   const applySavedAppTemplateToProject = useCallback(
     async (template: StoredAppTemplate) => {
       if (!isAdmin) {
-        setTemplateNotice('Nur Admins dürfen App-Vorlagen bearbeiten.');
+        setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen bearbeiten.', 'Only admins can edit app templates.'));
         return;
       }
       if (!_projectId) {
-        setTemplateNotice('Bitte öffne zuerst ein Projekt.');
+        setTemplateNotice(tr('Bitte öffne zuerst ein Projekt.', 'Please open a project first.'));
         return;
       }
       if (!template.pages.length) {
-        setTemplateNotice('Diese Vorlage enthält keine Seiten.');
+        setTemplateNotice(tr('Diese Vorlage enthält keine Seiten.', 'This template contains no pages.'));
         return;
       }
 
       const confirmed = window.confirm(
-        'Achtung: Diese Aktion ersetzt alle Seiten im aktuellen Projekt. Fortfahren?'
+        tr('Achtung: Diese Aktion ersetzt alle Seiten im aktuellen Projekt. Fortfahren?', 'Warning: This will replace all pages in the current project. Continue?')
       );
       if (!confirmed) return;
 
@@ -2440,8 +2472,8 @@ export default function EditorShell({ initialPageId }: Props) {
               folder: page.folder ?? null,
               tree: sanitizeNode(page.tree as any),
             });
-          })
-        );
+          },
+          [isAdmin, _projectId, setTemplateNotice, tr]
 
         await touchProject(_projectId, 'edited');
         setEditingAppTemplateId(template.id);
@@ -3592,22 +3624,27 @@ export default function EditorShell({ initialPageId }: Props) {
         setTemplateNotice(null);
       } catch (error) {
         console.error('Quick preset page creation failed', error);
-        setTemplateNotice('Seite konnte nicht erstellt werden. Bitte versuche es erneut.');
+        setTemplateNotice(tr('Seite konnte nicht erstellt werden. Bitte versuche es erneut.', 'Page could not be created. Please try again.'));
       }
     },
-    [_projectId, applyTreeUpdate, createPageWithContent, currentPageId, handlePageSelection, setSelectedId, setTemplateNotice]
+    [_projectId, applyTreeUpdate, createPageWithContent, currentPageId, handlePageSelection, setSelectedId, setTemplateNotice, tr]
   );
 
   const handleDeleteCurrentPage = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
     if (pages.length <= 1) {
-      window.alert('Mindestens eine Seite muss bestehen. Erstelle erst eine neue Seite, bevor du diese löscht.');
+      window.alert(
+        tr(
+          'Mindestens eine Seite muss bestehen. Erstelle erst eine neue Seite, bevor du diese löschst.',
+          'At least one page must remain. Create a new page before deleting this one.'
+        )
+      );
       return;
     }
     const deletingPageId = currentPageId;
     const fallback = pages.find((page) => page.id !== deletingPageId) ?? null;
     if (!fallback) return;
-    const confirmed = window.confirm('Seite wirklich löschen?');
+    const confirmed = window.confirm(tr('Seite wirklich löschen?', 'Really delete this page?'));
     if (!confirmed) return;
     setDeletingPage(true);
     try {
@@ -3616,31 +3653,44 @@ export default function EditorShell({ initialPageId }: Props) {
       setPages((prev) => prev.filter((page) => page.id !== deletingPageId));
     } catch (error) {
       console.error('Seite konnte nicht gelöscht werden', error);
-      window.alert('Seite konnte nicht gelöscht werden. Bitte versuche es erneut.');
+      window.alert(tr('Seite konnte nicht gelöscht werden. Bitte versuche es erneut.', 'Page could not be deleted. Please try again.'));
     } finally {
       setDeletingPage(false);
     }
-  }, [_projectId, currentPageId, pages, handlePageSelection]);
+  }, [_projectId, currentPageId, pages, handlePageSelection, tr]);
 
   const templateControlsDisabled = !_projectId || !currentPageId;
 
   const templateContent = (
     <div className="space-y-4">
       <p className="text-xs text-neutral-400">
-        Wähle eine Vorlage, um die aktuelle Seite durch ein kuratiertes Layout zu ersetzen.
+        {tr(
+          'Wähle eine Vorlage, um die aktuelle Seite durch ein kuratiertes Layout zu ersetzen.',
+          'Choose a template to replace the current page with a curated layout.'
+        )}
       </p>
       {templateNotice && (
         <p className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{templateNotice}</p>
       )}
       {isAdmin && (
         <div className="space-y-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-50">
-          <div className="font-semibold text-emerald-100">Admin-Aktionen</div>
-          <p className="text-[11px] text-emerald-100/80">Speichere eigene Seiten- oder App-Vorlagen für alle Nutzer.</p>
+          <div className="font-semibold text-emerald-100">{tr('Admin-Aktionen', 'Admin actions')}</div>
+          <p className="text-[11px] text-emerald-100/80">
+            {tr('Speichere eigene Seiten- oder App-Vorlagen für alle Nutzer.', 'Save your own page or app templates for all users.')}
+          </p>
           {(editingPageTemplate || editingAppTemplate) && (
             <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-50">
-              <div className="font-semibold text-emerald-100">Aktive Vorlagen-Bearbeitung</div>
-              {editingPageTemplate && <div>Seitenvorlage: <span className="font-semibold">{editingPageTemplate.name}</span></div>}
-              {editingAppTemplate && <div>App-Vorlage: <span className="font-semibold">{editingAppTemplate.name}</span></div>}
+              <div className="font-semibold text-emerald-100">{tr('Aktive Vorlagen-Bearbeitung', 'Active template editing')}</div>
+              {editingPageTemplate && (
+                <div>
+                  {tr('Seitenvorlage:', 'Page template:')} <span className="font-semibold">{editingPageTemplate.name}</span>
+                </div>
+              )}
+              {editingAppTemplate && (
+                <div>
+                  {tr('App-Vorlage:', 'App template:')} <span className="font-semibold">{editingAppTemplate.name}</span>
+                </div>
+              )}
             </div>
           )}
           <div className="flex flex-col gap-2 text-sm">
@@ -3650,7 +3700,9 @@ export default function EditorShell({ initialPageId }: Props) {
               onClick={handleSavePageTemplate}
               disabled={templateControlsDisabled || savingPageTemplate}
             >
-              {savingPageTemplate ? 'Speichere Seitenvorlage…' : 'Aktuelle Seite als Vorlage speichern'}
+              {savingPageTemplate
+                ? tr('Speichere Seitenvorlage…', 'Saving page template…')
+                : tr('Aktuelle Seite als Vorlage speichern', 'Save current page as template')}
             </button>
             {editingPageTemplateId && !editingAppTemplateId && (
               <button
@@ -3659,7 +3711,9 @@ export default function EditorShell({ initialPageId }: Props) {
                 onClick={handleOverwritePageTemplate}
                 disabled={templateControlsDisabled || savingTemplateOverwrite === 'page'}
               >
-                {savingTemplateOverwrite === 'page' ? 'Speichere Vorlage…' : 'Vorlage speichern'}
+                {savingTemplateOverwrite === 'page'
+                  ? tr('Speichere Vorlage…', 'Saving template…')
+                  : tr('Vorlage speichern', 'Save template')}
               </button>
             )}
             <button
@@ -3668,7 +3722,9 @@ export default function EditorShell({ initialPageId }: Props) {
               onClick={handleSaveAppTemplate}
               disabled={!_projectId || !pages.length || savingAppTemplate}
             >
-              {savingAppTemplate ? 'Speichere App-Vorlage…' : 'Projekt als App-Vorlage speichern'}
+              {savingAppTemplate
+                ? tr('Speichere App-Vorlage…', 'Saving app template…')
+                : tr('Projekt als App-Vorlage speichern', 'Save project as app template')}
             </button>
             {editingAppTemplateId && (
               <button
@@ -3677,7 +3733,9 @@ export default function EditorShell({ initialPageId }: Props) {
                 onClick={handleOverwriteAppTemplate}
                 disabled={!_projectId || !pages.length || savingTemplateOverwrite === 'app'}
               >
-                {savingTemplateOverwrite === 'app' ? 'Speichere Vorlage…' : 'Vorlage speichern'}
+                {savingTemplateOverwrite === 'app'
+                  ? tr('Speichere Vorlage…', 'Saving template…')
+                  : tr('Vorlage speichern', 'Save template')}
               </button>
             )}
           </div>
@@ -3691,7 +3749,12 @@ export default function EditorShell({ initialPageId }: Props) {
             disabled={templateControlsDisabled}
             onClick={() => {
               if (templateControlsDisabled) {
-                setTemplateNotice('Bitte öffne ein Projekt und eine Seite, bevor du Vorlagen nutzt.');
+                setTemplateNotice(
+                  tr(
+                    'Bitte öffne ein Projekt und eine Seite, bevor du Vorlagen nutzt.',
+                    'Open a project and a page before using templates.'
+                  )
+                );
                 return;
               }
               const applied = applyTemplate(tpl.template);
@@ -3707,19 +3770,21 @@ export default function EditorShell({ initialPageId }: Props) {
           >
             <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${tpl.gradient} px-3 py-1 text-[11px] font-semibold text-white`}>
               <span>{tpl.icon}</span>
-              <span>{tpl.subtitle}</span>
+              <span>{tr(tpl.subtitle.de, tpl.subtitle.en)}</span>
             </div>
-            <div className="mt-3 text-lg font-semibold text-white">{tpl.title}</div>
-            <p className="text-sm text-neutral-300">{tpl.description}</p>
+            <div className="mt-3 text-lg font-semibold text-white">{tr(tpl.title.de, tpl.title.en)}</div>
+            <p className="text-sm text-neutral-300">{tr(tpl.description.de, tpl.description.en)}</p>
             <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-300">
-              Vorlage anwenden
+              {tr('Vorlage anwenden', 'Apply template')}
               <span className="ml-1 transition group-hover:translate-x-1">→</span>
             </span>
           </button>
         ))}
       </div>
       <div className="space-y-2">
-        <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Gespeicherte Seitenvorlagen</div>
+        <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">
+          {tr('Gespeicherte Seitenvorlagen', 'Saved page templates')}
+        </div>
         {loadingPageTemplates ? (
           <p className="text-xs text-neutral-400">Lade gespeicherte Vorlagen…</p>
         ) : pageTemplates.length === 0 ? (
@@ -4284,7 +4349,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       aria-pressed={isActive}
                     >
                       <span className="text-lg">{item.icon}</span>
-                      <span className="text-[11px] uppercase tracking-widest">{item.label}</span>
+                      <span className="text-[11px] uppercase tracking-widest">{tr(item.label.de, item.label.en)}</span>
                     </button>
                   );
                 })}

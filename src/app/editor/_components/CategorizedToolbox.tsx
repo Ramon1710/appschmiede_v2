@@ -2,56 +2,84 @@
 'use client';
 import React, { useState } from 'react';
 import type { NodeType, NodeProps, NavbarItem } from '@/lib/editorTypes';
+import { useI18n } from '@/lib/i18n';
 
 interface ToolboxProps {
   onAdd: (type: NodeType, defaultProps?: NodeProps) => void;
 }
 
 type Category = {
+  id: string;
   name: string;
   icon: string;
   items: Array<{ type: NodeType; label: string; icon: string; defaultProps?: NodeProps }>;
 };
 
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
-  const [expanded, setExpanded] = useState<string[]>(['allgemein']);
+  const { lang } = useI18n();
+  const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+
+  const [expanded, setExpanded] = useState<string[]>(['basic']);
   const [searchQuery, setSearchQuery] = useState('');
   const categories: Category[] = [
     {
-      name: 'Alleine Funktionen',
+      id: 'basic',
+      name: tr('Allgemeine Funktionen', 'Basic functions'),
       icon: '🎨',
       items: [
-        { type: 'text', label: 'Text', icon: '📝' },
-        { type: 'button', label: 'Button', icon: '🔘' },
-        { type: 'input', label: 'Eingabefeld', icon: '📥' },
-        { type: 'image', label: 'Bild', icon: '🖼️' },
-        { type: 'container', label: 'KI-Chat', icon: '🤖', defaultProps: { component: 'ai-chat' } },
+        { type: 'text', label: tr('Text', 'Text'), icon: '📝' },
+        { type: 'button', label: tr('Button', 'Button'), icon: '🔘' },
+        { type: 'input', label: tr('Eingabefeld', 'Input field'), icon: '📥' },
+        { type: 'image', label: tr('Bild', 'Image'), icon: '🖼️' },
+        { type: 'container', label: tr('KI-Chat', 'AI chat'), icon: '🤖', defaultProps: { component: 'ai-chat' } },
       ],
     },
     {
-      name: 'Login & Auth',
+      id: 'auth',
+      name: tr('Login & Auth', 'Login & auth'),
       icon: '🔐',
       items: [
-        { type: 'input', label: 'Email-Feld', icon: '📧', defaultProps: { placeholder: 'E-Mail-Adresse', inputType: 'email' } },
-        { type: 'input', label: 'Passwort-Feld', icon: '🔒', defaultProps: { placeholder: 'Passwort', inputType: 'password' } },
-        { type: 'button', label: 'Login', icon: '✅', defaultProps: { label: 'Anmelden', action: 'login', target: '/login' } },
-        { type: 'button', label: 'Registrieren', icon: '📝', defaultProps: { label: 'Registrieren', action: 'register', target: '/register' } },
-        { type: 'button', label: 'Passwort vergessen', icon: '🧠', defaultProps: { label: 'Passwort vergessen?', action: 'reset-password', target: '/reset' } },
-        { type: 'button', label: 'Foto hochladen', icon: '📷', defaultProps: { label: 'Foto wählen', action: 'upload-photo' } },
+        {
+          type: 'input',
+          label: tr('Email-Feld', 'Email field'),
+          icon: '📧',
+          defaultProps: { placeholder: tr('E-Mail-Adresse', 'Email address'), inputType: 'email' },
+        },
+        {
+          type: 'input',
+          label: tr('Passwort-Feld', 'Password field'),
+          icon: '🔒',
+          defaultProps: { placeholder: tr('Passwort', 'Password'), inputType: 'password' },
+        },
+        { type: 'button', label: tr('Login', 'Login'), icon: '✅', defaultProps: { label: tr('Anmelden', 'Sign in'), action: 'login', target: '/login' } },
+        {
+          type: 'button',
+          label: tr('Registrieren', 'Register'),
+          icon: '📝',
+          defaultProps: { label: tr('Registrieren', 'Register'), action: 'register', target: '/register' },
+        },
+        {
+          type: 'button',
+          label: tr('Passwort vergessen', 'Forgot password'),
+          icon: '🧠',
+          defaultProps: { label: tr('Passwort vergessen?', 'Forgot password?'), action: 'reset-password', target: '/reset' },
+        },
+        { type: 'button', label: tr('Foto hochladen', 'Upload photo'), icon: '📷', defaultProps: { label: tr('Foto wählen', 'Choose photo'), action: 'upload-photo' } },
       ],
     },
     {
-      name: 'Kommunikation',
+      id: 'communication',
+      name: tr('Kommunikation', 'Communication'),
       icon: '💬',
       items: [
-        { type: 'container', label: 'Chatfenster', icon: '💬', defaultProps: { component: 'chat' } },
-        { type: 'button', label: 'Anrufbutton', icon: '📞', defaultProps: { label: 'Anrufen', action: 'call' } },
+        { type: 'container', label: tr('Chatfenster', 'Chat window'), icon: '💬', defaultProps: { component: 'chat' } },
+        { type: 'button', label: tr('Anrufbutton', 'Call button'), icon: '📞', defaultProps: { label: tr('Anrufen', 'Call'), action: 'call' } },
         {
           type: 'button',
-          label: 'Tischreservierung',
+          label: tr('Tischreservierung', 'Table reservation'),
           icon: '🍽️',
           defaultProps: {
-            label: 'Tisch reservieren',
+            label: tr('Tisch reservieren', 'Reserve table'),
             icon: '🍽️',
             action: 'email',
             emailAddress: 'reservierung@deinbetrieb.de',
@@ -59,50 +87,52 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         },
         {
           type: 'button',
-          label: 'Werbung',
+          label: tr('Werbung', 'Ad'),
           icon: '📢',
           defaultProps: {
             component: 'ad-banner',
-            label: 'Jetzt buchen',
+            label: tr('Jetzt buchen', 'Book now'),
             action: 'url',
             url: 'https://www.appschmiede.app',
-            adBadge: 'Anzeige',
-            adHeadline: 'Dein Produkt vor der richtigen Zielgruppe',
-            adDescription: 'Starte Kampagnen direkt aus deiner App und erreiche Nutzer:innen in Minuten.',
-            adSubline: 'Inklusive Tracking & AI-Kampagnen',
-            adCtaLabel: 'Mehr erfahren',
-            adPrice: 'Ab 49 € / Monat',
+            adBadge: tr('Anzeige', 'Ad'),
+            adHeadline: tr('Dein Produkt vor der richtigen Zielgruppe', 'Your product in front of the right audience'),
+            adDescription: tr('Starte Kampagnen direkt aus deiner App und erreiche Nutzer:innen in Minuten.', 'Launch campaigns directly from your app and reach users in minutes.'),
+            adSubline: tr('Inklusive Tracking & AI-Kampagnen', 'Includes tracking & AI campaigns'),
+            adCtaLabel: tr('Mehr erfahren', 'Learn more'),
+            adPrice: tr('Ab 49 € / Monat', 'From €49 / month'),
             adImageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=640&q=80',
           },
         },
       ],
     },
     {
-      name: 'Interaktiv',
+      id: 'interactive',
+      name: tr('Interaktiv', 'Interactive'),
       icon: '✨',
       items: [
-        { type: 'container', label: 'QR-Code', icon: '📱', defaultProps: { component: 'qr-code' } },
+        { type: 'container', label: tr('QR-Code', 'QR code'), icon: '📱', defaultProps: { component: 'qr-code' } },
         {
           type: 'container',
-          label: 'Timer',
+          label: tr('Timer', 'Timer'),
           icon: '⏲️',
           defaultProps: {
             component: 'timer',
-            timer: { label: 'Timer', mode: 'countdown', seconds: 15 * 60 },
+            timer: { label: tr('Timer', 'Timer'), mode: 'countdown', seconds: 15 * 60 },
           },
         },
-        { type: 'button', label: 'Dark/Light Mode', icon: '🌓', defaultProps: { action: 'toggle-theme' } },
-        { type: 'input', label: 'Checkbox', icon: '☑️', defaultProps: { inputType: 'checkbox', label: 'Zustimmen' } },
-        { type: 'input', label: 'Datum', icon: '📅', defaultProps: { inputType: 'date' } },
+        { type: 'button', label: tr('Dark/Light Mode', 'Dark/light mode'), icon: '🌓', defaultProps: { action: 'toggle-theme' } },
+        { type: 'input', label: tr('Checkbox', 'Checkbox'), icon: '☑️', defaultProps: { inputType: 'checkbox', label: tr('Zustimmen', 'Agree') } },
+        { type: 'input', label: tr('Datum', 'Date'), icon: '📅', defaultProps: { inputType: 'date' } },
       ],
     },
     {
-      name: 'Kopfzeile & Navigation',
+      id: 'nav',
+      name: tr('Kopfzeile & Navigation', 'Header & navigation'),
       icon: '🧭',
       items: [
         {
           type: 'container',
-          label: 'Navigationsleiste',
+          label: tr('Navigationsleiste', 'Navigation bar'),
           icon: '🧭',
           defaultProps: {
             component: 'navbar',
@@ -113,8 +143,8 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
             ],
           },
         },
-        { type: 'button', label: 'Logout', icon: '🚪', defaultProps: { label: 'Abmelden', action: 'logout' } },
-        { type: 'button', label: 'Dropdown-Menü', icon: '📋', defaultProps: { component: 'dropdown' } },
+        { type: 'button', label: tr('Logout', 'Logout'), icon: '🚪', defaultProps: { label: tr('Abmelden', 'Sign out'), action: 'logout' } },
+        { type: 'button', label: tr('Dropdown-Menü', 'Dropdown menu'), icon: '📋', defaultProps: { component: 'dropdown' } },
       ],
     },
     {
@@ -398,7 +428,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       <div className="p-3 border-b border-[#222]">
         <input
           type="text"
-          placeholder="Komponente suchen..."
+          placeholder={tr('Komponente suchen...', 'Search components...')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-neutral-900 border border-[#333] rounded px-3 py-2 text-sm placeholder:text-neutral-500"
@@ -408,11 +438,11 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       {/* Categories */}
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {filteredCategories.map((cat) => {
-          const isExpanded = expanded.includes(cat.name);
+          const isExpanded = expanded.includes(cat.id);
           return (
-            <div key={cat.name} className="border border-white/10 rounded-lg overflow-hidden">
+            <div key={cat.id} className="border border-white/10 rounded-lg overflow-hidden">
               <button
-                onClick={() => toggle(cat.name)}
+                onClick={() => toggle(cat.id)}
                 className="w-full flex items-center gap-2 px-3 py-2 bg-neutral-900 hover:bg-neutral-800 text-left text-sm font-semibold"
               >
                 <span>{cat.icon}</span>
@@ -423,7 +453,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
                 <div className="bg-neutral-950/50 p-2 space-y-1">
                   {cat.items.map((item) => (
                     <button
-                      key={item.label}
+                      key={`${cat.id}-${item.label}`}
                       onClick={() => onAdd(item.type, item.defaultProps)}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
                     >
