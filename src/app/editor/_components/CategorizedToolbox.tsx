@@ -62,6 +62,15 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
             adCtaLabel: 'Mehr erfahren',
             adPrice: 'Ab 49 € / Monat',
             adImageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=640&q=80',
+            {
+              type: 'container',
+              label: 'Timer',
+              icon: '⏱️',
+              defaultProps: {
+                component: 'timer',
+                timer: { title: 'Timer', seconds: 300 },
+              },
+            },
           },
         },
       ],
@@ -71,6 +80,15 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       icon: '✨',
       items: [
         { type: 'container', label: 'QR-Code', icon: '📱', defaultProps: { component: 'qr-code' } },
+        {
+          type: 'container',
+          label: 'Timer',
+          icon: '⏲️',
+          defaultProps: {
+            component: 'timer',
+            timer: { label: 'Timer', mode: 'countdown', seconds: 15 * 60 },
+          },
+        },
         { type: 'button', label: 'Dark/Light Mode', icon: '🌓', defaultProps: { action: 'toggle-theme' } },
         { type: 'input', label: 'Checkbox', icon: '☑️', defaultProps: { inputType: 'checkbox', label: 'Zustimmen' } },
         { type: 'input', label: 'Datum', icon: '📅', defaultProps: { inputType: 'date' } },

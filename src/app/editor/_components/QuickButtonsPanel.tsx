@@ -11,7 +11,21 @@ export type QuickButtonPresetKey =
   | 'benefits'
   | 'contacts'
   | 'bautagebuch'
-  | 'phasenboard';
+  | 'phasenboard'
+  | 'tasks'
+  | 'communication'
+  | 'chat'
+  | 'calendar'
+  | 'map'
+  | 'qr-code'
+  | 'timer'
+  | 'time-tracking-reports'
+  | 'course-plan'
+  | 'feedback'
+  | 'location'
+  | 'member-status'
+  | 'table-reservations'
+  | 'tracking-recording';
 
 type PresetItem = {
   label: string;
@@ -47,15 +61,38 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
       ],
     },
     {
+      name: 'Organisation',
+      items: [
+        { preset: 'tasks', label: 'Aufgaben', icon: '✅' },
+        { preset: 'calendar', label: 'Kalender', icon: '📅' },
+        { preset: 'course-plan', label: 'Kursplan', icon: '📚' },
+        { preset: 'table-reservations', label: 'Tischplanung & Reservierungen', icon: '🍽️' },
+      ],
+    },
+    {
       name: 'Kommunikation',
       items: [
-        { preset: 'important-links', label: 'Linksammlung', icon: '🔗' },
+        { preset: 'communication', label: 'Kommunikation', icon: '📣' },
+        { preset: 'chat', label: 'Chat', icon: '💬' },
+        { preset: 'feedback', label: 'Feedback', icon: '⭐' },
       ],
     },
     {
       name: 'Business',
       items: [
         { preset: 'benefits', label: 'Benefits', icon: '🎁' },
+        { preset: 'time-tracking-reports', label: 'Zeiterfassung & Berichte', icon: '🧾' },
+        { preset: 'member-status', label: 'Mitgliederstatus', icon: '🪪' },
+      ],
+    },
+    {
+      name: 'Tools',
+      items: [
+        { preset: 'map', label: 'Karte', icon: '🗺️' },
+        { preset: 'location', label: 'Standort', icon: '📍' },
+        { preset: 'qr-code', label: 'QR-Code', icon: '📱' },
+        { preset: 'timer', label: 'Timer', icon: '⏱️' },
+        { preset: 'tracking-recording', label: 'Tracking & Aufzeichnung', icon: '🎥' },
       ],
     },
     {
@@ -91,3 +128,4 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
     </div>
   );
 }
+

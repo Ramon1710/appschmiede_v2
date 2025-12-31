@@ -2862,6 +2862,20 @@ export default function EditorShell({ initialPageId }: Props) {
         contacts: { label: 'Ansprechpartner', icon: '👥' },
         bautagebuch: { label: 'Bautagebuch', icon: '🧱' },
         phasenboard: { label: 'Phasenboard', icon: '🧩' },
+        tasks: { label: 'Aufgaben', icon: '✅' },
+        communication: { label: 'Kommunikation', icon: '📣' },
+        chat: { label: 'Chat', icon: '💬' },
+        calendar: { label: 'Kalender', icon: '📅' },
+        map: { label: 'Karte', icon: '🗺️' },
+        'qr-code': { label: 'QR-Code', icon: '📱' },
+        timer: { label: 'Timer', icon: '⏲️' },
+        'time-tracking-reports': { label: 'Zeiterfassung & Berichte', icon: '⏱️' },
+        'course-plan': { label: 'Kursplan', icon: '📚' },
+        feedback: { label: 'Feedback', icon: '📝' },
+        location: { label: 'Standort', icon: '📍' },
+        'member-status': { label: 'Mitgliederstatus', icon: '🪪' },
+        'table-reservations': { label: 'Tischplanung & Reservierungen', icon: '🍽️' },
+        'tracking-recording': { label: 'Tracking & Aufzeichnung', icon: '🎥' },
       };
 
       let pageName = 'Neue Seite';
@@ -3147,6 +3161,380 @@ export default function EditorShell({ initialPageId }: Props) {
                   },
                 ].filter((card) => typeof card.phaseId === 'string' && card.phaseId.length > 0),
               },
+            },
+          }),
+        ];
+      } else if (preset === 'tasks') {
+        pageName = 'Aufgaben';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Aufgaben' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Plane To-dos und hake Aufgaben ab. Du kannst die Liste direkt im Baustein bearbeiten.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 620,
+            props: {
+              component: 'task-manager',
+              tasks: [
+                { id: makeId(), title: 'Beispiel: Material bestellen', done: false },
+                { id: makeId(), title: 'Beispiel: Termin bestätigen', done: true },
+              ],
+            },
+          }),
+        ];
+      } else if (preset === 'communication') {
+        pageName = 'Kommunikation';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Kommunikation' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Ankündigungen, Updates und Infos für alle – als News-Feed.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 640,
+            props: {
+              component: 'news',
+              newsFeed: {
+                title: 'Kommunikation',
+                items: [
+                  {
+                    id: makeId(),
+                    title: 'Willkommen',
+                    body: 'Hier kannst du Infos und Updates teilen.',
+                    date: new Date().toISOString().slice(0, 10),
+                  },
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'chat') {
+        pageName = 'Chat';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Chat' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Team-Kommunikation direkt in der App.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 640,
+            props: { component: 'chat' },
+          }),
+        ];
+      } else if (preset === 'calendar') {
+        pageName = 'Kalender';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Kalender' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Behalte Termine, Kurse und Reservierungen im Blick.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: { component: 'calendar', calendarFocusDate: new Date().toISOString() },
+          }),
+        ];
+      } else if (preset === 'map') {
+        pageName = 'Karte';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Karte' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Kartenansicht für Standort / Routen / Tracking.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: {
+              component: 'map',
+              mapLocation: 'Berlin, Germany',
+              mapMode: 'static',
+              mapModeLabel: 'Karte',
+              mapInfo: 'Passe den Ort im Eigenschaften-Panel an.',
+              mapActionLabel: 'Route öffnen',
+            },
+          }),
+        ];
+      } else if (preset === 'location') {
+        pageName = 'Standort';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Standort' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Adresse, Hinweistext und Navigation.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: {
+              component: 'map',
+              mapLocation: 'Musterstraße 1, 10115 Berlin',
+              mapMode: 'geofence',
+              mapModeLabel: 'Standort',
+              mapInfo: 'Hier steht dein Standort-Text (z.B. Zugang, Parken, Öffnungszeiten).',
+              mapActionLabel: 'Navigation',
+            },
+          }),
+        ];
+      } else if (preset === 'qr-code') {
+        pageName = 'QR-Code';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'QR-Code' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'QR-Code für Links, Check-in, Formulare oder Downloads.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 420,
+            props: { component: 'qr-code', qrUrl: 'https://www.appschmiede.app' },
+          }),
+        ];
+      } else if (preset === 'timer') {
+        pageName = 'Timer';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Timer' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Stoppuhr / Countdown für Kurse, Einsätze oder Trainings.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 360,
+            props: { component: 'timer', timer: { title: 'Timer', seconds: 15 * 60 } },
+          }),
+        ];
+      } else if (preset === 'time-tracking-reports') {
+        pageName = 'Zeiterfassung & Berichte';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Zeiterfassung & Berichte' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Tracke Zeiten und sieh Auswertungen als Kennzahlen.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 320,
+            props: { component: 'time-tracking', timeTracking: { entries: [] } },
+          }),
+          createNode('container', {
+            y: 550,
+            h: 280,
+            props: {
+              component: 'analytics',
+              analyticsMetrics: [
+                { id: makeId(), label: 'Stunden', value: '0', description: 'diese Woche' },
+                { id: makeId(), label: 'Aufgaben', value: '0', description: 'offen' },
+              ],
+              analyticsHighlight: 'Lege KPIs im Eigenschaften-Panel fest.',
+            },
+          }),
+        ];
+      } else if (preset === 'course-plan') {
+        pageName = 'Kursplan';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Kursplan' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Übersicht über Kurse/Slots – als Tabelle.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Kursplan',
+                columns: [makeTableColumn('Tag'), makeTableColumn('Uhrzeit'), makeTableColumn('Kurs'), makeTableColumn('Trainer')],
+                rows: [
+                  makeTableRow(['Mo', '18:00', 'Yoga', 'Alex']),
+                  makeTableRow(['Mi', '19:00', 'HIIT', 'Sam']),
+                  makeTableRow(['Fr', '17:30', 'Pilates', 'Jamie']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'feedback') {
+        pageName = 'Feedback';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Feedback' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Sammle Rückmeldungen als Tickets (Betreff + Nachricht).' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: {
+              component: 'support',
+              supportChannel: 'ticket',
+              supportTarget: 'feedback@example.com',
+              supportTickets: [],
+            },
+          }),
+        ];
+      } else if (preset === 'member-status') {
+        pageName = 'Mitgliederstatus';
+        const options = [
+          { id: makeId(), label: 'Aktiv', description: 'Mitglied ist freigeschaltet', color: '#22c55e' },
+          { id: makeId(), label: 'Ausstehend', description: 'Zahlung/Prüfung offen', color: '#f97316' },
+          { id: makeId(), label: 'Gesperrt', description: 'Mitglied deaktiviert', color: '#ef4444' },
+        ];
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Mitgliederstatus' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Status-Auswahl, z.B. für Mitglieder oder Buchungen.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 420,
+            props: {
+              component: 'status-board',
+              statusBoard: { title: 'Status', options, activeId: options[0]?.id ?? null },
+            },
+          }),
+        ];
+      } else if (preset === 'table-reservations') {
+        pageName = 'Tischplanung & Reservierungen';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Tischplanung & Reservierungen' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Pflege Reservierungen als Tabelle (Zeit, Tisch, Name, Status).' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 520,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Reservierungen',
+                columns: [makeTableColumn('Uhrzeit'), makeTableColumn('Tisch'), makeTableColumn('Name'), makeTableColumn('Status')],
+                rows: [
+                  makeTableRow(['18:00', 'Tisch 3', 'Müller', 'Bestätigt']),
+                  makeTableRow(['19:30', 'Tisch 1', 'Schneider', 'Offen']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'tracking-recording') {
+        pageName = 'Tracking & Aufzeichnung';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Tracking & Aufzeichnung' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 72,
+            props: { text: 'Route-Tracking (Karte) + Audio-Notizen (Aufzeichnung).' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 210,
+            h: 360,
+            props: {
+              component: 'map',
+              mapLocation: 'Berlin, Germany',
+              mapMode: 'route-recording',
+              mapModeLabel: 'Route Recording',
+              mapInfo: 'Beispiel: Route wird aufgezeichnet und später ausgewertet.',
+              mapActionLabel: 'Aufzeichnung starten',
+            },
+          }),
+          createNode('container', {
+            y: 590,
+            h: 280,
+            props: {
+              component: 'audio-recorder',
+              audioNotes: [],
             },
           }),
         ];
@@ -3556,13 +3944,6 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="flex h-full flex-col">
               <div className="border-b border-[#111]/60 bg-[#0b0b0f]/95 px-4 py-4" data-tour-id="editor-actions">
                 <div className="flex items-center justify-between">
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-200 transition hover:bg-white/10"
-                  >
-                    <span className="text-lg" aria-hidden="true">←</span>
-                    <span>Dashboard</span>
-                  </Link>
                   <span className="text-xs uppercase tracking-[0.35em] text-neutral-500">Editor</span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -3715,13 +4096,6 @@ export default function EditorShell({ initialPageId }: Props) {
                     <p className="text-base font-semibold text-white">{project?.name ?? 'Unbenanntes Projekt'}</p>
                     {project?.description && <p className="text-xs text-neutral-400">{project.description}</p>}
                   </div>
-                  <Link
-                    href="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm transition hover:bg-white/20"
-                  >
-                    <span className="text-lg">←</span>
-                    <span>Dashboard</span>
-                  </Link>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                   <button
@@ -3883,6 +4257,7 @@ export default function EditorShell({ initialPageId }: Props) {
                   <div className="rounded-2xl border border-white/10 bg-[#070a13]/90 p-4 shadow-2xl">
                     <PropertiesPanel
                       node={selectedNode}
+                      pages={pages}
                       onUpdate={(patch) => {
                         if (selectedId) updateNode(selectedId, patch);
                       }}
@@ -3959,6 +4334,7 @@ export default function EditorShell({ initialPageId }: Props) {
             <div className="flex-1 overflow-y-auto p-4">
               <PropertiesPanel
                 node={selectedNode}
+                pages={pages}
                 onUpdate={(patch) => {
                   if (selectedId) updateNode(selectedId, patch);
                 }}

@@ -1,6 +1,6 @@
 'use client';
 
-import type { NodeProps, NavbarItem, BautagebuchEntry, PhaseCard, PhaseItem } from '@/lib/editorTypes';
+import type { NodeProps, NavbarItem, BautagebuchEntry, PhaseCard, PhaseItem, TimerConfig, TimerMode } from '@/lib/editorTypes';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
@@ -1440,6 +1440,24 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
         );
       }
 
+      if (component === 'timer') {
+        const data = ensureTimer(node.props?.timer);
+        return (
+          <TimerWidget
+            title={data.title}
+            seconds={data.seconds}
+            onChange={(next) =>
+              onUpdate({
+                props: {
+                  ...node.props,
+                  timer: next,
+                },
+              })
+            }
+          />
+        );
+      }
+
       if (component === 'todo') {
         const todos = ensureTaskList(node.props?.todoItems);
         return (
@@ -1450,6 +1468,23 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
                 props: {
                   ...node.props,
                   todoItems: updated,
+                },
+              })
+            }
+          />
+        );
+      }
+
+      if (component === 'timer') {
+        const timer = ensureTimer(node.props?.timer);
+        return (
+          <TimerWidget
+            config={timer}
+            onChange={(next) =>
+              onUpdate({
+                props: {
+                  ...node.props,
+                  timer: next,
                 },
               })
             }
@@ -1913,6 +1948,55 @@ function formatDuration(seconds: number) {
   return `${mins}:${secs}`;
 }
 
+type BautagebuchData = {
+  title: string;
+  entries: BautagebuchEntry[];
+};
+
+function ensureBautagebuch(raw?: NodeProps['bautagebuch'] | null): BautagebuchData {
+  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Bautagebuch';
+  const entries = Array.isArray(raw?.entries)
+    ? (raw?.entries as BautagebuchEntry[]).filter((entry) => entry && typeof entry.id === 'string')
+    : [];
+  const normalizedEntries = entries.map((entry) => ({
+    id: typeof entry.id === 'string' ? entry.id : createId(),
+    date: typeof entry.date === 'string' && entry.date.trim() ? entry.date.trim() : new Date().toISOString().slice(0, 10),
+    note: typeof entry.note === 'string' ? entry.note : '',
+  }));
+  return { title, entries: normalizedEntries };
+}
+
+type PhasenboardData = {
+  title: string;
+  phases: PhaseItem[];
+  cards: PhaseCard[];
+};
+
+function ensurePhasenboard(raw?: NodeProps['phasenboard'] | null): PhasenboardData {
+  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Phasenboard';
+  const phasesRaw = Array.isArray(raw?.phases) ? (raw?.phases as PhaseItem[]) : [];
+  const phases = (phasesRaw.length ? phasesRaw : [{ id: createId(), title: 'Phase 1' }]).map((phase) => ({
+    id: typeof phase.id === 'string' && phase.id ? phase.id : createId(),
+    title: typeof phase.title === 'string' && phase.title.trim() ? phase.title.trim() : 'Phase',
+  }));
+  const phaseIds = new Set(phases.map((phase) => phase.id));
+
+  const cardsRaw = Array.isArray(raw?.cards) ? (raw?.cards as PhaseCard[]) : [];
+  const cards = cardsRaw
+    .filter(
+      (card) =>
+        card && typeof card.id === 'string' && typeof card.phaseId === 'string' && phaseIds.has(card.phaseId)
+    )
+    .map((card) => ({
+      id: typeof card.id === 'string' && card.id ? card.id : createId(),
+      phaseId: card.phaseId,
+      title: typeof card.title === 'string' && card.title.trim() ? card.title.trim() : 'Karte',
+      description: typeof card.description === 'string' ? card.description : undefined,
+    }));
+
+  return { title, phases, cards };
+}
+
 function ensureNavItems(props?: NodeProps): NavbarItem[] {
 
   type BautagebuchData = {
@@ -2200,6 +2284,273 @@ function ensureNavItems(props?: NodeProps): NavbarItem[] {
       target: '#contact',
     },
   ];
+}
+
+type TimerData = Required<Pick<TimerConfig, 'label' | 'mode' | 'seconds'>>;
+
+function ensureTimer(raw?: TimerConfig | null): TimerData {
+  const label = typeof raw?.label === 'string' && raw.label.trim() ? raw.label.trim() : 'Timer';
+  const mode: TimerMode = raw?.mode === 'stopwatch' ? 'stopwatch' : 'countdown';
+  const secondsRaw = typeof raw?.seconds === 'number' && Number.isFinite(raw.seconds) ? raw.seconds : 15 * 60;
+  const seconds = Math.max(0, Math.min(24 * 60 * 60, Math.floor(secondsRaw)));
+  return { label, mode, seconds };
+}
+
+function formatHms(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(safe / 3600);
+  const m = Math.floor((safe % 3600) / 60);
+  const s = safe % 60;
+  const pad = (v: number) => String(v).padStart(2, '0');
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
+  return `${m}:${pad(s)}`;
+}
+
+function TimerWidget({
+  config,
+  onChange,
+}: {
+  config: TimerData;
+  onChange: (next: TimerConfig) => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [seconds, setSeconds] = useState<number>(config.mode === 'countdown' ? config.seconds : 0);
+
+  useEffect(() => {
+    setRunning(false);
+    setSeconds(config.mode === 'countdown' ? config.seconds : 0);
+  }, [config.mode, config.seconds]);
+
+  useEffect(() => {
+    if (!running) return;
+    const handle = window.setInterval(() => {
+      setSeconds((prev) => {
+        if (config.mode === 'countdown') {
+          const next = Math.max(0, prev - 1);
+          if (next === 0) {
+            window.setTimeout(() => setRunning(false), 0);
+          }
+          return next;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(handle);
+  }, [running, config.mode]);
+
+  const displayed = config.mode === 'countdown' ? seconds : seconds;
+
+  return (
+    <div
+      className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">{config.mode === 'countdown' ? 'Countdown' : 'Stoppuhr'}</div>
+          <div className="truncate text-sm font-semibold text-white">{config.label}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-semibold tabular-nums text-white">{formatHms(displayed)}</div>
+          <div className="text-[10px] text-neutral-400">{running ? 'läuft' : 'pausiert'}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            setRunning((prev) => !prev);
+          }}
+        >
+          {running ? 'Pause' : 'Start'}
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            setRunning(false);
+            setSeconds(config.mode === 'countdown' ? config.seconds : 0);
+          }}
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            setRunning(false);
+            onChange({ ...config, mode: config.mode === 'countdown' ? 'stopwatch' : 'countdown' });
+          }}
+        >
+          Modus
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 rounded-lg border border-white/10 bg-black/20 p-2">
+        <div className="grid grid-cols-3 gap-2">
+          <input
+            className="col-span-2 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
+            value={config.label}
+            onChange={(e) => onChange({ ...config, label: e.target.value })}
+            onClick={(event) => event.stopPropagation()}
+            placeholder="Label"
+          />
+          <select
+            className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
+            value={config.mode}
+            onChange={(e) => {
+              const nextMode = e.target.value === 'stopwatch' ? 'stopwatch' : 'countdown';
+              onChange({ ...config, mode: nextMode });
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <option value="countdown">Countdown</option>
+            <option value="stopwatch">Stoppuhr</option>
+          </select>
+        </div>
+
+        {config.mode === 'countdown' && (
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2 text-[11px] text-neutral-300">Dauer (Sek.)</div>
+            <input
+              type="number"
+              min={0}
+              max={86400}
+              className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
+              value={config.seconds}
+              onChange={(e) => onChange({ ...config, seconds: Number(e.target.value) })}
+              onClick={(event) => event.stopPropagation()}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type TimerData = {
+  title: string;
+  seconds: number;
+};
+
+function ensureTimer(raw?: NodeProps['timer'] | null): TimerData {
+  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Timer';
+  const secondsRaw = typeof raw?.seconds === 'number' && Number.isFinite(raw.seconds) ? raw.seconds : 300;
+  const seconds = Math.max(1, Math.min(24 * 60 * 60, Math.round(secondsRaw)));
+  return { title, seconds };
+}
+
+function TimerWidget({
+  title,
+  seconds,
+  onChange,
+}: {
+  title: string;
+  seconds: number;
+  onChange: (next: TimerData) => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [remaining, setRemaining] = useState(seconds);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [remainingAtStart, setRemainingAtStart] = useState<number>(seconds);
+
+  useEffect(() => {
+    if (!running) return;
+    const handle = window.setInterval(() => {
+      const start = startedAt ?? Date.now();
+      const elapsed = Math.max(0, Date.now() - start);
+      const nextRemaining = Math.max(0, remainingAtStart - Math.floor(elapsed / 1000));
+      setRemaining(nextRemaining);
+      if (nextRemaining <= 0) {
+        setRunning(false);
+        setStartedAt(null);
+      }
+    }, 250);
+    return () => window.clearInterval(handle);
+  }, [running, startedAt, remainingAtStart]);
+
+  useEffect(() => {
+    if (running) return;
+    setRemaining(seconds);
+    setRemainingAtStart(seconds);
+    setStartedAt(null);
+  }, [seconds, running]);
+
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+  const ss = String(remaining % 60).padStart(2, '0');
+
+  return (
+    <div
+      className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Timer</div>
+          <div className="text-sm font-semibold text-white">{title}</div>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-2xl font-semibold tabular-nums text-white">
+          {mm}:{ss}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (running) {
+              setRunning(false);
+              setStartedAt(null);
+              setRemainingAtStart(remaining);
+              return;
+            }
+            setRunning(true);
+            setStartedAt(Date.now());
+            setRemainingAtStart(remaining);
+          }}
+        >
+          {running ? 'Pause' : 'Start'}
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            setRunning(false);
+            setRemaining(seconds);
+            setRemainingAtStart(seconds);
+            setStartedAt(null);
+          }}
+        >
+          Reset
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            const raw = window.prompt('Dauer in Minuten:', String(Math.max(1, Math.round(seconds / 60))));
+            if (!raw) return;
+            const minutes = Number(raw);
+            if (!Number.isFinite(minutes)) return;
+            const nextSeconds = Math.max(1, Math.min(24 * 60, Math.round(minutes))) * 60;
+            onChange({ title, seconds: nextSeconds });
+          }}
+        >
+          Dauer
+        </button>
+      </div>
+
+      <div className="text-[11px] text-neutral-400">Hinweis: Die Laufzeit ist lokal (Vorschau). Gespeichert wird nur die Dauer.</div>
+    </div>
+  );
 }
 
 function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {

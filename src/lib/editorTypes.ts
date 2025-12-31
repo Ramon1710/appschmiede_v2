@@ -103,6 +103,14 @@ export type TimeEntry = {
   endedAt?: string;
 };
 
+export type TimerMode = 'stopwatch' | 'countdown';
+
+export type TimerConfig = {
+  label?: string;
+  mode?: TimerMode;
+  seconds?: number;
+};
+
 export type StatusOption = {
   id: string;
   label: string;
@@ -188,6 +196,7 @@ export type NodeProps = {
   timeTracking?: {
     entries: TimeEntry[];
   };
+  timer?: TimerConfig;
   statusBoard?: {
     title?: string;
     activeId?: string | null;
@@ -254,6 +263,10 @@ export type NodeProps = {
     title?: string;
     phases: PhaseItem[];
     cards: PhaseCard[];
+  };
+  timer?: {
+    title?: string;
+    seconds?: number;
   };
   [key: string]: unknown;
 };

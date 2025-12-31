@@ -551,6 +551,7 @@ const parseBackgroundImage = (value?: string): ParsedBackgroundImage | null => {
 
 interface PropertiesPanelProps {
   node: EditorNode | null;
+  pages?: Array<{ id?: string | null; name: string }>;
   onUpdate: (patch: Partial<EditorNode>) => void;
   onGenerateBackground: (prompt: string) => void;
   onChangeBackground: (value: string) => void;
@@ -566,6 +567,7 @@ interface PropertiesPanelProps {
 
 export default function PropertiesPanel({
   node,
+  pages = [],
   onUpdate,
   onGenerateBackground,
   onChangeBackground,
@@ -610,6 +612,31 @@ export default function PropertiesPanel({
     ? pageBackgroundColor.trim()
     : FALLBACK_COLOR;
   const parsedLegacyBackground = useMemo(() => parseBackgroundImage(pageBackground), [pageBackground]);
+  const availablePages = useMemo(
+    () =>
+      pages
+        .filter((page) => typeof page?.id === 'string' && page.id.length > 0)
+        .map((page) => ({ id: page.id as string, name: page.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'de')),
+    [pages]
+  );
+
+  const resolveTargetPage = useCallback(
+    (targetPage?: string | null) => {
+      if (typeof targetPage !== 'string') return '';
+      const value = targetPage.trim();
+      if (!value) return '';
+
+      const matchById = availablePages.find((page) => page.id === value);
+      if (matchById) return matchById.id;
+
+      const matchByName = availablePages.find((page) => page.name === value);
+      if (matchByName) return matchByName.id;
+
+      return value;
+    },
+    [availablePages]
+  );
   const hasLegacyImageBackground = Boolean(parsedLegacyBackground);
   const backgroundSizeToken = parsedLegacyBackground?.size ?? SIZE_DEFAULT;
   const backgroundPosXPercent = parsedLegacyBackground
@@ -2189,12 +2216,23 @@ export default function PropertiesPanel({
                           <>
                             <div>
                               <label className="text-xs text-gray-400">Zielseite</label>
-                              <input
+                              <select
                                 className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
-                                placeholder="Dashboard"
-                                value={option.targetPage ?? ''}
-                                onChange={(event) => handleDropdownOptionChange(option.id, { targetPage: event.target.value })}
-                              />
+                                value={resolveTargetPage(option.targetPage)}
+                                onChange={(event) =>
+                                  handleDropdownOptionChange(option.id, { targetPage: event.target.value || undefined })
+                                }
+                              >
+                                <option value="">— Seite wählen —</option>
+                                {availablePages.map((page) => (
+                                  <option key={page.id} value={page.id}>
+                                    {page.name}
+                                  </option>
+                                ))}
+                                {option.targetPage && !availablePages.some((p) => p.id === resolveTargetPage(option.targetPage)) && (
+                                  <option value={resolveTargetPage(option.targetPage)}>Seite nicht gefunden</option>
+                                )}
+                              </select>
                             </div>
                             <div>
                               <label className="text-xs text-gray-400">Anchor / URL (optional)</label>
@@ -2336,12 +2374,21 @@ export default function PropertiesPanel({
               {node.props?.action === 'navigate' && (
                 <div>
                   <label className="text-xs text-gray-400">Zielseite</label>
-                  <input
+                  <select
                     className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
-                    placeholder="Seiten-ID"
-                    value={node.props?.targetPage ?? ''}
-                    onChange={(e) => setProps({ targetPage: e.target.value })}
-                  />
+                    value={resolveTargetPage(node.props?.targetPage)}
+                    onChange={(e) => setProps({ targetPage: e.target.value || undefined })}
+                  >
+                    <option value="">— Seite wählen —</option>
+                    {availablePages.map((page) => (
+                      <option key={page.id} value={page.id}>
+                        {page.name}
+                      </option>
+                    ))}
+                    {node.props?.targetPage && !availablePages.some((p) => p.id === resolveTargetPage(node.props?.targetPage)) && (
+                      <option value={resolveTargetPage(node.props.targetPage)}>Seite nicht gefunden</option>
+                    )}
+                  </select>
                 </div>
               )}
 
@@ -2362,7 +2409,7 @@ export default function PropertiesPanel({
                   <label className="text-xs text-gray-400">Telefonnummer</label>
                   <input
                     className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
-                    placeholder="+49 123 456789"
+                    placeholder="z.B. +49 123 456"
                     value={node.props?.phoneNumber ?? ''}
                     onChange={(e) => setProps({ phoneNumber: e.target.value })}
                   />
@@ -3096,13 +3143,22 @@ export default function PropertiesPanel({
                         {item.action === 'navigate' && (
                           <>
                             <div>
-                              <label className="text-xs text-gray-400">Zielseite (Name oder ID)</label>
-                              <input
+                              <label className="text-xs text-gray-400">Zielseite</label>
+                              <select
                                 className="w-full bg-neutral-800 rounded px-2 py-1.5 text-sm"
-                                placeholder="z.B. Unternehmen"
-                                value={item.targetPage ?? ''}
-                                onChange={(e) => handleNavItemChange(item.id, { targetPage: e.target.value })}
-                              />
+                                value={resolveTargetPage(item.targetPage)}
+                                onChange={(e) => handleNavItemChange(item.id, { targetPage: e.target.value || undefined })}
+                              >
+                                <option value="">— Seite wählen —</option>
+                                {availablePages.map((page) => (
+                                  <option key={page.id} value={page.id}>
+                                    {page.name}
+                                  </option>
+                                ))}
+                                {item.targetPage && !availablePages.some((p) => p.id === resolveTargetPage(item.targetPage)) && (
+                                  <option value={resolveTargetPage(item.targetPage)}>Seite nicht gefunden</option>
+                                )}
+                              </select>
                             </div>
                             <div>
                               <label className="text-xs text-gray-400">Eigenes Ziel / Anker (optional)</label>
