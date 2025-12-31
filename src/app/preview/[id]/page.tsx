@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import PreviewCanvas from '../PreviewCanvas';
 import { db } from '@/lib/firebase';
@@ -16,6 +16,13 @@ type LoadState =
 	| { status: 'error'; message: string };
 
 export default function Preview({ params }: { params: { id: string } }) {
+	const pathname = usePathname();
+	const pathnameProjectId = (() => {
+		if (!pathname) return '';
+		const match = pathname.match(/\/preview\/([^/?#]+)/);
+		return match?.[1] ?? '';
+	})();
+	const projectId = typeof params?.id === 'string' ? params.id : pathnameProjectId;
 	const search = useSearchParams();
 	const requestedPageId = search.get('page');
 	const [state, setState] = useState<LoadState>({ status: 'loading' });
@@ -33,11 +40,20 @@ export default function Preview({ params }: { params: { id: string } }) {
 		if (authLoading) return;
 
 		const load = async () => {
+			if (!projectId) {
+				setState({
+					status: 'error',
+					message:
+						'Die Vorschau-URL ist ungültig (fehlende Projekt-ID). Bitte öffne die Vorschau erneut aus dem Editor oder aus der Projektliste.',
+				});
+				return;
+			}
+
 			setState({ status: 'loading' });
 			try {
 				let projectName = 'App Vorschau';
 				try {
-					const projectSnap = await getDoc(doc(db, 'projects', params.id));
+					const projectSnap = await getDoc(doc(db, 'projects', projectId));
 					if (projectSnap.exists()) {
 						const data = projectSnap.data();
 						const rawName = typeof data?.name === 'string' ? data.name.trim() : '';
@@ -47,7 +63,7 @@ export default function Preview({ params }: { params: { id: string } }) {
 					console.warn('Projekt-Metadaten konnten nicht geladen werden', metaError);
 				}
 
-				const pages = await listPages(params.id);
+				const pages = await listPages(projectId);
 				if (cancelled) return;
 
 				if (!pages.length) {
@@ -95,7 +111,7 @@ export default function Preview({ params }: { params: { id: string } }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [params.id, requestedPageId, authLoading]);
+	}, [projectId, requestedPageId, authLoading]);
 
 	if (state.status === 'loading') {
 		return (
