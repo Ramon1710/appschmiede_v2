@@ -6,7 +6,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Canvas from './Canvas';
 import PropertiesPanel from './PropertiesPanel';
 import CategorizedToolbox from './CategorizedToolbox';
-import QuickButtonsPanel from './QuickButtonsPanel';
+import QuickButtonsPanel, { type QuickButtonPresetKey } from './QuickButtonsPanel';
 import QRCodeButton from '../_extensions/QRCodeButton';
 import GuidedTour from '@/components/GuidedTour';
 import Header from '@/components/Header';
@@ -832,6 +832,51 @@ const APP_TEMPLATES: AppTemplateDefinition[] = [
     description: 'Chatfenster plus Eingabefeld & Aktionen.',
     icon: '💬',
     template: 'chat',
+    gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
+  },
+  {
+    id: 'tpl-home-4',
+    title: 'Startseite (4 Buttons)',
+    subtitle: 'Start',
+    description: '2×2 Kachel-Layout für eine kompakte Startseite.',
+    icon: '🏠',
+    template: 'home-grid-4',
+    gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
+  },
+  {
+    id: 'tpl-home-6',
+    title: 'Startseite (6 Buttons)',
+    subtitle: 'Start',
+    description: '3×2 Kachel-Layout wie ein App-Dashboard.',
+    icon: '🏠',
+    template: 'home-grid-6',
+    gradient: 'from-cyan-500/40 via-sky-500/20 to-indigo-500/40',
+  },
+  {
+    id: 'tpl-home-8',
+    title: 'Startseite (8 Buttons)',
+    subtitle: 'Start',
+    description: '4×2 Kachel-Layout für viele schnelle Aktionen.',
+    icon: '🏠',
+    template: 'home-grid-8',
+    gradient: 'from-purple-500/40 via-indigo-500/20 to-cyan-500/40',
+  },
+  {
+    id: 'tpl-home-10',
+    title: 'Startseite (10 Buttons)',
+    subtitle: 'Start',
+    description: '2×5 Kachel-Layout mit mehr Platz pro Button.',
+    icon: '🏠',
+    template: 'home-grid-10',
+    gradient: 'from-amber-500/40 via-orange-500/20 to-rose-500/40',
+  },
+  {
+    id: 'tpl-home-12',
+    title: 'Startseite (12 Buttons)',
+    subtitle: 'Start',
+    description: '3×4 Kachel-Layout wie im Intranet-App Beispiel.',
+    icon: '🏠',
+    template: 'home-grid-12',
     gradient: 'from-emerald-500/40 via-teal-500/20 to-sky-500/40',
   },
 ];
@@ -1729,6 +1774,48 @@ export default function EditorShell({ initialPageId }: Props) {
     let nodes: EditorNode[] = [];
     let background: string | undefined;
 
+    const buildHomeGrid = (buttonCount: number, columns: number, labels: Array<{ label: string; icon: string }>) => {
+      background = 'linear-gradient(155deg,#0b0b0f,#0b1220,#111827)';
+
+      const hero = createNode('image', {
+        x: 32,
+        y: 28,
+        w: 296,
+        h: 170,
+        props: {
+          src: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1200&q=80',
+        },
+      });
+
+      const startY = 220;
+      const gapX = columns >= 4 ? 8 : 12;
+      const gapY = 12;
+      const marginX = 32;
+      const pageWidth = 360;
+      const tileW = Math.floor((pageWidth - marginX * 2 - gapX * (columns - 1)) / columns);
+      const tileH = columns === 2 ? 96 : 92;
+
+      const tiles = Array.from({ length: buttonCount }).map((_, idx) => {
+        const row = Math.floor(idx / columns);
+        const col = idx % columns;
+        const label = labels[idx]?.label ?? `Button ${idx + 1}`;
+        const icon = labels[idx]?.icon ?? '🔘';
+        return createNode('button', {
+          x: marginX + col * (tileW + gapX),
+          y: startY + row * (tileH + gapY),
+          w: tileW,
+          h: tileH,
+          props: {
+            label,
+            icon,
+            action: 'none',
+          },
+        });
+      });
+
+      nodes = [hero, ...tiles];
+    };
+
     if (template === 'login') {
       background = 'linear-gradient(155deg,#0b1220,#142238)';
       nodes = stack([
@@ -1926,6 +2013,61 @@ export default function EditorShell({ initialPageId }: Props) {
             props: { label: 'Senden', action: 'chat', target: '+491234567890' },
           },
         },
+      ]);
+    } else if (template === 'home-grid-4') {
+      buildHomeGrid(4, 2, [
+        { label: 'Schichtplan', icon: '🗓️' },
+        { label: 'News', icon: '📰' },
+        { label: 'Wichtige Links', icon: '🔗' },
+        { label: 'Kontakt', icon: '☎️' },
+      ]);
+    } else if (template === 'home-grid-6') {
+      buildHomeGrid(6, 3, [
+        { label: 'Schichtplan', icon: '🗓️' },
+        { label: 'News', icon: '📰' },
+        { label: 'Wichtige Links', icon: '🔗' },
+        { label: 'Kontakt Mitarbeiter', icon: '📞' },
+        { label: 'Betriebsrat', icon: '📣' },
+        { label: 'Benefits', icon: '🎁' },
+      ]);
+    } else if (template === 'home-grid-8') {
+      buildHomeGrid(8, 4, [
+        { label: 'Schichtplan', icon: '🗓️' },
+        { label: 'News', icon: '📰' },
+        { label: 'Links', icon: '🔗' },
+        { label: 'Kontakt', icon: '☎️' },
+        { label: 'Betriebsrat', icon: '📣' },
+        { label: 'Benefits', icon: '🎁' },
+        { label: 'Social', icon: '❤️' },
+        { label: 'Onboarding', icon: '🧑‍🎓' },
+      ]);
+    } else if (template === 'home-grid-10') {
+      buildHomeGrid(10, 2, [
+        { label: 'Schichtplan', icon: '🗓️' },
+        { label: 'News', icon: '📰' },
+        { label: 'Wichtige Links', icon: '🔗' },
+        { label: 'Kontakt Mitarbeiter', icon: '📞' },
+        { label: 'Betriebsrat NEWS & BV', icon: '📣' },
+        { label: 'Benefits', icon: '🎁' },
+        { label: 'Social Media', icon: '❤️' },
+        { label: 'Mitarbeiterempfehlung', icon: '✅' },
+        { label: 'Wichtige Ansprechpartner', icon: '👤' },
+        { label: 'Galvapedia', icon: '📚' },
+      ]);
+    } else if (template === 'home-grid-12') {
+      buildHomeGrid(12, 3, [
+        { label: 'Schichtpläne', icon: '🗓️' },
+        { label: 'NEWS', icon: '📰' },
+        { label: 'Wichtige Links', icon: '🔗' },
+        { label: 'Kontaktseite Mitarbeiter', icon: '📞' },
+        { label: 'Betriebsrat NEWS & BV', icon: '📣' },
+        { label: 'Benefits', icon: '🎁' },
+        { label: 'Social Media', icon: '❤️' },
+        { label: 'Mitarbeiterempfehlung', icon: '✅' },
+        { label: 'Wichtige Ansprechpartner', icon: '👤' },
+        { label: 'Galvapedia', icon: '📚' },
+        { label: 'Mitarbeiterzeitung', icon: '🗞️' },
+        { label: 'Onboarding Broschüre', icon: '📘' },
       ]);
     }
 
@@ -2284,6 +2426,249 @@ export default function EditorShell({ initialPageId }: Props) {
     }));
     setSelectedId(newNode.id);
   }, [applyTemplate, applyTreeUpdate]);
+
+  const createQuickPresetPage = useCallback(
+    async (preset: QuickButtonPresetKey) => {
+      if (!_projectId) {
+        setTemplateNotice('Bitte öffne zuerst ein Projekt.');
+        return;
+      }
+
+      const makeTableColumn = (label: string) => ({ id: makeId(), label });
+      const makeTableRow = (values: string[]) => ({ id: makeId(), values });
+
+      const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
+        id: makeId(),
+        type,
+        x: overrides.x ?? 32,
+        y: overrides.y ?? 96,
+        w: overrides.w ?? 296,
+        h: overrides.h ?? (type === 'text' ? 60 : type === 'button' ? 56 : 200),
+        props: overrides.props ?? {},
+        style: overrides.style ?? {},
+        children: overrides.children,
+      });
+
+      const background = 'linear-gradient(140deg,#0b0b0f,#111827)';
+
+      let pageName = 'Neue Seite';
+      let nodes: EditorNode[] = [];
+
+      if (preset === 'contact-list') {
+        pageName = 'Kontaktliste';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            h: 60,
+            props: { text: 'Kontaktliste' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Hinterlege hier Ansprechpartner inkl. Telefon und E-Mail.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 260,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Ansprechpartner',
+                columns: [makeTableColumn('Name'), makeTableColumn('Telefon'), makeTableColumn('E-Mail')],
+                rows: [
+                  makeTableRow(['Max Mustermann', '+49 123 4567', 'max@example.com']),
+                  makeTableRow(['Erika Musterfrau', '+49 234 5678', 'erika@example.com']),
+                ],
+              },
+            },
+          }),
+          createNode('button', {
+            y: 470,
+            w: 296,
+            h: 56,
+            props: { label: 'E-Mail schreiben', icon: '✉️', action: 'email', emailAddress: 'info@example.com' },
+          }),
+          createNode('button', {
+            y: 540,
+            w: 296,
+            h: 56,
+            props: { label: 'Anrufen', icon: '📞', action: 'call', phoneNumber: '+491234567890' },
+          }),
+        ];
+      } else if (preset === 'opening-hours') {
+        pageName = 'Öffnungszeiten';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Öffnungszeiten' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Passe die Zeiten an eure Standorte und Feiertage an.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 320,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Zeiten',
+                columns: [makeTableColumn('Tag'), makeTableColumn('Von'), makeTableColumn('Bis')],
+                rows: [
+                  makeTableRow(['Mo', '08:00', '17:00']),
+                  makeTableRow(['Di', '08:00', '17:00']),
+                  makeTableRow(['Mi', '08:00', '17:00']),
+                  makeTableRow(['Do', '08:00', '17:00']),
+                  makeTableRow(['Fr', '08:00', '15:00']),
+                  makeTableRow(['Sa', 'geschlossen', '—']),
+                  makeTableRow(['So', 'geschlossen', '—']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'important-links') {
+        pageName = 'Wichtige Links';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Wichtige Links' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Sammle interne Tools und Dokumente an einem Ort.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('button', {
+            y: 200,
+            props: { label: 'Intranet', icon: '🔗', action: 'url', url: 'https://example.com' },
+          }),
+          createNode('button', {
+            y: 270,
+            props: { label: 'Wiki / Doku', icon: '📚', action: 'url', url: 'https://example.com/wiki' },
+          }),
+          createNode('button', {
+            y: 340,
+            props: { label: 'Support', icon: '🎫', action: 'url', url: 'https://example.com/support' },
+          }),
+        ];
+      } else if (preset === 'news') {
+        pageName = 'News';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'News' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 80,
+            props: {
+              text: '• Betriebsrat News & BV\n• Interne Updates\n• Wichtige Hinweise\n\nErsetze diese Liste durch eure echten Meldungen.',
+            },
+            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
+          }),
+        ];
+      } else if (preset === 'shift-plan') {
+        pageName = 'Schichtplan';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Schichtplan' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Beispiel-Daten – ersetze sie durch euren echten Plan.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 300,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Diese Woche',
+                columns: [makeTableColumn('Datum'), makeTableColumn('Schicht'), makeTableColumn('Team')],
+                rows: [
+                  makeTableRow(['Mo', 'Früh', 'Team A']),
+                  makeTableRow(['Di', 'Spät', 'Team B']),
+                  makeTableRow(['Mi', 'Früh', 'Team A']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'benefits') {
+        pageName = 'Benefits';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Benefits' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 140,
+            props: {
+              text: '• JobRad / ÖPNV\n• Weiterbildung\n• Verpflegung\n• Events\n\nPasse die Inhalte an euer Unternehmen an.',
+            },
+            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
+          }),
+        ];
+      } else if (preset === 'contacts') {
+        pageName = 'Ansprechpartner';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Wichtige Ansprechpartner' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('container', {
+            y: 130,
+            h: 300,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Kontakte',
+                columns: [makeTableColumn('Thema'), makeTableColumn('Name'), makeTableColumn('Kontakt')],
+                rows: [
+                  makeTableRow(['IT', 'Alex', 'it@example.com']),
+                  makeTableRow(['HR', 'Sam', 'hr@example.com']),
+                  makeTableRow(['Facility', 'Pat', '+49 111 222']),
+                ],
+              },
+            },
+          }),
+        ];
+      }
+
+      const tree: PageTree['tree'] = sanitizeNode({
+        id: 'root',
+        type: 'container',
+        props: { bg: background },
+        children: nodes,
+      } as any);
+
+      try {
+        const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree });
+        handlePageSelection(pageId, { placeholderName: pageName });
+        setTemplateNotice(null);
+      } catch (error) {
+        console.error('Quick preset page creation failed', error);
+        setTemplateNotice('Seite konnte nicht erstellt werden. Bitte versuche es erneut.');
+      }
+    },
+    [_projectId, handlePageSelection, setTemplateNotice]
+  );
 
   useEffect(() => {
     if (!(_projectId && currentPageId)) return;
@@ -3094,7 +3479,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     </div>
                     <div className="mt-4 flex-1 overflow-hidden">
                       {toolboxTab === 'components' && toolboxContent}
-                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onAdd={addNode} />}
+                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onCreatePage={createQuickPresetPage} />}
                       {toolboxTab === 'templates' && (
                         <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
                       )}
@@ -3252,7 +3637,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     </div>
                     <div className="mt-4 space-y-3 overflow-y-auto pr-1">
                       {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
-                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onAdd={addNode} />}
+                      {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onCreatePage={createQuickPresetPage} />}
                       {toolboxTab === 'templates' && templateContent}
                     </div>
                   </div>
