@@ -1824,8 +1824,10 @@ export default function PreviewCanvas({ page }: PreviewCanvasProps) {
     }));
   }, []);
 
-  const rootBackground = typeof localPage.tree.props?.bg === 'string' && localPage.tree.props.bg.trim() !== ''
-    ? localPage.tree.props.bg
+  const rawBackground = typeof localPage.tree.props?.bg === 'string' ? localPage.tree.props.bg.trim() : '';
+  const backgroundIsNone = rawBackground.toLowerCase() === 'none';
+  const rootBackground = rawBackground && !backgroundIsNone
+    ? rawBackground
     : DEFAULT_PAGE_BACKGROUND;
 
   const rootBackgroundColor = typeof localPage.tree.props?.bgColor === 'string' && localPage.tree.props.bgColor.trim() !== ''
@@ -1836,7 +1838,7 @@ export default function PreviewCanvas({ page }: PreviewCanvasProps) {
     <div className="flex justify-center">
       <div
         className="relative shrink-0 overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
-        style={{ width: FRAME.width, height: FRAME.height, background: rootBackground, backgroundColor: rootBackgroundColor }}
+        style={{ width: FRAME.width, height: FRAME.height, background: backgroundIsNone ? undefined : rootBackground, backgroundColor: rootBackgroundColor }}
       >
         {(localPage.tree.children ?? []).map((node) => (
           <div

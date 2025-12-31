@@ -1918,8 +1918,10 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
     };
   }, [processPointerMove, processPointerUp]);
 
-  const hasCustomBackground = typeof tree.tree.props?.bg === 'string' && tree.tree.props.bg.trim() !== '';
-  const backgroundValue = hasCustomBackground ? (tree.tree.props!.bg as string) : DEFAULT_PAGE_BACKGROUND;
+  const rawBackground = typeof tree.tree.props?.bg === 'string' ? tree.tree.props.bg.trim() : '';
+  const backgroundIsNone = rawBackground.toLowerCase() === 'none';
+  const hasCustomBackground = rawBackground !== '' && !backgroundIsNone;
+  const backgroundValue = hasCustomBackground ? rawBackground : DEFAULT_PAGE_BACKGROUND;
   const rootBackgroundColor = typeof tree.tree.props?.bgColor === 'string' && tree.tree.props.bgColor.trim() !== ''
     ? tree.tree.props.bgColor
     : DEFAULT_PAGE_BACKGROUND_COLOR;
@@ -1948,7 +1950,7 @@ export default function Canvas({ tree, selectedId, onSelect, onRemove, onMove, o
       >
         <div
           className="relative h-full w-full overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
-          style={{ background: backgroundValue, backgroundColor: rootBackgroundColor }}
+          style={{ background: backgroundIsNone ? undefined : backgroundValue, backgroundColor: rootBackgroundColor }}
           onPointerDown={(event) => {
             if (event.currentTarget === event.target) onSelect(null);
           }}
