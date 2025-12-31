@@ -17,12 +17,13 @@ import type {
   SupportTicket,
   AnalyticsMetric,
   TableConfig,
+  NewsItem,
   MapMode,
 } from '@/lib/editorTypes';
 import { buildContainerBackgroundStyle } from '@/lib/containerBackground';
 
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
-  NewsItem,
+const DEFAULT_PAGE_BACKGROUND_COLOR = '#05070f';
 const AI_CHAT_FALLBACK_BACKGROUND = 'linear-gradient(135deg,#0f172a,#020617,#000000)';
 const CHAT_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#0f172a,#111827,#020617)';
 const NEWS_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#1f0a11,#0b0b0f,#111827)';
@@ -1827,11 +1828,15 @@ export default function PreviewCanvas({ page }: PreviewCanvasProps) {
     ? localPage.tree.props.bg
     : DEFAULT_PAGE_BACKGROUND;
 
+  const rootBackgroundColor = typeof localPage.tree.props?.bgColor === 'string' && localPage.tree.props.bgColor.trim() !== ''
+    ? localPage.tree.props.bgColor
+    : DEFAULT_PAGE_BACKGROUND_COLOR;
+
   return (
     <div className="flex justify-center">
       <div
         className="relative shrink-0 overflow-hidden rounded-[36px] border border-neutral-800 shadow-2xl"
-        style={{ width: FRAME.width, height: FRAME.height, background: rootBackground }}
+        style={{ width: FRAME.width, height: FRAME.height, background: rootBackground, backgroundColor: rootBackgroundColor }}
       >
         {(localPage.tree.children ?? []).map((node) => (
           <div

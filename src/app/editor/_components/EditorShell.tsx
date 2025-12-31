@@ -93,6 +93,22 @@ const sanitizePage = (page: PageTree): PageTree => ({
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
 const DEFAULT_PAGE_BACKGROUND_COLOR = '#05070f';
 
+const normalizeBackgroundColorInput = (value: string): string => {
+  const raw = (value ?? '').trim();
+  if (!raw) return DEFAULT_PAGE_BACKGROUND_COLOR;
+  const lower = raw.toLowerCase();
+
+  if (lower === 'white' || lower === 'weiß' || lower === 'weiss') return '#ffffff';
+  if (lower === 'black' || lower === 'schwarz') return '#000000';
+  if (lower === 'transparent') return 'transparent';
+
+  // accept hex as-is
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return raw;
+
+  // allow common CSS names; keep as-is (backgroundColor supports it)
+  return raw;
+};
+
 const emptyTree: PageTree = {
   id: 'local',
   name: 'Seite 1',
@@ -1515,7 +1531,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const setPageBackgroundColor = useCallback(
     (value: string) => {
-      const next = typeof value === 'string' && value.trim() ? value : DEFAULT_PAGE_BACKGROUND_COLOR;
+      const next = typeof value === 'string' ? normalizeBackgroundColorInput(value) : DEFAULT_PAGE_BACKGROUND_COLOR;
       applyTreeUpdate((prev) => ({
         ...prev,
         tree: {
@@ -1573,14 +1589,40 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const generatePageBackground = useCallback((description: string) => {
+    const normalized = (description ?? '').trim();
+    const lower = normalized.toLowerCase();
+
+    // Simple "KI"-Interpretation: Farbwünsche -> echter einfarbiger Hintergrund
+    if (/(\bweiß\b|\bweiss\b|\bwhite\b)/i.test(lower)) {
+      setBackgroundLayers([]);
+      setPageBackgroundColor('#ffffff');
+      setPageBackground('none');
+      return;
+    }
+    if (/(\bschwarz\b|\bblack\b)/i.test(lower)) {
+      setBackgroundLayers([]);
+      setPageBackgroundColor('#000000');
+      setPageBackground('none');
+      return;
+    }
+
+    const hexMatch = normalized.match(/#([0-9a-f]{3}|[0-9a-f]{6})/i);
+    if (hexMatch) {
+      setBackgroundLayers([]);
+      setPageBackgroundColor(hexMatch[0]);
+      setPageBackground('none');
+      return;
+    }
+
+    // Fallback: deterministischer Gradient
     const colors = ['#38BDF8', '#6366F1', '#F472B6', '#22D3EE', '#F97316', '#A855F7'];
-    const hash = [...description].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = [...normalized].reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const first = colors[hash % colors.length];
     const second = colors[(hash + 3) % colors.length];
     const third = colors[(hash + 5) % colors.length];
     const gradient = `linear-gradient(140deg, ${first}, ${second}, ${third})`;
     setPageBackground(gradient);
-  }, [setPageBackground]);
+  }, [setBackgroundLayers, setPageBackground, setPageBackgroundColor]);
 
   const resetPageBackground = useCallback(() => {
     setBackgroundLayers([]);

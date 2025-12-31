@@ -904,7 +904,7 @@ export default function PropertiesPanel({
   };
 
   const applyColorOnlyBackground = () => {
-    onChangeBackground('');
+    onChangeBackground('none');
     onChangeBackgroundLayers([]);
   };
 
