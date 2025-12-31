@@ -318,7 +318,7 @@ export async function POST(request: Request) {
 - Setze sinnvolle x,y,w,h (max 360) und einen Hintergrund unter tree.props.bg.
   - Antworte NUR mit JSON im Format {"name":"...","tree":{...}} ohne Markdown oder Kommentare.
   - Bevorzuge die geforderten Inhalte aus dem Nutzerprompt. Erzeuge KEINE Login- oder Auth-Seite, sofern der Nutzer nicht explizit nach Login/Registration fragt.
-  - Falls der Nutzer nach einer Chat-Seite fragt, muss mindestens ein container mit component: "chat" enthalten sein und ein Eingabefeld für Nachrichten.`;
+  - Falls der Nutzer nach einer Chat-Seite fragt, muss mindestens ein container mit component: "chat" enthalten sein und ein Eingabefeld für Nachrichten.
   - Falls der Nutzer nach Zeiterfassung/Arbeitszeit/Stundenzettel fragt, MUSS mindestens ein container mit component: "time-tracking" enthalten sein und idealerweise Start/Stop-Buttons und ein Eingabefeld für Projekt/Tätigkeit.`;
 
     const completion = await fetch('https://api.openai.com/v1/chat/completions', {
