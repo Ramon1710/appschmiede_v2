@@ -2427,249 +2427,6 @@ export default function EditorShell({ initialPageId }: Props) {
     setSelectedId(newNode.id);
   }, [applyTemplate, applyTreeUpdate]);
 
-  const createQuickPresetPage = useCallback(
-    async (preset: QuickButtonPresetKey) => {
-      if (!_projectId) {
-        setTemplateNotice('Bitte öffne zuerst ein Projekt.');
-        return;
-      }
-
-      const makeTableColumn = (label: string) => ({ id: makeId(), label });
-      const makeTableRow = (values: string[]) => ({ id: makeId(), values });
-
-      const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
-        id: makeId(),
-        type,
-        x: overrides.x ?? 32,
-        y: overrides.y ?? 96,
-        w: overrides.w ?? 296,
-        h: overrides.h ?? (type === 'text' ? 60 : type === 'button' ? 56 : 200),
-        props: overrides.props ?? {},
-        style: overrides.style ?? {},
-        children: overrides.children,
-      });
-
-      const background = 'linear-gradient(140deg,#0b0b0f,#111827)';
-
-      let pageName = 'Neue Seite';
-      let nodes: EditorNode[] = [];
-
-      if (preset === 'contact-list') {
-        pageName = 'Kontaktliste';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            h: 60,
-            props: { text: 'Kontaktliste' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 56,
-            props: { text: 'Hinterlege hier Ansprechpartner inkl. Telefon und E-Mail.' },
-            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
-          }),
-          createNode('container', {
-            y: 190,
-            h: 260,
-            props: {
-              component: 'table',
-              tableConfig: {
-                title: 'Ansprechpartner',
-                columns: [makeTableColumn('Name'), makeTableColumn('Telefon'), makeTableColumn('E-Mail')],
-                rows: [
-                  makeTableRow(['Max Mustermann', '+49 123 4567', 'max@example.com']),
-                  makeTableRow(['Erika Musterfrau', '+49 234 5678', 'erika@example.com']),
-                ],
-              },
-            },
-          }),
-          createNode('button', {
-            y: 470,
-            w: 296,
-            h: 56,
-            props: { label: 'E-Mail schreiben', icon: '✉️', action: 'email', emailAddress: 'info@example.com' },
-          }),
-          createNode('button', {
-            y: 540,
-            w: 296,
-            h: 56,
-            props: { label: 'Anrufen', icon: '📞', action: 'call', phoneNumber: '+491234567890' },
-          }),
-        ];
-      } else if (preset === 'opening-hours') {
-        pageName = 'Öffnungszeiten';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'Öffnungszeiten' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 56,
-            props: { text: 'Passe die Zeiten an eure Standorte und Feiertage an.' },
-            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
-          }),
-          createNode('container', {
-            y: 190,
-            h: 320,
-            props: {
-              component: 'table',
-              tableConfig: {
-                title: 'Zeiten',
-                columns: [makeTableColumn('Tag'), makeTableColumn('Von'), makeTableColumn('Bis')],
-                rows: [
-                  makeTableRow(['Mo', '08:00', '17:00']),
-                  makeTableRow(['Di', '08:00', '17:00']),
-                  makeTableRow(['Mi', '08:00', '17:00']),
-                  makeTableRow(['Do', '08:00', '17:00']),
-                  makeTableRow(['Fr', '08:00', '15:00']),
-                  makeTableRow(['Sa', 'geschlossen', '—']),
-                  makeTableRow(['So', 'geschlossen', '—']),
-                ],
-              },
-            },
-          }),
-        ];
-      } else if (preset === 'important-links') {
-        pageName = 'Wichtige Links';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'Wichtige Links' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 56,
-            props: { text: 'Sammle interne Tools und Dokumente an einem Ort.' },
-            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
-          }),
-          createNode('button', {
-            y: 200,
-            props: { label: 'Intranet', icon: '🔗', action: 'url', url: 'https://example.com' },
-          }),
-          createNode('button', {
-            y: 270,
-            props: { label: 'Wiki / Doku', icon: '📚', action: 'url', url: 'https://example.com/wiki' },
-          }),
-          createNode('button', {
-            y: 340,
-            props: { label: 'Support', icon: '🎫', action: 'url', url: 'https://example.com/support' },
-          }),
-        ];
-      } else if (preset === 'news') {
-        pageName = 'News';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'News' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 80,
-            props: {
-              text: '• Betriebsrat News & BV\n• Interne Updates\n• Wichtige Hinweise\n\nErsetze diese Liste durch eure echten Meldungen.',
-            },
-            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
-          }),
-        ];
-      } else if (preset === 'shift-plan') {
-        pageName = 'Schichtplan';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'Schichtplan' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 56,
-            props: { text: 'Beispiel-Daten – ersetze sie durch euren echten Plan.' },
-            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
-          }),
-          createNode('container', {
-            y: 190,
-            h: 300,
-            props: {
-              component: 'table',
-              tableConfig: {
-                title: 'Diese Woche',
-                columns: [makeTableColumn('Datum'), makeTableColumn('Schicht'), makeTableColumn('Team')],
-                rows: [
-                  makeTableRow(['Mo', 'Früh', 'Team A']),
-                  makeTableRow(['Di', 'Spät', 'Team B']),
-                  makeTableRow(['Mi', 'Früh', 'Team A']),
-                ],
-              },
-            },
-          }),
-        ];
-      } else if (preset === 'benefits') {
-        pageName = 'Benefits';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'Benefits' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('text', {
-            y: 120,
-            h: 140,
-            props: {
-              text: '• JobRad / ÖPNV\n• Weiterbildung\n• Verpflegung\n• Events\n\nPasse die Inhalte an euer Unternehmen an.',
-            },
-            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
-          }),
-        ];
-      } else if (preset === 'contacts') {
-        pageName = 'Ansprechpartner';
-        nodes = [
-          createNode('text', {
-            y: 64,
-            props: { text: 'Wichtige Ansprechpartner' },
-            style: { fontSize: 26, fontWeight: 700 },
-          }),
-          createNode('container', {
-            y: 130,
-            h: 300,
-            props: {
-              component: 'table',
-              tableConfig: {
-                title: 'Kontakte',
-                columns: [makeTableColumn('Thema'), makeTableColumn('Name'), makeTableColumn('Kontakt')],
-                rows: [
-                  makeTableRow(['IT', 'Alex', 'it@example.com']),
-                  makeTableRow(['HR', 'Sam', 'hr@example.com']),
-                  makeTableRow(['Facility', 'Pat', '+49 111 222']),
-                ],
-              },
-            },
-          }),
-        ];
-      }
-
-      const tree: PageTree['tree'] = sanitizeNode({
-        id: 'root',
-        type: 'container',
-        props: { bg: background },
-        children: nodes,
-      } as any);
-
-      try {
-        const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree });
-        handlePageSelection(pageId, { placeholderName: pageName });
-        setTemplateNotice(null);
-      } catch (error) {
-        console.error('Quick preset page creation failed', error);
-        setTemplateNotice('Seite konnte nicht erstellt werden. Bitte versuche es erneut.');
-      }
-    },
-    [_projectId, handlePageSelection, setTemplateNotice]
-  );
-
   useEffect(() => {
     if (!(_projectId && currentPageId)) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
@@ -3009,6 +2766,249 @@ export default function EditorShell({ initialPageId }: Props) {
       pageBackground,
       pageBackgroundColor,
     ]
+  );
+
+  const createQuickPresetPage = useCallback(
+    async (preset: QuickButtonPresetKey) => {
+      if (!_projectId) {
+        setTemplateNotice('Bitte öffne zuerst ein Projekt.');
+        return;
+      }
+
+      const makeTableColumn = (label: string) => ({ id: makeId(), label });
+      const makeTableRow = (values: string[]) => ({ id: makeId(), values });
+
+      const createNode = (type: NodeType, overrides: Partial<EditorNode> = {}): EditorNode => ({
+        id: makeId(),
+        type,
+        x: overrides.x ?? 32,
+        y: overrides.y ?? 96,
+        w: overrides.w ?? 296,
+        h: overrides.h ?? (type === 'text' ? 60 : type === 'button' ? 56 : 200),
+        props: overrides.props ?? {},
+        style: overrides.style ?? {},
+        children: overrides.children,
+      });
+
+      const background = 'linear-gradient(140deg,#0b0b0f,#111827)';
+
+      let pageName = 'Neue Seite';
+      let nodes: EditorNode[] = [];
+
+      if (preset === 'contact-list') {
+        pageName = 'Kontaktliste';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            h: 60,
+            props: { text: 'Kontaktliste' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Hinterlege hier Ansprechpartner inkl. Telefon und E-Mail.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 260,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Ansprechpartner',
+                columns: [makeTableColumn('Name'), makeTableColumn('Telefon'), makeTableColumn('E-Mail')],
+                rows: [
+                  makeTableRow(['Max Mustermann', '+49 123 4567', 'max@example.com']),
+                  makeTableRow(['Erika Musterfrau', '+49 234 5678', 'erika@example.com']),
+                ],
+              },
+            },
+          }),
+          createNode('button', {
+            y: 470,
+            w: 296,
+            h: 56,
+            props: { label: 'E-Mail schreiben', icon: '✉️', action: 'email', emailAddress: 'info@example.com' },
+          }),
+          createNode('button', {
+            y: 540,
+            w: 296,
+            h: 56,
+            props: { label: 'Anrufen', icon: '📞', action: 'call', phoneNumber: '+491234567890' },
+          }),
+        ];
+      } else if (preset === 'opening-hours') {
+        pageName = 'Öffnungszeiten';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Öffnungszeiten' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Passe die Zeiten an eure Standorte und Feiertage an.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 320,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Zeiten',
+                columns: [makeTableColumn('Tag'), makeTableColumn('Von'), makeTableColumn('Bis')],
+                rows: [
+                  makeTableRow(['Mo', '08:00', '17:00']),
+                  makeTableRow(['Di', '08:00', '17:00']),
+                  makeTableRow(['Mi', '08:00', '17:00']),
+                  makeTableRow(['Do', '08:00', '17:00']),
+                  makeTableRow(['Fr', '08:00', '15:00']),
+                  makeTableRow(['Sa', 'geschlossen', '—']),
+                  makeTableRow(['So', 'geschlossen', '—']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'important-links') {
+        pageName = 'Wichtige Links';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Wichtige Links' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Sammle interne Tools und Dokumente an einem Ort.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('button', {
+            y: 200,
+            props: { label: 'Intranet', icon: '🔗', action: 'url', url: 'https://example.com' },
+          }),
+          createNode('button', {
+            y: 270,
+            props: { label: 'Wiki / Doku', icon: '📚', action: 'url', url: 'https://example.com/wiki' },
+          }),
+          createNode('button', {
+            y: 340,
+            props: { label: 'Support', icon: '🎫', action: 'url', url: 'https://example.com/support' },
+          }),
+        ];
+      } else if (preset === 'news') {
+        pageName = 'News';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'News' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 80,
+            props: {
+              text: '• Betriebsrat News & BV\n• Interne Updates\n• Wichtige Hinweise\n\nErsetze diese Liste durch eure echten Meldungen.',
+            },
+            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
+          }),
+        ];
+      } else if (preset === 'shift-plan') {
+        pageName = 'Schichtplan';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Schichtplan' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 56,
+            props: { text: 'Beispiel-Daten – ersetze sie durch euren echten Plan.' },
+            style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
+          }),
+          createNode('container', {
+            y: 190,
+            h: 300,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Diese Woche',
+                columns: [makeTableColumn('Datum'), makeTableColumn('Schicht'), makeTableColumn('Team')],
+                rows: [
+                  makeTableRow(['Mo', 'Früh', 'Team A']),
+                  makeTableRow(['Di', 'Spät', 'Team B']),
+                  makeTableRow(['Mi', 'Früh', 'Team A']),
+                ],
+              },
+            },
+          }),
+        ];
+      } else if (preset === 'benefits') {
+        pageName = 'Benefits';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Benefits' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('text', {
+            y: 120,
+            h: 140,
+            props: {
+              text: '• JobRad / ÖPNV\n• Weiterbildung\n• Verpflegung\n• Events\n\nPasse die Inhalte an euer Unternehmen an.',
+            },
+            style: { fontSize: 14, lineHeight: 1.6, color: '#cbd5f5' },
+          }),
+        ];
+      } else if (preset === 'contacts') {
+        pageName = 'Ansprechpartner';
+        nodes = [
+          createNode('text', {
+            y: 64,
+            props: { text: 'Wichtige Ansprechpartner' },
+            style: { fontSize: 26, fontWeight: 700 },
+          }),
+          createNode('container', {
+            y: 130,
+            h: 300,
+            props: {
+              component: 'table',
+              tableConfig: {
+                title: 'Kontakte',
+                columns: [makeTableColumn('Thema'), makeTableColumn('Name'), makeTableColumn('Kontakt')],
+                rows: [
+                  makeTableRow(['IT', 'Alex', 'it@example.com']),
+                  makeTableRow(['HR', 'Sam', 'hr@example.com']),
+                  makeTableRow(['Facility', 'Pat', '+49 111 222']),
+                ],
+              },
+            },
+          }),
+        ];
+      }
+
+      const tree: PageTree['tree'] = sanitizeNode({
+        id: 'root',
+        type: 'container',
+        props: { bg: background },
+        children: nodes,
+      } as any);
+
+      try {
+        const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree });
+        handlePageSelection(pageId, { placeholderName: pageName });
+        setTemplateNotice(null);
+      } catch (error) {
+        console.error('Quick preset page creation failed', error);
+        setTemplateNotice('Seite konnte nicht erstellt werden. Bitte versuche es erneut.');
+      }
+    },
+    [_projectId, handlePageSelection, setTemplateNotice]
   );
 
   const handleDeleteCurrentPage = useCallback(async () => {
