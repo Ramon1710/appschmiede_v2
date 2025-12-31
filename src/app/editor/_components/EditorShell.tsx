@@ -3201,25 +3201,14 @@ export default function EditorShell({ initialPageId }: Props) {
           createNode('text', {
             y: 120,
             h: 72,
-            props: { text: 'Ankündigungen, Updates und Infos für alle – als News-Feed.' },
+            props: { text: 'Chatfenster für schnelle Abstimmungen mit Kund:innen oder deinem Team.' },
             style: { fontSize: 14, lineHeight: 1.55, color: '#cbd5f5' },
           }),
           createNode('container', {
             y: 210,
             h: 640,
             props: {
-              component: 'news',
-              newsFeed: {
-                title: 'Kommunikation',
-                items: [
-                  {
-                    id: makeId(),
-                    title: 'Willkommen',
-                    body: 'Hier kannst du Infos und Updates teilen.',
-                    date: new Date().toISOString().slice(0, 10),
-                  },
-                ],
-              },
+              component: 'chat',
             },
           }),
         ];
@@ -3354,7 +3343,7 @@ export default function EditorShell({ initialPageId }: Props) {
           createNode('container', {
             y: 210,
             h: 360,
-            props: { component: 'timer', timer: { title: 'Timer', seconds: 15 * 60 } },
+            props: { component: 'timer', timer: { label: 'Timer', mode: 'countdown', seconds: 15 * 60 } },
           }),
         ];
       } else if (preset === 'time-tracking-reports') {

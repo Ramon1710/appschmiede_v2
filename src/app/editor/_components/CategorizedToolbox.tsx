@@ -48,6 +48,17 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
         { type: 'button', label: 'Anrufbutton', icon: '📞', defaultProps: { label: 'Anrufen', action: 'call' } },
         {
           type: 'button',
+          label: 'Tischreservierung',
+          icon: '🍽️',
+          defaultProps: {
+            label: 'Tisch reservieren',
+            icon: '🍽️',
+            action: 'email',
+            emailAddress: 'reservierung@deinbetrieb.de',
+          },
+        },
+        {
+          type: 'button',
           label: 'Werbung',
           icon: '📢',
           defaultProps: {

@@ -1370,24 +1370,6 @@ function RenderNode({ node, onUpdate }: { node: EditorNode; onUpdate: (patch: Pa
         );
       }
 
-      if (component === 'timer') {
-        const data = ensureTimer(node.props?.timer);
-        return (
-          <TimerWidget
-            title={data.title}
-            seconds={data.seconds}
-            onChange={(next) =>
-              onUpdate({
-                props: {
-                  ...node.props,
-                  timer: next,
-                },
-              })
-            }
-          />
-        );
-      }
-
       if (component === 'todo') {
         const todos = ensureTaskList(node.props?.todoItems);
         return (
@@ -2578,12 +2560,6 @@ function TimerWidget({
     </div>
   );
 }
-
-type TimerData = {
-  title: string;
-  seconds: number;
-};
-
 
 function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
   if (!Array.isArray(entries) || entries.length === 0) {
