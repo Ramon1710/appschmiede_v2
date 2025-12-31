@@ -1787,13 +1787,18 @@ export default function EditorShell({ initialPageId }: Props) {
         },
       });
 
-      const startY = 220;
+      const startY = (hero.y ?? 28) + (hero.h ?? 170) + 24;
       const gapX = columns >= 4 ? 8 : 12;
       const gapY = 12;
       const marginX = 32;
       const pageWidth = 360;
+      const pageHeight = CANVAS_FRAME.height;
       const tileW = Math.floor((pageWidth - marginX * 2 - gapX * (columns - 1)) / columns);
-      const tileH = columns === 2 ? 96 : 92;
+
+      const rows = Math.max(1, Math.ceil(buttonCount / columns));
+      const bottomPadding = 28;
+      const availableHeight = Math.max(160, pageHeight - startY - bottomPadding);
+      const tileH = Math.floor((availableHeight - gapY * (rows - 1)) / rows);
 
       const tiles = Array.from({ length: buttonCount }).map((_, idx) => {
         const row = Math.floor(idx / columns);
