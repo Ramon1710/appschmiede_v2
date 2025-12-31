@@ -1997,268 +1997,222 @@ function ensurePhasenboard(raw?: NodeProps['phasenboard'] | null): PhasenboardDa
   return { title, phases, cards };
 }
 
-function ensureNavItems(props?: NodeProps): NavbarItem[] {
-
-  type BautagebuchData = {
-    title: string;
-    entries: BautagebuchEntry[];
+function BautagebuchWidget({
+  title,
+  entries,
+  onChange,
+}: {
+  title: string;
+  entries: BautagebuchEntry[];
+  onChange: (next: BautagebuchData) => void;
+}) {
+  const addEntry = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    const note = window.prompt('Bautagebuch-Eintrag (kurz):')?.trim();
+    if (!note) return;
+    onChange({
+      title,
+      entries: [{ id: createId(), date, note }, ...entries],
+    });
   };
 
-  function ensureBautagebuch(raw?: NodeProps['bautagebuch'] | null): BautagebuchData {
-    const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Bautagebuch';
-    const entries = Array.isArray(raw?.entries)
-      ? (raw?.entries as BautagebuchEntry[]).filter((e) => e && typeof e.id === 'string')
-      : [];
-    const normalizedEntries = entries.map((entry) => ({
-      id: typeof entry.id === 'string' ? entry.id : createId(),
-      date: typeof entry.date === 'string' && entry.date.trim() ? entry.date.trim() : new Date().toISOString().slice(0, 10),
-      note: typeof entry.note === 'string' ? entry.note : '',
-    }));
-    return { title, entries: normalizedEntries };
-  }
-
-  type PhasenboardData = {
-    title: string;
-    phases: PhaseItem[];
-    cards: PhaseCard[];
+  const updateEntry = (id: string, patch: Partial<BautagebuchEntry>) => {
+    onChange({
+      title,
+      entries: entries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
+    });
   };
 
-  function ensurePhasenboard(raw?: NodeProps['phasenboard'] | null): PhasenboardData {
-    const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Phasenboard';
-    const phasesRaw = Array.isArray(raw?.phases) ? (raw?.phases as PhaseItem[]) : [];
-    const phases = (phasesRaw.length ? phasesRaw : [{ id: createId(), title: 'Phase 1' }]).map((phase) => ({
-      id: typeof phase.id === 'string' && phase.id ? phase.id : createId(),
-      title: typeof phase.title === 'string' && phase.title.trim() ? phase.title.trim() : 'Phase',
-    }));
-    const phaseIds = new Set(phases.map((p) => p.id));
+  const removeEntry = (id: string) => {
+    onChange({
+      title,
+      entries: entries.filter((entry) => entry.id !== id),
+    });
+  };
 
-    const cardsRaw = Array.isArray(raw?.cards) ? (raw?.cards as PhaseCard[]) : [];
-    const cards = cardsRaw
-      .filter((card) => card && typeof card.id === 'string' && typeof card.phaseId === 'string' && phaseIds.has(card.phaseId))
-      .map((card) => ({
-        id: typeof card.id === 'string' && card.id ? card.id : createId(),
-        phaseId: card.phaseId,
-        title: typeof card.title === 'string' && card.title.trim() ? card.title.trim() : 'Karte',
-        description: typeof card.description === 'string' ? card.description : undefined,
-      }));
-
-    return { title, phases, cards };
-  }
-
-  function BautagebuchWidget({
-    title,
-    entries,
-    onChange,
-  }: {
-    title: string;
-    entries: BautagebuchEntry[];
-    onChange: (next: BautagebuchData) => void;
-  }) {
-    const addEntry = () => {
-      const date = new Date().toISOString().slice(0, 10);
-      const note = window.prompt('Bautagebuch-Eintrag (kurz):')?.trim();
-      if (!note) return;
-      onChange({
-        title,
-        entries: [{ id: createId(), date, note }, ...entries],
-      });
-    };
-
-    const updateEntry = (id: string, patch: Partial<BautagebuchEntry>) => {
-      onChange({
-        title,
-        entries: entries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
-      });
-    };
-
-    const removeEntry = (id: string) => {
-      onChange({
-        title,
-        entries: entries.filter((entry) => entry.id !== id),
-      });
-    };
-
-    return (
-      <div
-        className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Bautagebuch</div>
-            <div className="text-sm font-semibold text-white">{title}</div>
-          </div>
-          <button
-            type="button"
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
-            onClick={(event) => {
-              event.stopPropagation();
-              addEntry();
-            }}
-          >
-            + Eintrag
-          </button>
+  return (
+    <div
+      className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Bautagebuch</div>
+          <div className="text-sm font-semibold text-white">{title}</div>
         </div>
+        <button
+          type="button"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-neutral-200 hover:bg-white/10"
+          onClick={(event) => {
+            event.stopPropagation();
+            addEntry();
+          }}
+        >
+          + Eintrag
+        </button>
+      </div>
 
-        <div className="flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/20 p-2">
-          {entries.length === 0 ? (
-            <div className="rounded border border-dashed border-white/15 px-3 py-2 text-[11px] text-neutral-300">
-              Noch keine Einträge. Klicke auf „+ Eintrag“.
+      <div className="flex-1 space-y-2 overflow-y-auto rounded-lg bg-black/20 p-2">
+        {entries.length === 0 ? (
+          <div className="rounded border border-dashed border-white/15 px-3 py-2 text-[11px] text-neutral-300">
+            Noch keine Einträge. Klicke auf „+ Eintrag“.
+          </div>
+        ) : (
+          entries.map((entry) => (
+            <div key={entry.id} className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <input
+                  value={entry.date}
+                  onChange={(e) => updateEntry(entry.id, { date: e.target.value })}
+                  className="w-36 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
+                  type="date"
+                  onClick={(event) => event.stopPropagation()}
+                />
+                <button
+                  type="button"
+                  className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-200 hover:bg-white/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    removeEntry(entry.id);
+                  }}
+                  title="Eintrag löschen"
+                >
+                  Löschen
+                </button>
+              </div>
+              <textarea
+                value={entry.note}
+                onChange={(e) => updateEntry(entry.id, { note: e.target.value })}
+                className="min-h-[64px] w-full rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-white placeholder:text-neutral-400"
+                placeholder="Was wurde gemacht?"
+                onClick={(event) => event.stopPropagation()}
+              />
             </div>
-          ) : (
-            entries.map((entry) => (
-              <div key={entry.id} className="space-y-2 rounded-lg border border-white/10 bg-white/5 p-2">
-                <div className="flex items-center justify-between gap-2">
-                  <input
-                    value={entry.date}
-                    onChange={(e) => updateEntry(entry.id, { date: e.target.value })}
-                    className="w-36 rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
-                    type="date"
-                    onClick={(event) => event.stopPropagation()}
-                  />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhasenboardWidget({
+  title,
+  phases,
+  cards,
+  onChange,
+}: {
+  title: string;
+  phases: PhaseItem[];
+  cards: PhaseCard[];
+  onChange: (next: PhasenboardData) => void;
+}) {
+  const addCard = (phaseId: string) => {
+    const cardTitle = window.prompt('Karte / Aufgabe (kurz):')?.trim();
+    if (!cardTitle) return;
+    const nextCards: PhaseCard[] = [{ id: createId(), phaseId, title: cardTitle }, ...cards];
+    onChange({ title, phases, cards: nextCards });
+  };
+
+  const updateCard = (id: string, patch: Partial<PhaseCard>) => {
+    onChange({ title, phases, cards: cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
+  };
+
+  const removeCard = (id: string) => {
+    onChange({ title, phases, cards: cards.filter((c) => c.id !== id) });
+  };
+
+  return (
+    <div
+      className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Phasenboard</div>
+          <div className="text-sm font-semibold text-white">{title}</div>
+        </div>
+        <div className="text-[10px] text-neutral-400">{cards.length} Karten</div>
+      </div>
+
+      <div className="flex-1 overflow-x-auto">
+        <div className="flex h-full gap-3">
+          {phases.map((phase) => {
+            const phaseCards = cards.filter((card) => card.phaseId === phase.id);
+            return (
+              <div key={phase.id} className="flex h-full w-64 shrink-0 flex-col rounded-xl border border-white/10 bg-white/5">
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-neutral-200">{phase.title}</div>
                   <button
                     type="button"
                     className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-200 hover:bg-white/10"
                     onClick={(event) => {
                       event.stopPropagation();
-                      removeEntry(entry.id);
+                      addCard(phase.id);
                     }}
-                    title="Eintrag löschen"
                   >
-                    Löschen
+                    + Karte
                   </button>
                 </div>
-                <textarea
-                  value={entry.note}
-                  onChange={(e) => updateEntry(entry.id, { note: e.target.value })}
-                  className="min-h-[64px] w-full rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-white placeholder:text-neutral-400"
-                  placeholder="Was wurde gemacht?"
-                  onClick={(event) => event.stopPropagation()}
-                />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function PhasenboardWidget({
-    title,
-    phases,
-    cards,
-    onChange,
-  }: {
-    title: string;
-    phases: PhaseItem[];
-    cards: PhaseCard[];
-    onChange: (next: PhasenboardData) => void;
-  }) {
-    const addCard = (phaseId: string) => {
-      const cardTitle = window.prompt('Karte / Aufgabe (kurz):')?.trim();
-      if (!cardTitle) return;
-      const nextCards: PhaseCard[] = [{ id: createId(), phaseId, title: cardTitle }, ...cards];
-      onChange({ title, phases, cards: nextCards });
-    };
-
-    const updateCard = (id: string, patch: Partial<PhaseCard>) => {
-      onChange({ title, phases, cards: cards.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
-    };
-
-    const removeCard = (id: string) => {
-      onChange({ title, phases, cards: cards.filter((c) => c.id !== id) });
-    };
-
-    return (
-      <div
-        className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Phasenboard</div>
-            <div className="text-sm font-semibold text-white">{title}</div>
-          </div>
-          <div className="text-[10px] text-neutral-400">{cards.length} Karten</div>
-        </div>
-
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex h-full gap-3">
-            {phases.map((phase) => {
-              const phaseCards = cards.filter((card) => card.phaseId === phase.id);
-              return (
-                <div key={phase.id} className="flex h-full w-64 shrink-0 flex-col rounded-xl border border-white/10 bg-white/5">
-                  <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.25em] text-neutral-200">{phase.title}</div>
-                    <button
-                      type="button"
-                      className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-200 hover:bg-white/10"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        addCard(phase.id);
-                      }}
-                    >
-                      + Karte
-                    </button>
-                  </div>
-                  <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                    {phaseCards.length === 0 ? (
-                      <div className="rounded border border-dashed border-white/15 px-2 py-2 text-[11px] text-neutral-300">
-                        Keine Karten.
-                      </div>
-                    ) : (
-                      phaseCards.map((card) => (
-                        <div key={card.id} className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <input
-                              value={card.title}
-                              onChange={(e) => updateCard(card.id, { title: e.target.value })}
-                              className="w-full rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
-                              onClick={(event) => event.stopPropagation()}
-                            />
-                            <button
-                              type="button"
-                              className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-200 hover:bg-white/10"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                removeCard(card.id);
-                              }}
-                              title="Karte löschen"
-                            >
-                              ×
-                            </button>
-                          </div>
-                          <select
-                            value={card.phaseId}
-                            onChange={(e) => updateCard(card.id, { phaseId: e.target.value })}
+                <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                  {phaseCards.length === 0 ? (
+                    <div className="rounded border border-dashed border-white/15 px-2 py-2 text-[11px] text-neutral-300">
+                      Keine Karten.
+                    </div>
+                  ) : (
+                    phaseCards.map((card) => (
+                      <div key={card.id} className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <input
+                            value={card.title}
+                            onChange={(e) => updateCard(card.id, { title: e.target.value })}
                             className="w-full rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
                             onClick={(event) => event.stopPropagation()}
-                          >
-                            {phases.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.title}
-                              </option>
-                            ))}
-                          </select>
-                          <textarea
-                            value={card.description ?? ''}
-                            onChange={(e) => updateCard(card.id, { description: e.target.value })}
-                            className="min-h-[52px] w-full rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-white placeholder:text-neutral-400"
-                            placeholder="Details (optional)"
-                            onClick={(event) => event.stopPropagation()}
                           />
+                          <button
+                            type="button"
+                            className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] text-neutral-200 hover:bg-white/10"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              removeCard(card.id);
+                            }}
+                            title="Karte löschen"
+                          >
+                            ×
+                          </button>
                         </div>
-                      ))
-                    )}
-                  </div>
+                        <select
+                          value={card.phaseId}
+                          onChange={(e) => updateCard(card.id, { phaseId: e.target.value })}
+                          className="w-full rounded-md border border-white/10 bg-black/20 px-2 py-1 text-[11px] text-white"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {phases.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.title}
+                            </option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={card.description ?? ''}
+                          onChange={(e) => updateCard(card.id, { description: e.target.value })}
+                          className="min-h-[52px] w-full rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-white placeholder:text-neutral-400"
+                          placeholder="Details (optional)"
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function ensureNavItems(props?: NodeProps): NavbarItem[] {
   if (Array.isArray(props?.navItems) && props.navItems.length > 0) {
     return props.navItems.map((item) => ({
       id: typeof item.id === 'string' ? item.id : createId(),
