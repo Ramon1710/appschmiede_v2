@@ -13,6 +13,7 @@ import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
 import { isAdminEmail } from '@/lib/user-utils';
+import { DEFAULT_PROJECT_ICON } from '@/lib/db-projects';
 
 const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
@@ -196,6 +197,8 @@ function TemplatesPageComponent() {
         members: [user.uid],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        lastOpenedAt: serverTimestamp(),
+        icon: DEFAULT_PROJECT_ICON,
       });
 
       await Promise.all(

@@ -10,6 +10,7 @@ import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
+import { DEFAULT_PROJECT_ICON } from '@/lib/db-projects';
 
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
@@ -400,6 +401,8 @@ export default function TradesWizardPage() {
         members: [user.uid],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        lastOpenedAt: serverTimestamp(),
+        icon: DEFAULT_PROJECT_ICON,
       });
 
       await Promise.all(
