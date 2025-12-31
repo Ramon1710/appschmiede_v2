@@ -30,6 +30,9 @@ const AI_CHAT_FALLBACK_BACKGROUND = 'linear-gradient(135deg,#0f172a,#020617,#000
 const CHAT_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#0f172a,#111827,#020617)';
 const NEWS_FALLBACK_BACKGROUND = 'linear-gradient(145deg,#1f0a11,#0b0b0f,#111827)';
 
+// Muss zur Editor-Canvas-Größe passen (siehe EditorShell/PropertiesPanel)
+const FRAME = { width: 414, height: 896 } as const;
+
 const normalizeExternalUrl = (raw?: string | null): string | null => {
   if (!raw) return null;
   const value = raw.trim();
