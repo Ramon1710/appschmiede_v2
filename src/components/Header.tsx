@@ -81,6 +81,7 @@ export default function Header() {
         >
           {t('nav_editor')}
         </Link>
+        <Link href="/tools/gewerke" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_trades')}</Link>
         <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
         <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
         <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
