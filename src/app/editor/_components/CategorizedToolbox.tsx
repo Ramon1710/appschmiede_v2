@@ -62,15 +62,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
             adCtaLabel: 'Mehr erfahren',
             adPrice: 'Ab 49 € / Monat',
             adImageUrl: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=640&q=80',
-            {
-              type: 'container',
-              label: 'Timer',
-              icon: '⏱️',
-              defaultProps: {
-                component: 'timer',
-                timer: { title: 'Timer', seconds: 300 },
-              },
-            },
           },
         },
       ],

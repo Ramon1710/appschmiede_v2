@@ -2438,120 +2438,6 @@ type TimerData = {
   seconds: number;
 };
 
-function ensureTimer(raw?: NodeProps['timer'] | null): TimerData {
-  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'Timer';
-  const secondsRaw = typeof raw?.seconds === 'number' && Number.isFinite(raw.seconds) ? raw.seconds : 300;
-  const seconds = Math.max(1, Math.min(24 * 60 * 60, Math.round(secondsRaw)));
-  return { title, seconds };
-}
-
-function TimerWidget({
-  title,
-  seconds,
-  onChange,
-}: {
-  title: string;
-  seconds: number;
-  onChange: (next: TimerData) => void;
-}) {
-  const [running, setRunning] = useState(false);
-  const [remaining, setRemaining] = useState(seconds);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [remainingAtStart, setRemainingAtStart] = useState<number>(seconds);
-
-  useEffect(() => {
-    if (!running) return;
-    const handle = window.setInterval(() => {
-      const start = startedAt ?? Date.now();
-      const elapsed = Math.max(0, Date.now() - start);
-      const nextRemaining = Math.max(0, remainingAtStart - Math.floor(elapsed / 1000));
-      setRemaining(nextRemaining);
-      if (nextRemaining <= 0) {
-        setRunning(false);
-        setStartedAt(null);
-      }
-    }, 250);
-    return () => window.clearInterval(handle);
-  }, [running, startedAt, remainingAtStart]);
-
-  useEffect(() => {
-    if (running) return;
-    setRemaining(seconds);
-    setRemainingAtStart(seconds);
-    setStartedAt(null);
-  }, [seconds, running]);
-
-  const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-  const ss = String(remaining % 60).padStart(2, '0');
-
-  return (
-    <div
-      className="flex h-full w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-neutral-100"
-      onClick={(event) => event.stopPropagation()}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.3em] text-neutral-300">Timer</div>
-          <div className="text-sm font-semibold text-white">{title}</div>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-2xl font-semibold tabular-nums text-white">
-          {mm}:{ss}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
-          onClick={(event) => {
-            event.stopPropagation();
-            if (running) {
-              setRunning(false);
-              setStartedAt(null);
-              setRemainingAtStart(remaining);
-              return;
-            }
-            setRunning(true);
-            setStartedAt(Date.now());
-            setRemainingAtStart(remaining);
-          }}
-        >
-          {running ? 'Pause' : 'Start'}
-        </button>
-        <button
-          type="button"
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
-          onClick={(event) => {
-            event.stopPropagation();
-            setRunning(false);
-            setRemaining(seconds);
-            setRemainingAtStart(seconds);
-            setStartedAt(null);
-          }}
-        >
-          Reset
-        </button>
-        <button
-          type="button"
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
-          onClick={(event) => {
-            event.stopPropagation();
-            const raw = window.prompt('Dauer in Minuten:', String(Math.max(1, Math.round(seconds / 60))));
-            if (!raw) return;
-            const minutes = Number(raw);
-            if (!Number.isFinite(minutes)) return;
-            const nextSeconds = Math.max(1, Math.min(24 * 60, Math.round(minutes))) * 60;
-            onChange({ title, seconds: nextSeconds });
-          }}
-        >
-          Dauer
-        </button>
-      </div>
-
-      <div className="text-[11px] text-neutral-400">Hinweis: Die Laufzeit ist lokal (Vorschau). Gespeichert wird nur die Dauer.</div>
-    </div>
-  );
-}
 
 function ensureTimeEntries(entries?: TimeEntry[] | null): TimeEntry[] {
   if (!Array.isArray(entries) || entries.length === 0) {
@@ -2718,37 +2604,6 @@ const TABLE_ROW_PRESET = [
 ];
 
 function ensureTableConfig(config?: TableConfig | null): TableConfig {
-
-  function ensureNewsFeed(feed?: unknown): { title: string; items: NewsItem[] } {
-    const raw = (feed as { title?: unknown; items?: unknown }) ?? undefined;
-    const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'News';
-    const itemsSource = Array.isArray(raw?.items) ? (raw.items as unknown[]) : [];
-    const items: NewsItem[] = itemsSource
-      .map((candidate, index) => {
-        const item = (candidate as Partial<NewsItem>) ?? {};
-        return {
-          id: typeof item.id === 'string' ? item.id : createId(),
-          title: typeof item.title === 'string' && item.title.trim() ? item.title.trim() : `Eintrag ${index + 1}`,
-          body: typeof item.body === 'string' && item.body.trim() ? item.body.trim() : undefined,
-          imageUrl: typeof item.imageUrl === 'string' && item.imageUrl.trim() ? item.imageUrl.trim() : undefined,
-          date: typeof item.date === 'string' && item.date.trim() ? item.date.trim() : undefined,
-        };
-      })
-      .filter(Boolean);
-
-    return { title, items };
-  }
-
-  function formatNewsDate(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed) return '';
-    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
-    const parsed = new Date(trimmed);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    return trimmed;
-  }
   const columns = Array.isArray(config?.columns) && config.columns.length > 0
     ? config.columns.map((column, index) => ({
         id: typeof column?.id === 'string' ? column.id : createId(),
@@ -2773,6 +2628,37 @@ function ensureTableConfig(config?: TableConfig | null): TableConfig {
     columns,
     rows,
   };
+}
+
+function ensureNewsFeed(feed?: unknown): { title: string; items: NewsItem[] } {
+  const raw = (feed as { title?: unknown; items?: unknown }) ?? undefined;
+  const title = typeof raw?.title === 'string' && raw.title.trim() ? raw.title.trim() : 'News';
+  const itemsSource = Array.isArray(raw?.items) ? (raw.items as unknown[]) : [];
+  const items: NewsItem[] = itemsSource
+    .map((candidate, index) => {
+      const item = (candidate as Partial<NewsItem>) ?? {};
+      return {
+        id: typeof item.id === 'string' ? item.id : createId(),
+        title: typeof item.title === 'string' && item.title.trim() ? item.title.trim() : `Eintrag ${index + 1}`,
+        body: typeof item.body === 'string' && item.body.trim() ? item.body.trim() : undefined,
+        imageUrl: typeof item.imageUrl === 'string' && item.imageUrl.trim() ? item.imageUrl.trim() : undefined,
+        date: typeof item.date === 'string' && item.date.trim() ? item.date.trim() : undefined,
+      };
+    })
+    .filter(Boolean);
+
+  return { title, items };
+}
+
+function formatNewsDate(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  return trimmed;
 }
 
 function ensureAudioNotes(notes?: AudioNote[] | null): AudioNote[] {
