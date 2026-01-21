@@ -4,6 +4,20 @@ import './globals.css';
 import I18nRoot from './I18nRoot';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://myappschmiede.com'),
+  title: {
+    default: 'AppSchmiede – No‑Code KI App Builder',
+    template: '%s | AppSchmiede',
+  },
+  description:
+    'AppSchmiede ist ein No‑Code App‑Builder mit KI-Unterstützung: Ideen in Minuten in klickbare Apps verwandeln – direkt im Browser.',
+  alternates: {
+    canonical: '/',
+  },
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();

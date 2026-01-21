@@ -1,16 +1,17 @@
-"use client";
-
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 import GoogleAdSlot from '@/components/GoogleAdSlot';
 
-import { useI18n } from '@/lib/i18n';
 import { getHomeContent } from '@/lib/home-content';
+import { cookies } from 'next/headers';
+import { Lang } from '@/lib/i18n-dict';
 
-export default function HomePage() {
-  const { lang } = useI18n();
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get('lang')?.value;
+  const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const {
     workflowSteps,
