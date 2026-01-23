@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import SettingsClient from "./SettingsClient";
 import { cookies } from 'next/headers';
 
-export default function ProjectSettingsPage() {
-  const raw = cookies().get('lang')?.value;
+export default async function ProjectSettingsPage() {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get('lang')?.value;
   const lang = raw === 'en' ? 'en' : 'de';
   const loadingText =
     lang === 'en' ? 'Loading project settings…' : 'Projekt-Einstellungen werden geladen…';
