@@ -31,6 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Script
           id="adsense-loader"
           strategy="beforeInteractive"
+          async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9591311841405142"
           crossOrigin="anonymous"
         />
