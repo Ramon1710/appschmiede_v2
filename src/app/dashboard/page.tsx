@@ -11,7 +11,6 @@ import { auth } from '@/lib/firebase';
 import { db } from '@/lib/firebase';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
-import LegalModalTrigger from '@/components/LegalModalTrigger';
 import GuidedTour from '@/components/GuidedTour';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
@@ -227,7 +226,6 @@ export default function DashboardPage() {
             </section>
           </div>
       </main>
-      <LegalModalTrigger className="fixed bottom-4 left-4" />
       <GuidedTour storageKey="tour-dashboard" steps={tourSteps} autoStart={shouldAutoStartTour} forceStartToken={forceStartToken} />
     </>
   );

@@ -100,7 +100,7 @@ const de: HomeContent = {
     {
       title: 'Rechtlich sauber unterwegs',
       description:
-        'Impressum, Datenschutz und Legal-Modal sind eingebaut – so kannst du deine App professionell präsentieren und bleibst auf der sicheren Seite.',
+		'Impressum, Datenschutz, AGB und Datenschutzeinstellungen sind eingebaut – so kannst du deine App professionell präsentieren und bleibst auf der sicheren Seite.',
     },
   ],
   audience: [

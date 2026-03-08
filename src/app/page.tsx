@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
-import LegalModalTrigger from '@/components/LegalModalTrigger';
 
 import { getHomeContent } from '@/lib/home-content';
 import { cookies } from 'next/headers';
@@ -807,8 +806,6 @@ export default async function HomePage() {
         </section>
         </div>
       </main>
-
-      <LegalModalTrigger className="fixed bottom-4 left-4" />
     </div>
   );
 }

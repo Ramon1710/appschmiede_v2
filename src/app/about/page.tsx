@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
-import LegalModalTrigger from '@/components/LegalModalTrigger';
 import type { Lang } from '@/lib/i18n-dict';
 
 export const metadata: Metadata = {
@@ -104,7 +103,6 @@ export default async function AboutPage() {
           </div>
         </section>
       </main>
-      <LegalModalTrigger className="fixed bottom-4 left-4" />
     </div>
   );
 }

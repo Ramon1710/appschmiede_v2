@@ -5,6 +5,8 @@ import I18nRoot from './I18nRoot';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
 import type { Metadata } from 'next';
+import ConsentBanner from '@/components/ConsentBanner';
+import SiteFooter from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://myappschmiede.com'),
@@ -40,7 +42,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body className="bg-neutral-950 text-neutral-100 min-h-screen">
-        <I18nRoot initialLang={initialLang}>{children}</I18nRoot>
+        <I18nRoot initialLang={initialLang}>
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+            <SiteFooter />
+          </div>
+          <ConsentBanner />
+        </I18nRoot>
       </body>
     </html>
   );
