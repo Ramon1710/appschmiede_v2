@@ -642,14 +642,9 @@ export default async function HomePage() {
           </header>
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {spotlightCards.map((feature) => (
-              <article key={feature.title} className="overflow-hidden rounded-3xl border border-white/10 bg-[#070b16] p-4 shadow-lg">
-                <div className={`rounded-2xl bg-gradient-to-br ${feature.accent} p-4`}>
-                  <div className="rounded-2xl bg-black/20 p-3">
-                    <SpotlightVisual title={feature.title} lang={lang} />
-                  </div>
-                </div>
-                <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
-                <p className="mt-2 text-sm text-neutral-300">{feature.text}</p>
+              <article key={feature.title} className="rounded-3xl border border-white/10 bg-[#070b16] p-6 shadow-lg">
+                <h3 className="text-xl font-semibold">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-300">{feature.text}</p>
               </article>
             ))}
           </div>
@@ -664,8 +659,7 @@ export default async function HomePage() {
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {personas.map((group) => (
               <article key={group.title} className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-lg">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-3xl">{group.icon}</div>
-                <h3 className="mt-4 text-xl font-semibold">{group.title}</h3>
+                <h3 className="text-xl font-semibold">{group.title}</h3>
                 <p className="mt-2 text-sm text-neutral-300">{group.text}</p>
               </article>
             ))}

@@ -3809,7 +3809,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const templateControlsDisabled = !_projectId || !currentPageId;
 
   const editorCostSummary = (
-    <div className="rounded-xl border border-amber-400/25 bg-amber-500/10 p-3 text-xs text-amber-50">
+    <div className={`border border-amber-400/25 bg-amber-500/10 text-xs text-amber-50 ${leftPanelSections.costs ? 'rounded-lg px-3 py-2' : 'rounded-xl p-3'}`}>
       <div className="flex w-full items-center justify-between gap-3 text-left">
         <div>
           <div className="font-semibold text-amber-100">{tr('Coin-Kosten im Editor', 'Coin costs in the editor')}</div>
@@ -3820,7 +3820,7 @@ export default function EditorShell({ initialPageId }: Props) {
         <button
           type="button"
           onClick={() => toggleLeftPanelSection('costs')}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-lg text-amber-100 transition hover:bg-black/30"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-base text-amber-100 transition hover:bg-black/30"
           aria-label={leftPanelSections.costs ? tr('Kosten öffnen', 'Expand costs') : tr('Kosten schließen', 'Collapse costs')}
         >
           {leftPanelSections.costs ? '▸' : '▾'}
@@ -4146,13 +4146,13 @@ export default function EditorShell({ initialPageId }: Props) {
     return (
       <div className="flex w-full items-center justify-between gap-3 text-left">
         <div>
-          <div className="text-xs uppercase tracking-[0.35em] text-neutral-500">{title}</div>
+          <div className={`uppercase text-neutral-500 ${collapsed ? 'text-[11px] tracking-[0.28em]' : 'text-xs tracking-[0.35em]'}`}>{title}</div>
           {subtitle && !collapsed && <div className="mt-1 text-sm font-semibold text-white">{subtitle}</div>}
         </div>
         <button
           type="button"
           onClick={() => toggleLeftPanelSection(section)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-neutral-300 transition hover:bg-white/10"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-base text-neutral-300 transition hover:bg-white/10"
           aria-label={collapsed ? tr('Bereich öffnen', 'Expand section') : tr('Bereich schließen', 'Collapse section')}
         >
           {collapsed ? '▸' : '▾'}
@@ -4214,8 +4214,8 @@ export default function EditorShell({ initialPageId }: Props) {
             className="hidden flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex"
             style={{ width: `${leftPanelWidth}px` }}
           >
-            <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
-              <section className="rounded-2xl border border-white/10 bg-[#0b0b0f]/95 p-4" data-tour-id="editor-actions">
+            <div className="flex h-full flex-col gap-3 overflow-hidden p-3">
+              <section className={`border border-white/10 bg-[#0b0b0f]/95 ${leftPanelSections.editor ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4'}`} data-tour-id="editor-actions">
                 {renderLeftPanelToggle('editor', 'Editor', tr('Aktionen & Tools', 'Actions & tools'))}
                 {!leftPanelSections.editor && (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -4261,7 +4261,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-[#0b0b0f]/95 p-4">
+              <section className={`border border-white/10 bg-[#0b0b0f]/95 ${leftPanelSections.project ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4'}`}>
                 {renderLeftPanelToggle('project', tr('Projekt', 'Project'), project?.name ?? tr('Kein Projekt geladen', 'No project loaded'))}
                 {!leftPanelSections.project && (
                   <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
@@ -4316,7 +4316,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 )}
               </section>
 
-              <section className={`min-h-0 rounded-2xl border border-white/10 bg-white/5 p-4 ${leftPanelSections.elements ? '' : 'flex flex-1 flex-col'}`} data-tour-id="editor-toolbox">
+              <section className={`min-h-0 border border-white/10 bg-white/5 ${leftPanelSections.elements ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4 flex flex-1 flex-col'}`} data-tour-id="editor-toolbox">
                 {renderLeftPanelToggle('elements', tr('Elemente', 'Elements'), tr('Bausteine & Vorlagen', 'Blocks & templates'))}
                 {!leftPanelSections.elements && (
                   <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
