@@ -50,7 +50,7 @@ function buildProjectLimitMessage(maxProjects: number): string {
 async function loadUserDoc(uid: string): Promise<{ ref: FirebaseFirestore.DocumentReference; data: UserDocData } | null> {
   const ref = adminDb().collection('users').doc(uid);
   const snap = await ref.get();
-  if (!snap.exists()) {
+  if (!snap.exists) {
     return null;
   }
   return { ref, data: snap.data() as UserDocData };
@@ -64,7 +64,7 @@ export async function creditCoins(uid: string, coins: number): Promise<void> {
   }
   await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) {
+    if (!snap.exists) {
       throw new Error(`User ${uid} nicht gefunden.`);
     }
     const data = snap.data() as UserDocData;
@@ -101,7 +101,7 @@ export async function activatePlan(
   const plan = getPlanConfig(planId);
   await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) {
+    if (!snap.exists) {
       throw new Error(`User ${uid} nicht gefunden.`);
     }
     const data = snap.data() as UserDocData;
@@ -211,7 +211,7 @@ export async function chargeCoins(uid: string, coins: number, actionLabel: strin
 
   await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (!snap.exists()) {
+    if (!snap.exists) {
       throw new Error(`User ${uid} nicht gefunden.`);
     }
 
@@ -270,7 +270,7 @@ export async function claimStripeEvent(eventId: string): Promise<boolean> {
   let alreadyProcessed = true;
   await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    if (snap.exists()) {
+    if (snap.exists) {
       alreadyProcessed = true;
       return;
     }
@@ -288,7 +288,7 @@ export async function finalizeStripeEvent(
   status: StripeEventStatus,
   errorMessage?: string | null
 ): Promise<void> {
-  const ref = adminDb.collection(STRIPE_EVENT_COLLECTION).doc(eventId);
+  const ref = adminDb().collection(STRIPE_EVENT_COLLECTION).doc(eventId);
   await ref.set(
     {
       status,

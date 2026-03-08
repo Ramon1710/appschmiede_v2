@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const uid = await requireAuthenticatedUid(request);
 
     const userSnap = await getFirebaseAdminDb().collection('users').doc(uid).get();
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }
 

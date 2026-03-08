@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const snap = await getFirebaseAdminDb().collection('users').doc(uid).get();
-    if (!snap.exists()) {
+    if (!snap.exists) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }
     const userData = snap.data() as AppUserProfile;
