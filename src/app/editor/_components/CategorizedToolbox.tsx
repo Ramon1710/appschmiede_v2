@@ -76,7 +76,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: tr('Kommunikation', 'Communication'),
       icon: '💬',
       items: [
-        { type: 'container', label: tr('Chatfenster', 'Chat window'), icon: '💬', defaultProps: { component: 'chat' } },
         { type: 'button', label: tr('Anrufbutton', 'Call button'), icon: '📞', defaultProps: { label: tr('Anrufen', 'Call'), action: 'call' } },
         {
           type: 'button',
@@ -114,16 +113,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: tr('Interaktiv', 'Interactive'),
       icon: '✨',
       items: [
-        { type: 'container', label: tr('QR-Code', 'QR code'), icon: '📱', defaultProps: { component: 'qr-code' } },
-        {
-          type: 'container',
-          label: tr('Timer', 'Timer'),
-          icon: '⏲️',
-          defaultProps: {
-            component: 'timer',
-            timer: { label: tr('Timer', 'Timer'), mode: 'countdown', seconds: 15 * 60 },
-          },
-        },
         { type: 'button', label: tr('Dark/Light Mode', 'Dark/light mode'), icon: '🌓', defaultProps: { action: 'toggle-theme' } },
         { type: 'input', label: tr('Checkbox', 'Checkbox'), icon: '☑️', defaultProps: { inputType: 'checkbox', label: tr('Zustimmen', 'Agree') } },
         { type: 'input', label: tr('Datum', 'Date'), icon: '📅', defaultProps: { inputType: 'date' } },
@@ -156,61 +145,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Unternehmen',
       icon: '🏢',
       items: [
-        {
-          type: 'container',
-          label: 'Bautagebuch',
-          icon: '🧱',
-          defaultProps: {
-            component: 'bautagebuch',
-            bautagebuch: {
-              title: 'Tagesberichte',
-              entries: [
-                {
-                  id: crypto.randomUUID(),
-                  date: new Date().toISOString().slice(0, 10),
-                  note: 'Beispiel: Material geliefert, Arbeiten begonnen.',
-                },
-              ],
-            },
-          },
-        },
-        {
-          type: 'container',
-          label: 'Phasenboard',
-          icon: '🧩',
-          defaultProps: {
-            component: 'phasenboard',
-            phasenboard: {
-              title: 'Bauphasen',
-              phases: [
-                { id: crypto.randomUUID(), title: 'Planung' },
-                { id: crypto.randomUUID(), title: 'Ausführung' },
-                { id: crypto.randomUUID(), title: 'Abnahme' },
-              ],
-              cards: [],
-            },
-          },
-        },
-        {
-          type: 'container',
-          label: 'Schichtplan',
-          icon: '🗓️',
-          defaultProps: {
-            component: 'table',
-            tableConfig: {
-              title: 'Schichtplan',
-              columns: [
-                { id: crypto.randomUUID(), label: 'Tag' },
-                { id: crypto.randomUUID(), label: 'Schicht' },
-                { id: crypto.randomUUID(), label: 'Team' },
-              ],
-              rows: [
-                { id: crypto.randomUUID(), values: ['Mo', 'Früh', 'Team A'] },
-                { id: crypto.randomUUID(), values: ['Di', 'Spät', 'Team B'] },
-              ],
-            },
-          },
-        },
         {
           type: 'container',
           label: 'Zeiterfassung',
@@ -319,27 +253,6 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       name: 'Medien & Inhalte',
       icon: '📹',
       items: [
-        {
-          type: 'container',
-          label: 'News',
-          icon: '📰',
-          defaultProps: {
-            component: 'news',
-            newsFeed: {
-              title: 'News',
-              items: [
-                {
-                  id: crypto.randomUUID(),
-                  title: 'Neuer Beitrag',
-                  body: 'Hier kannst du aktuelle Informationen eintragen – optional mit Bild.',
-                  imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
-                  date: new Date().toISOString().slice(0, 10),
-                },
-              ],
-            },
-          },
-        },
-        { type: 'container', label: 'Kalender', icon: '📅', defaultProps: { component: 'calendar', calendarFocusDate: new Date().toISOString() } },
         {
           type: 'container',
           label: 'Todo-Liste',
