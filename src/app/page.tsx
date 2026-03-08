@@ -67,6 +67,76 @@ const trustFacts = {
   ],
 } as const;
 
+const heroStats = {
+  de: ['Vorlagen-Start', 'KI-Generierung', 'Live-Vorschau'],
+  en: ['Template start', 'AI generation', 'Live preview'],
+} as const;
+
+const featureSpotlights = {
+  de: [
+    {
+      title: 'Projekte steuern',
+      text: 'Alles in einem Workspace statt in fünf Tools.',
+      accent: 'from-cyan-500/25 to-blue-500/10',
+    },
+    {
+      title: 'Mit KI starten',
+      text: 'Aus einer Idee werden Seiten, Bereiche und Inhalte.',
+      accent: 'from-fuchsia-500/25 to-violet-500/10',
+    },
+    {
+      title: 'Visuell bearbeiten',
+      text: 'Layouts, Texte und Komponenten direkt im Editor anpassen.',
+      accent: 'from-emerald-500/25 to-teal-500/10',
+    },
+    {
+      title: 'Mobil testen',
+      text: 'Per Vorschau-Link und QR-Code sofort auf dem Smartphone prüfen.',
+      accent: 'from-amber-500/25 to-orange-500/10',
+    },
+  ],
+  en: [
+    {
+      title: 'Control projects',
+      text: 'Everything in one workspace instead of five tools.',
+      accent: 'from-cyan-500/25 to-blue-500/10',
+    },
+    {
+      title: 'Start with AI',
+      text: 'Turn an idea into screens, sections, and content.',
+      accent: 'from-fuchsia-500/25 to-violet-500/10',
+    },
+    {
+      title: 'Edit visually',
+      text: 'Adjust layouts, text, and components directly in the editor.',
+      accent: 'from-emerald-500/25 to-teal-500/10',
+    },
+    {
+      title: 'Test on mobile',
+      text: 'Validate instantly via preview links and QR codes.',
+      accent: 'from-amber-500/25 to-orange-500/10',
+    },
+  ],
+} as const;
+
+const personaCards = {
+  de: [
+    { icon: '🚀', title: 'Gründer:innen', text: 'Ideen schnell als MVP und Demo sichtbar machen.' },
+    { icon: '🧩', title: 'Agenturen', text: 'Prototypen, Workshops und Kundenpräsentationen beschleunigen.' },
+    { icon: '🏢', title: 'Teams', text: 'Interne Prozesse digitalisieren, bevor Entwicklung teuer wird.' },
+  ],
+  en: [
+    { icon: '🚀', title: 'Founders', text: 'Turn ideas into visible MVPs and demos quickly.' },
+    { icon: '🧩', title: 'Agencies', text: 'Speed up prototypes, workshops, and client presentations.' },
+    { icon: '🏢', title: 'Teams', text: 'Digitize internal workflows before development gets expensive.' },
+  ],
+} as const;
+
+const reasonPills = {
+  de: ['Schneller Start', 'Weniger Abstimmung', 'Bessere Demos', 'Frühes Nutzerfeedback'],
+  en: ['Faster start', 'Less coordination', 'Better demos', 'Earlier feedback'],
+} as const;
+
 function WorkflowPreview({
   index,
   lang,
@@ -241,12 +311,13 @@ export default async function HomePage() {
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const faq = faqEntries[lang];
   const trustList = trustFacts[lang];
+  const stats = heroStats[lang];
+  const spotlightCards = featureSpotlights[lang];
+  const personas = personaCards[lang];
+  const pills = reasonPills[lang];
   const {
     workflowSteps,
-    featureList,
-    audience,
     kiHighlights,
-    reasons,
     coinPricingCards,
     subscriptionPlans,
     subscriptionPlanOrder,
@@ -258,17 +329,17 @@ export default async function HomePage() {
       <Header />
       <main className="w-full px-4 py-12 lg:px-10">
         <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-12">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-10 shadow-2xl">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
-            <div className="flex-1 text-center lg:text-left">
+        <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl md:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="text-center lg:text-left">
               <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">{tr('No-Code Builder', 'No-code builder')}</p>
-              <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-5xl">
+              <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">
                 {tr('Von der Idee zur App in wenigen Minuten', 'From idea to app in minutes')}
               </h1>
-              <p className="mt-5 text-lg text-neutral-200">
+              <p className="mt-5 max-w-2xl text-lg text-neutral-200 lg:text-xl">
                 {tr(
-                  'Melde dich an, wähle eine Vorlage, lass dir von der KI helfen und passe alles im Editor an – direkt im Browser und ohne Vorkenntnisse. So testest du deine App-Ideen schneller als je zuvor.',
-                  'Sign up, pick a template, let AI help you, and fine-tune everything in the editor — right in the browser, no prior knowledge required. Test your app ideas faster than ever.'
+                  'Vorlage wählen, KI anschieben, im Editor verfeinern und direkt auf dem Handy testen. Weniger Planung, mehr sichtbares Produkt.',
+                  'Pick a template, use AI, refine in the editor, and test on mobile right away. Less planning, more visible product.'
                 )}
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
@@ -285,19 +356,75 @@ export default async function HomePage() {
                   {tr('Beispiele ansehen', 'See examples')}
                 </Link>
               </div>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                {stats.map((item) => (
+                  <div key={item} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-neutral-100 shadow-lg backdrop-blur">
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-1 items-center justify-center">
-              <div className="relative h-56 w-56 sm:h-64 sm:w-64">
-                <div className="absolute inset-0 rounded-[32px] bg-gradient-to-br from-cyan-500 via-blue-500 to-fuchsia-600 blur-2xl opacity-40" />
-                <div className="relative flex h-full w-full items-center justify-center rounded-[32px] border border-white/15 bg-black/20 backdrop-blur">
-                  <Image
-                    src="/logo.png"
-                    alt={tr('AppSchmiede Logo', 'AppSchmiede logo')}
-                    width={220}
-                    height={220}
-                    priority
-                    className="drop-shadow-2xl"
-                  />
+            <div className="relative min-h-[420px]">
+              <div className="absolute left-8 top-2 h-28 w-28 rounded-full bg-cyan-500/20 blur-3xl" />
+              <div className="absolute bottom-6 right-10 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-3xl" />
+              <div className="relative mx-auto max-w-[760px]">
+                <div className="relative rounded-[34px] border border-white/10 bg-[#06101d]/90 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+                  <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                    <div className="ml-3 rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-neutral-400">
+                      {tr('Live Workspace', 'Live workspace')}
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+                    <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
+                      {[
+                        tr('Dashboard', 'Dashboard'),
+                        tr('Projekte', 'Projects'),
+                        tr('Vorlagen', 'Templates'),
+                        tr('Editor', 'Editor'),
+                      ].map((item, index) => (
+                        <div key={item} className={`rounded-2xl px-4 py-3 text-sm ${index === 1 ? 'bg-cyan-500/15 text-cyan-100' : 'bg-black/20 text-neutral-200'}`}>
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid gap-4">
+                      <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+                        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 p-5">
+                          <div className="text-xs uppercase tracking-[0.35em] text-cyan-100/80">{tr('App Preview', 'App preview')}</div>
+                          <div className="mt-4 rounded-[28px] border border-white/10 bg-[#02050d] p-4">
+                            <div className="mx-auto h-1.5 w-16 rounded-full bg-white/10" />
+                            <div className="mt-4 h-24 rounded-3xl bg-white/10" />
+                            <div className="mt-4 h-3 w-2/3 rounded-full bg-white/20" />
+                            <div className="mt-2 h-3 w-1/2 rounded-full bg-white/10" />
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                              <div className="h-16 rounded-2xl bg-white/5" />
+                              <div className="h-16 rounded-2xl bg-white/10" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                          <div className="text-xs uppercase tracking-[0.35em] text-neutral-400">{tr('Bausteine', 'Blocks')}</div>
+                          <div className="mt-4 space-y-3">
+                            {['Hero', 'Chat', 'Tasks', 'Analytics'].map((item) => (
+                              <div key={item} className="rounded-2xl bg-black/20 px-4 py-3 text-sm text-neutral-200">{item}</div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        {spotlightCards.slice(0, 3).map((item) => (
+                          <div key={item.title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
+                            <div className="h-24 rounded-2xl bg-black/20" />
+                            <div className="mt-4 text-sm font-semibold text-white">{item.title}</div>
+                            <div className="mt-1 text-xs text-neutral-200">{item.text}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -308,10 +435,10 @@ export default async function HomePage() {
           <header className="space-y-3 text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Ablauf', 'Workflow')}</p>
             <h2 className="text-3xl font-semibold">{tr('So funktioniert die AppSchmiede', 'How AppSchmiede works')}</h2>
-            <p className="text-base text-neutral-300">
+            <p className="text-sm text-neutral-300 md:text-base">
               {tr(
-                'AppSchmiede ist deine Werkbank für digitale Produkte. Statt monatelang zu planen, baust du in wenigen Schritten eine funktionsfähige App, testest sie mit deinem Team oder Kund:innen und entscheidest dann, wie es weitergeht.',
-                'AppSchmiede is your workshop for digital products. Instead of planning for months, you build a working app in just a few steps, test it with your team or clients, and then decide what to do next.'
+                'Drei klare Schritte statt langer Vorprojekte.',
+                'Three clear steps instead of long prep phases.'
               )}
             </p>
           </header>
@@ -336,19 +463,16 @@ export default async function HomePage() {
             <h2 className="text-3xl font-semibold">
               {tr('Alles, was du zum App-Bau brauchst – in einer Oberfläche', 'Everything you need to build an app — in one interface')}
             </h2>
-            <p className="text-base text-neutral-300">
-              {tr(
-                'AppSchmiede bündelt alle Schritte, die du für moderne Web-Apps brauchst – von der Idee bis zur Vorschau auf dem Handy.',
-                'AppSchmiede bundles every step you need for modern web apps — from idea to a mobile preview.'
-              )}
-            </p>
           </header>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {featureList.map((feature) => (
-              <div key={feature.title} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
-                <h3 className="text-xl font-semibold">{feature.title}</h3>
-                <p className="mt-3 text-sm text-neutral-300">{feature.description}</p>
-              </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {spotlightCards.map((feature) => (
+              <article key={feature.title} className="overflow-hidden rounded-3xl border border-white/10 bg-[#070b16] p-4 shadow-lg">
+                <div className={`rounded-2xl bg-gradient-to-br ${feature.accent} p-4`}>
+                  <div className="h-24 rounded-2xl bg-black/20" />
+                </div>
+                <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
+                <p className="mt-2 text-sm text-neutral-300">{feature.text}</p>
+              </article>
             ))}
           </div>
         </section>
@@ -358,40 +482,51 @@ export default async function HomePage() {
             <h2 className="text-3xl font-semibold">
               {tr('Für Gründer:innen, Agenturen und Teams, die schneller testen wollen', 'For founders, agencies and teams who want to test faster')}
             </h2>
-            <p className="text-base text-neutral-300">
-              {tr(
-                'AppSchmiede richtet sich an alle, die digitale Ideen nicht nur auf Papier, sondern direkt vor Augen sehen wollen.',
-                'AppSchmiede is for anyone who wants to see digital ideas on screen — not just on paper.'
-              )}
-            </p>
           </header>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {audience.map((group) => (
-              <div key={group.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h3 className="text-xl font-semibold">{group.title}</h3>
-                <p className="mt-3 text-sm text-neutral-300">{group.description}</p>
-              </div>
+            {personas.map((group) => (
+              <article key={group.title} className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center shadow-lg">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white/10 text-3xl">{group.icon}</div>
+                <h3 className="mt-4 text-xl font-semibold">{group.title}</h3>
+                <p className="mt-2 text-sm text-neutral-300">{group.text}</p>
+              </article>
             ))}
           </div>
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
+            <div className="rounded-3xl border border-white/10 bg-[#070b16] p-5 shadow-lg">
+              <div className="rounded-3xl border border-cyan-400/20 bg-[#0b1731] p-4">
+                <div className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">{tr('KI-Eingabe', 'AI prompt')}</div>
+                <div className="mt-3 rounded-2xl bg-white/5 px-4 py-4 text-sm leading-6 text-neutral-200">
+                  {tr(
+                    'Baue eine Service-App mit Einsätzen, Fotos, Chat und Zeiterfassung für mobile Teams.',
+                    'Build a service app with jobs, photos, chat, and time tracking for mobile teams.'
+                  )}
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="h-24 rounded-2xl bg-white/5" />
+                  <div className="h-24 rounded-2xl bg-white/10" />
+                  <div className="h-24 rounded-2xl bg-white/5" />
+                </div>
+              </div>
+            </div>
             <div>
               <h2 className="text-3xl font-semibold">{tr('KI an deiner Seite – kein Code notwendig', 'AI by your side — no code required')}</h2>
               <p className="mt-4 text-base text-neutral-300">
                 {tr(
-                  'Statt pixelgenauen Wireframes und komplizierten Tickets beschreibst du einfach, was du brauchst: „Eine App zur Zeiterfassung für mein Team, mit Projektübersicht, Stundenerfassung und Auswertung.“ Die KI erstellt dir die passende Struktur, Seiten und Bausteine. Du entscheidest, was bleibt – den Rest passt du im Editor an.',
-                  'Instead of pixel-perfect wireframes and complex tickets, you just describe what you need: “A time-tracking app for my team, with a project overview, time entries, and reports.” The AI generates the structure, pages and building blocks. You decide what stays — and fine-tune the rest in the editor.'
+                  'Du beschreibst nur das Ziel. Die Plattform schlägt Seiten, Bausteine und Struktur vor, die du danach visuell weiterbearbeitest.',
+                  'You only describe the outcome. The platform suggests screens, blocks, and structure, which you then refine visually.'
                 )}
               </p>
-            </div>
-            <div className="space-y-3 rounded-2xl border border-white/10 bg-[#070b16] p-5">
-              {kiHighlights.map((highlight) => (
-                <p key={highlight} className="text-sm text-neutral-200">
-                  ✓ {highlight}
-                </p>
-              ))}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {kiHighlights.map((highlight) => (
+                  <div key={highlight} className="rounded-2xl border border-white/10 bg-[#070b16] px-4 py-3 text-sm text-neutral-200">
+                    ✓ {highlight}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -403,8 +538,8 @@ export default async function HomePage() {
               <h2 className="mt-3 text-3xl font-semibold">{tr('Wie Teams AppSchmiede konkret einsetzen', 'How teams use AppSchmiede in practice')}</h2>
               <p className="mt-4 text-base text-neutral-300">
                 {tr(
-                  'Typische Einsätze sind interne Prozess-Apps, Support-Oberflächen, mobile Arbeitsmasken für Service-Teams, kleine Kundenportale oder schnelle MVPs für neue Geschäftsmodelle. Statt monatelanger Entwicklung entstehen belastbare Prototypen, die intern getestet und dann gezielt ausgebaut werden.',
-                  'Typical use cases include internal process apps, support workflows, mobile screens for service teams, small client portals, or fast MVPs for new business ideas. Instead of waiting through long delivery cycles, teams get something tangible to test and improve.'
+                  'Interne Tools, Kunden-Demos und MVPs lassen sich deutlich früher sichtbar machen.',
+                  'Internal tools, client demos, and MVPs become visible much earlier.'
                 )}
               </p>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -454,18 +589,11 @@ export default async function HomePage() {
             <h2 className="text-3xl font-semibold">
               {tr('Warum du deine nächste App in der AppSchmiede bauen solltest', 'Why you should build your next app with AppSchmiede')}
             </h2>
-            <p className="text-base text-neutral-300">
-              {tr(
-                'Weil du keine Zeit für endlose Abstimmungen, Lastenhefte und Warteschlangen in der IT hast.',
-                'Because you don’t have time for endless alignment, specs, and IT queues.'
-              )}
-            </p>
           </header>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {reasons.map((reason) => (
-              <div key={reason.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <h3 className="text-xl font-semibold">{reason.title}</h3>
-                <p className="mt-3 text-sm text-neutral-300">{reason.description}</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            {pills.map((item) => (
+              <div key={item} className="rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-neutral-100 shadow-lg">
+                {item}
               </div>
             ))}
           </div>
@@ -590,19 +718,13 @@ export default async function HomePage() {
           <header className="space-y-3 text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-amber-300">FAQ</p>
             <h2 className="text-3xl font-semibold">{tr('Häufige Fragen zur Plattform', 'Common questions about the platform')}</h2>
-            <p className="text-base text-neutral-300">
-              {tr(
-                'Diese Antworten helfen Besucherinnen und Besuchern, das Produkt, den Einsatzbereich und den Ablauf besser einzuordnen.',
-                'These answers help visitors understand the product, its use cases, and how the workflow fits into real projects.'
-              )}
-            </p>
           </header>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {faq.map((entry) => (
-              <article key={entry.question} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
-                <h3 className="text-lg font-semibold">{entry.question}</h3>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {faq.slice(0, 3).map((entry) => (
+              <details key={entry.question} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
+                <summary className="cursor-pointer list-none text-lg font-semibold text-white">{entry.question}</summary>
                 <p className="mt-3 text-sm leading-6 text-neutral-300">{entry.answer}</p>
-              </article>
+              </details>
             ))}
           </div>
         </section>
