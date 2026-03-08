@@ -23,6 +23,7 @@ export interface EditorLayoutPreferences {
     editorCollapsed?: boolean;
     projectCollapsed?: boolean;
     elementsCollapsed?: boolean;
+    costsCollapsed?: boolean;
   };
 }
 

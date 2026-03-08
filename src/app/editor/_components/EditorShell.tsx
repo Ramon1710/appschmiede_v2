@@ -151,7 +151,7 @@ type StoredPageTemplate = {
 type MobilePanel = 'toolbox' | 'canvas' | 'properties';
 
 type PanelSide = 'left' | 'right';
-type LeftPanelSectionKey = 'editor' | 'project' | 'elements';
+type LeftPanelSectionKey = 'editor' | 'project' | 'elements' | 'costs';
 type LeftPanelSectionsState = Record<LeftPanelSectionKey, boolean>;
 
 const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: { de: string; en: string }; icon: string }> = [
@@ -176,6 +176,7 @@ const DEFAULT_LEFT_PANEL_SECTIONS: LeftPanelSectionsState = {
   editor: false,
   project: false,
   elements: false,
+  costs: false,
 };
 const DEFAULT_CANVAS_ZOOM = 1;
 
@@ -1074,8 +1075,11 @@ export default function EditorShell({ initialPageId }: Props) {
         editor: Boolean(prefs.leftPanelSections?.editorCollapsed),
         project: Boolean(prefs.leftPanelSections?.projectCollapsed),
         elements: Boolean(prefs.leftPanelSections?.elementsCollapsed),
+        costs: Boolean(prefs.leftPanelSections?.costsCollapsed),
       };
-      setLeftPanelSections(nextLeftPanelSections);
+      if (!layoutInitialized) {
+        setLeftPanelSections(nextLeftPanelSections);
+      }
       lastSavedLayoutRef.current = {
         leftPanelWidth: typeof prefs.leftPanelWidth === 'number' ? clampPanelWidth('left', prefs.leftPanelWidth) : undefined,
         rightPanelWidth: typeof prefs.rightPanelWidth === 'number' ? clampPanelWidth('right', prefs.rightPanelWidth) : undefined,
@@ -1084,14 +1088,17 @@ export default function EditorShell({ initialPageId }: Props) {
           editorCollapsed: nextLeftPanelSections.editor,
           projectCollapsed: nextLeftPanelSections.project,
           elementsCollapsed: nextLeftPanelSections.elements,
+          costsCollapsed: nextLeftPanelSections.costs,
         },
       };
     } else {
-      setLeftPanelSections(DEFAULT_LEFT_PANEL_SECTIONS);
+      if (!layoutInitialized) {
+        setLeftPanelSections(DEFAULT_LEFT_PANEL_SECTIONS);
+      }
       lastSavedLayoutRef.current = null;
     }
     setLayoutInitialized(true);
-  }, [user?.uid, profileLoading, profile?.editorLayout]);
+  }, [user?.uid, profileLoading, profile?.editorLayout, layoutInitialized]);
 
   useEffect(() => {
     if (derivedProjectId || manualProjectId || !projects.length) return;
@@ -1217,6 +1224,7 @@ export default function EditorShell({ initialPageId }: Props) {
         editorCollapsed: leftPanelSections.editor,
         projectCollapsed: leftPanelSections.project,
         elementsCollapsed: leftPanelSections.elements,
+        costsCollapsed: leftPanelSections.costs,
       },
     };
     const prev = lastSavedLayoutRef.current;
@@ -3804,24 +3812,41 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const editorCostSummary = (
     <div className="rounded-xl border border-amber-400/25 bg-amber-500/10 p-3 text-xs text-amber-50">
-      <div className="font-semibold text-amber-100">{tr('Coin-Kosten im Editor', 'Coin costs in the editor')}</div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-          {tr('Allgemeine Funktionen', 'Basic functions')}: {formatCoinLabel(basicComponentCoinCost)}
-        </span>
-        <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-          {tr('Andere Bausteine', 'Other blocks')}: {formatCoinLabel(componentCoinCost)}
-        </span>
-        <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-          {tr('Fertige Buttons', 'Quick buttons')}: {formatCoinLabel(quickButtonCoinCost)}
-        </span>
-        <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-          KI: {formatCoinLabel(aiCoinCost)}
-        </span>
-        <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-          {tr('Vorlagen', 'Templates')}: {formatCoinLabel(templateCoinCost)}
-        </span>
+      <div className="flex w-full items-center justify-between gap-3 text-left">
+        <div>
+          <div className="font-semibold text-amber-100">{tr('Coin-Kosten im Editor', 'Coin costs in the editor')}</div>
+          {!leftPanelSections.costs && (
+            <div className="mt-1 text-[11px] text-amber-100/80">{tr('Preise ein- oder ausklappen', 'Expand or collapse prices')}</div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => toggleLeftPanelSection('costs')}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-lg text-amber-100 transition hover:bg-black/30"
+          aria-label={leftPanelSections.costs ? tr('Kosten öffnen', 'Expand costs') : tr('Kosten schließen', 'Collapse costs')}
+        >
+          {leftPanelSections.costs ? '▸' : '▾'}
+        </button>
       </div>
+      {!leftPanelSections.costs && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Allgemeine Funktionen', 'Basic functions')}: {formatCoinLabel(basicComponentCoinCost)}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Andere Bausteine', 'Other blocks')}: {formatCoinLabel(componentCoinCost)}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Fertige Buttons', 'Quick buttons')}: {formatCoinLabel(quickButtonCoinCost)}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            KI: {formatCoinLabel(aiCoinCost)}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Vorlagen', 'Templates')}: {formatCoinLabel(templateCoinCost)}
+          </span>
+        </div>
+      )}
     </div>
   );
 
@@ -4121,17 +4146,20 @@ export default function EditorShell({ initialPageId }: Props) {
   const renderLeftPanelToggle = (section: LeftPanelSectionKey, title: string, subtitle?: string) => {
     const collapsed = leftPanelSections[section];
     return (
-      <button
-        type="button"
-        onClick={() => toggleLeftPanelSection(section)}
-        className="flex w-full items-center justify-between gap-3 text-left"
-      >
+      <div className="flex w-full items-center justify-between gap-3 text-left">
         <div>
           <div className="text-xs uppercase tracking-[0.35em] text-neutral-500">{title}</div>
           {subtitle && !collapsed && <div className="mt-1 text-sm font-semibold text-white">{subtitle}</div>}
         </div>
-        <span className="text-lg text-neutral-300">{collapsed ? '▸' : '▾'}</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => toggleLeftPanelSection(section)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-neutral-300 transition hover:bg-white/10"
+          aria-label={collapsed ? tr('Bereich öffnen', 'Expand section') : tr('Bereich schließen', 'Collapse section')}
+        >
+          {collapsed ? '▸' : '▾'}
+        </button>
+      </div>
     );
   };
 
