@@ -13,7 +13,6 @@ import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
 import GuidedTour from '@/components/GuidedTour';
-import GoogleAdSlot from '@/components/GoogleAdSlot';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import { getStoredProjectId } from '@/lib/editor-storage';
@@ -26,32 +25,6 @@ export default function DashboardPage() {
   const locale = lang === 'en' ? 'en-US' : 'de-DE';
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const dashboardAdsLeft = [
-    {
-      slotKey: 'DASH_LEFT_PRIMARY',
-      title: tr('Produktivität', 'Productivity'),
-      description: tr('Buche dir Add-ons für dein Team – Integrationen, Support, Co-Piloten.', 'Add-ons for your team — integrations, support, co-pilots.'),
-    },
-    {
-      slotKey: 'DASH_LEFT_SECONDARY',
-      title: tr('Deal der Woche', 'Deal of the week'),
-      description: tr('KI-gestützte Illustrationen für deine Apps 15 % günstiger.', 'AI-generated illustrations for your apps — 15% off.'),
-    },
-  ];
-
-  const dashboardAdsRight = [
-    {
-      slotKey: 'DASH_RIGHT_PRIMARY',
-      title: tr('App-Launch Promo', 'App launch promo'),
-      description: tr('Schalte deine erste Kampagne direkt aus der AppSchmiede.', 'Launch your first campaign directly from AppSchmiede.'),
-    },
-    {
-      slotKey: 'DASH_RIGHT_SECONDARY',
-      title: tr('Cloud Ressourcen', 'Cloud resources'),
-      description: tr('Skaliere Infrastruktur & Analysen mit Partner-Angeboten.', 'Scale infrastructure & analytics with partner offers.'),
-    },
-  ];
 
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -134,30 +107,7 @@ export default function DashboardPage() {
     <>
       <Header />
       <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
-        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[260px_minmax(0,1fr)_260px]">
-          {/* Left Ad Space */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
-              <div className="text-xs uppercase tracking-wider text-neutral-400">{tr('Werbung', 'Ads')}</div>
-              {dashboardAdsLeft.map((ad) => (
-                <GoogleAdSlot
-                  key={ad.slotKey}
-                  slotKey={ad.slotKey}
-                  className="mt-2"
-                  style={{ display: 'block', minHeight: 260 }}
-                  backgroundFallback={
-                    <>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
-                      <p className="mt-1 text-sm text-neutral-300">{ad.description}</p>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex flex-col gap-6">
+        <div className="flex w-full flex-col gap-6">
             <header className="flex items-center gap-3">
               <h1 className="text-3xl font-bold">Dashboard</h1>
               <span className="ml-auto text-sm opacity-70">{user.email}</span>
@@ -276,27 +226,6 @@ export default function DashboardPage() {
               )}
             </section>
           </div>
-
-          {/* Right Ad Space */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-6 space-y-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-6 backdrop-blur-sm">
-              <div className="text-xs uppercase tracking-wider text-neutral-400">{tr('Werbung', 'Ads')}</div>
-              {dashboardAdsRight.map((ad) => (
-                <GoogleAdSlot
-                  key={ad.slotKey}
-                  slotKey={ad.slotKey}
-                  className="mt-2"
-                  style={{ display: 'block', minHeight: 260 }}
-                  backgroundFallback={
-                    <>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
-                      <p className="mt-1 text-sm text-neutral-300">{ad.description}</p>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </aside>
         </div>
       </main>
       <LegalModalTrigger className="fixed bottom-4 left-4" />

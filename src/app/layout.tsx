@@ -23,18 +23,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
   const initialLang: Lang = raw === 'en' ? 'en' : 'de';
+  const adsenseEnabled = process.env.NEXT_PUBLIC_ENABLE_ADSENSE === 'true';
 
   return (
     <html lang={initialLang}>
       <head>
-        <meta name="google-adsense-account" content="ca-pub-9591311841405142" />
-        <Script
-          id="adsense-loader"
-          strategy="beforeInteractive"
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9591311841405142"
-          crossOrigin="anonymous"
-        />
+        {adsenseEnabled && <meta name="google-adsense-account" content="ca-pub-9591311841405142" />}
+        {adsenseEnabled && (
+          <Script
+            id="adsense-loader"
+            strategy="beforeInteractive"
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9591311841405142"
+            crossOrigin="anonymous"
+          />
+        )}
       </head>
       <body className="bg-neutral-950 text-neutral-100 min-h-screen">
         <I18nRoot initialLang={initialLang}>{children}</I18nRoot>

@@ -7,11 +7,73 @@ import { getHomeContent } from '@/lib/home-content';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
 
+const faqEntries = {
+  de: [
+    {
+      question: 'Für wen ist AppSchmiede gedacht?',
+      answer:
+        'AppSchmiede richtet sich an Selbstständige, kleine Teams, Agenturen und Unternehmen, die interne Tools, MVPs oder klickbare Demos schneller umsetzen möchten. Statt ein Pflichtenheft zu schreiben, entsteht direkt ein testbarer Prototyp im Browser.',
+    },
+    {
+      question: 'Was unterscheidet AppSchmiede von einem Baukasten?',
+      answer:
+        'Der Fokus liegt nicht auf dekorativen Webseiten, sondern auf arbeitsfähigen App-Strukturen: Projekte, Seiten, Vorlagen, Vorschau, Editor, KI-Generierung und wiederverwendbare Bausteine greifen in einer Oberfläche zusammen.',
+    },
+    {
+      question: 'Wie läuft ein typisches Projekt ab?',
+      answer:
+        'Die meisten Nutzer starten mit einer Vorlage oder einem Branchen-Setup, ergänzen Inhalte mit KI und verfeinern die Seiten anschließend im Editor. Danach wird die App über Vorschau-Links oder QR-Codes intern getestet und iterativ verbessert.',
+    },
+    {
+      question: 'Brauche ich Programmierkenntnisse?',
+      answer:
+        'Nein. Die Plattform ist so aufgebaut, dass Texte, Layouts, Bausteine und Seiten visuell bearbeitet werden können. Technische Teams können trotzdem mit klaren Strukturen, Projekten und Vorlagen arbeiten.',
+    },
+  ],
+  en: [
+    {
+      question: 'Who is AppSchmiede built for?',
+      answer:
+        'AppSchmiede is designed for solo founders, small teams, agencies, and companies that want to ship internal tools, MVPs, or clickable demos faster. Instead of writing long specifications, you build a testable prototype directly in the browser.',
+    },
+    {
+      question: 'What makes it different from a generic site builder?',
+      answer:
+        'The product is focused on usable app structures rather than decorative pages: projects, screens, templates, previews, editor workflows, AI generation, and reusable blocks all work together in one interface.',
+    },
+    {
+      question: 'What does a typical workflow look like?',
+      answer:
+        'Most users start from a template or industry setup, extend it with AI-generated content, then refine screens in the editor. The result can be reviewed internally through preview links or QR codes and improved iteratively.',
+    },
+    {
+      question: 'Do I need coding skills?',
+      answer:
+        'No. The platform is built so text, layouts, blocks, and pages can be edited visually. Technical teams can still benefit from clear project structure, reusable templates, and faster concept validation.',
+    },
+  ],
+} as const;
+
+const trustFacts = {
+  de: [
+    'Browserbasierter Editor ohne lokale Installation',
+    'Projektverwaltung, Vorschau und QR-Tests in einem Workflow',
+    'Rechtliche Basis mit Impressum und Datenschutz bereits vorhanden',
+  ],
+  en: [
+    'Browser-based editor with no local installation required',
+    'Projects, previews, and QR testing combined in one workflow',
+    'Legal foundation with imprint and privacy pages already available',
+  ],
+} as const;
+
 export default async function HomePage() {
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
   const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const faq = faqEntries[lang];
+  const trustList = trustFacts[lang];
   const {
     workflowSteps,
     featureList,
@@ -164,6 +226,59 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <section className="rounded-3xl border border-white/10 bg-[#08111f] p-8 shadow-lg">
+          <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Praxis', 'Real-world use')}</p>
+              <h2 className="mt-3 text-3xl font-semibold">{tr('Wie Teams AppSchmiede konkret einsetzen', 'How teams use AppSchmiede in practice')}</h2>
+              <p className="mt-4 text-base text-neutral-300">
+                {tr(
+                  'Typische Einsätze sind interne Prozess-Apps, Support-Oberflächen, mobile Arbeitsmasken für Service-Teams, kleine Kundenportale oder schnelle MVPs für neue Geschäftsmodelle. Statt monatelanger Entwicklung entstehen belastbare Prototypen, die intern getestet und dann gezielt ausgebaut werden.',
+                  'Typical use cases include internal process apps, support workflows, mobile screens for service teams, small client portals, or fast MVPs for new business ideas. Instead of waiting through long delivery cycles, teams get something tangible to test and improve.'
+                )}
+              </p>
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {[
+                  {
+                    title: tr('Interne Tools', 'Internal tools'),
+                    description: tr('Zeiterfassung, Checklisten, Schicht- oder Aufgabenansichten für den täglichen Betrieb.', 'Time tracking, checklists, scheduling, or task flows for daily operations.'),
+                  },
+                  {
+                    title: tr('Kunden-Demos', 'Client demos'),
+                    description: tr('Klickbare Prototypen für Angebote, Pitches oder Workshops mit direktem Feedback.', 'Clickable prototypes for proposals, pitches, or workshops with direct feedback.'),
+                  },
+                  {
+                    title: tr('MVP-Tests', 'MVP validation'),
+                    description: tr('Neue Ideen in wenigen Tagen sichtbar machen, bevor Budget in Entwicklung fließt.', 'Make new ideas visible in days before serious build budget is committed.'),
+                  },
+                ].map((item) => (
+                  <article key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                    <h3 className="text-lg font-semibold">{item.title}</h3>
+                    <p className="mt-2 text-sm text-neutral-300">{item.description}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+            <aside className="rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-6">
+              <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">{tr('Vertrauen', 'Trust')}</p>
+              <h3 className="mt-3 text-2xl font-semibold">{tr('Was Besucher auf der Website direkt nachvollziehen können', 'What visitors can verify right away')}</h3>
+              <ul className="mt-5 space-y-3 text-sm text-neutral-200">
+                {trustList.map((fact) => (
+                  <li key={fact}>✓ {fact}</li>
+                ))}
+              </ul>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:flex-col">
+                <Link href="/about" className="rounded-full border border-white/20 px-4 py-2 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                  {tr('Mehr über AppSchmiede', 'More about AppSchmiede')}
+                </Link>
+                <Link href="/impressum" className="rounded-full border border-white/20 px-4 py-2 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                  {tr('Impressum ansehen', 'View imprint')}
+                </Link>
+              </div>
+            </aside>
+          </div>
+        </section>
+
         <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
           <header className="space-y-3 text-center">
             <h2 className="text-3xl font-semibold">
@@ -298,6 +413,27 @@ export default async function HomePage() {
                 </table>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-amber-300">FAQ</p>
+            <h2 className="text-3xl font-semibold">{tr('Häufige Fragen zur Plattform', 'Common questions about the platform')}</h2>
+            <p className="text-base text-neutral-300">
+              {tr(
+                'Diese Antworten helfen Besucherinnen und Besuchern, das Produkt, den Einsatzbereich und den Ablauf besser einzuordnen.',
+                'These answers help visitors understand the product, its use cases, and how the workflow fits into real projects.'
+              )}
+            </p>
+          </header>
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {faq.map((entry) => (
+              <article key={entry.question} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
+                <h3 className="text-lg font-semibold">{entry.question}</h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-300">{entry.answer}</p>
+              </article>
+            ))}
           </div>
         </section>
 
