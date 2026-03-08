@@ -49,6 +49,7 @@ export default function Header() {
   }, [user?.uid]);
 
   const editorDisabled = Boolean(user) && !hasProjects;
+  const showAuthenticatedNav = !loading && Boolean(user);
   const editorDisabledTitle =
     lang === 'en'
       ? 'Create a project first before opening the editor.'
@@ -71,26 +72,30 @@ export default function Header() {
           </div>
         </Link>
         <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_home')}</Link>
-        <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_dashboard')}</Link>
-        <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_projects')}</Link>
-        <Link
-          href="/editor"
-          aria-disabled={editorDisabled}
-          tabIndex={editorDisabled ? -1 : undefined}
-          onClick={(event) => {
-            if (editorDisabled) {
-              event.preventDefault();
-            }
-          }}
-          className={`hover:text-cyan-400 transition text-sm uppercase tracking-wide ${
-            editorDisabled ? 'cursor-not-allowed text-neutral-500 opacity-60 hover:text-neutral-500' : ''
-          }`}
-          title={editorDisabled ? editorDisabledTitle : undefined}
-        >
-          {t('nav_editor')}
-        </Link>
-        <Link href="/wizard/name-it" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_trades')}</Link>
-        <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
+        {showAuthenticatedNav && (
+          <>
+            <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_dashboard')}</Link>
+            <Link href="/projects" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_projects')}</Link>
+            <Link
+              href="/editor"
+              aria-disabled={editorDisabled}
+              tabIndex={editorDisabled ? -1 : undefined}
+              onClick={(event) => {
+                if (editorDisabled) {
+                  event.preventDefault();
+                }
+              }}
+              className={`hover:text-cyan-400 transition text-sm uppercase tracking-wide ${
+                editorDisabled ? 'cursor-not-allowed text-neutral-500 opacity-60 hover:text-neutral-500' : ''
+              }`}
+              title={editorDisabled ? editorDisabledTitle : undefined}
+            >
+              {t('nav_editor')}
+            </Link>
+            <Link href="/wizard/name-it" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_trades')}</Link>
+            <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
+          </>
+        )}
         <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
         <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
       </nav>
