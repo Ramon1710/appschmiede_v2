@@ -226,7 +226,6 @@ export default function DashboardPage() {
               )}
             </section>
           </div>
-        </div>
       </main>
       <LegalModalTrigger className="fixed bottom-4 left-4" />
       <GuidedTour storageKey="tour-dashboard" steps={tourSteps} autoStart={shouldAutoStartTour} forceStartToken={forceStartToken} />
