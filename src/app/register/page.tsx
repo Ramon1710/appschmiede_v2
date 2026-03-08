@@ -5,6 +5,26 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { registerWithEmail } from '@/lib/auth';
 
+function formatRegisterError(error: unknown) {
+  const code =
+    error && typeof error === 'object' && 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+      ? (error as { code: string }).code
+      : null;
+
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'Diese E-Mail-Adresse ist bereits registriert. Bitte melde dich an oder setze dein Passwort zurück.';
+    case 'auth/invalid-email':
+      return 'Die E-Mail-Adresse ist ungültig.';
+    case 'auth/weak-password':
+      return 'Das Passwort ist zu schwach. Bitte wähle mindestens 6 Zeichen.';
+    case 'auth/network-request-failed':
+      return 'Netzwerkfehler. Bitte prüfe deine Verbindung und versuche es erneut.';
+    default:
+      return 'Registrierung fehlgeschlagen. Bitte versuche es erneut.';
+  }
+}
+
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -56,8 +76,8 @@ export default function RegisterPage() {
       const displayName = `${firstName} ${lastName}`;
       await registerWithEmail(email, password, displayName, company || undefined, null);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err?.message ?? 'Registrierung fehlgeschlagen');
+    } catch (err) {
+      setError(formatRegisterError(err));
     } finally {
       setBusy(false);
     }

@@ -503,23 +503,23 @@ export async function POST(request: Request) {
       }
     }
 
-    const page =
-      parsed && !hasHomePageMismatch(parsed, wantsHomepage)
-        ? parsed
-        : wantsHomepage
-          ? buildModernHomepage(userPrompt, pageName)
-          : wantsAuth
+    const validOpenAiPage = parsed && !hasHomePageMismatch(parsed, wantsHomepage) ? parsed : null;
+    const fallbackPage = wantsHomepage
+      ? buildModernHomepage(userPrompt, pageName)
+      : wantsAuth
         ? buildStandardLoginPage(pageName ?? userPrompt)
         : wantsTime
           ? buildSimpleTimeTrackingPage(userPrompt, pageName)
           : wantsChat
             ? buildSimpleChatPage(pageName ?? userPrompt)
-            : buildGenericPage(userPrompt, pageName));
+            : buildGenericPage(userPrompt, pageName);
+
+    const page = validOpenAiPage ?? fallbackPage;
 
     return NextResponse.json({
       page,
-      source: parsed && !hasHomePageMismatch(parsed, wantsHomepage) ? 'openai' : 'fallback',
-      diagnostics: parsed && !hasHomePageMismatch(parsed, wantsHomepage) ? undefined : { reason: 'parse_failed_or_empty' },
+      source: validOpenAiPage ? 'openai' : 'fallback',
+      diagnostics: validOpenAiPage ? undefined : { reason: 'parse_failed_or_empty' },
     });
   } catch (error) {
     console.error('AI generation failed, falling back', error);
