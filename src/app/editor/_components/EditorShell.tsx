@@ -2654,6 +2654,18 @@ export default function EditorShell({ initialPageId }: Props) {
         throw new Error('Keine Seitenergebnisse erhalten.');
       }
 
+      const missingApiKey = data.source === 'fallback' && data.diagnostics?.reason === 'missing_api_key';
+      if (missingApiKey) {
+        setAiError(
+          isAdmin
+            ? `OpenAI ist aktuell nicht konfiguriert. Setze OPENAI_API_KEY in der Server-Umgebung und deploye neu.${
+                data.diagnostics?.vercelEnv ? ` (vercelEnv=${data.diagnostics.vercelEnv})` : ''
+              }`
+            : 'Die KI ist aktuell nicht verfügbar. Die Seite wurde nicht verändert.'
+        );
+        return;
+      }
+
       const updatedTree = applyTreeUpdate((prev) => {
         const stableName = currentPageMeta?.name ?? prev.name ?? tree.name ?? 'Unbenannte Seite';
         return {
@@ -2671,14 +2683,10 @@ export default function EditorShell({ initialPageId }: Props) {
       isDirty.current = false;
 
       if (data.source === 'fallback') {
-        const diagnosticsParts: string[] = [];
-        if (data.diagnostics?.reason) diagnosticsParts.push(data.diagnostics.reason);
-        if (data.diagnostics?.vercelEnv) diagnosticsParts.push(`vercelEnv=${data.diagnostics.vercelEnv}`);
-        if (data.diagnostics?.runtime) diagnosticsParts.push(`runtime=${data.diagnostics.runtime}`);
-        const reason = diagnosticsParts.length ? ` (${diagnosticsParts.join(', ')})` : '';
         setAiError(
-          `Hinweis: OpenAI wurde nicht genutzt${reason}. Die Seite wurde mit einem lokalen Fallback-Template erstellt. ` +
-            `Wenn du OpenAI nutzen möchtest, setze OPENAI_API_KEY in deiner Umgebung (lokal: .env.local, Deployment: Vercel Environment Variables) und deploye neu.`
+          isAdmin
+            ? 'OpenAI konnte für diese Anfrage nicht verwendet werden. Stattdessen wurde ein Fallback-Layout erstellt.'
+            : 'Für diese Anfrage wurde ein Standardlayout erstellt, weil die KI-Antwort nicht verarbeitet werden konnte.'
         );
       } else {
         setAiPrompt('');
@@ -2690,7 +2698,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setAiBusy(false);
     }
-  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta]);
+  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta, isAdmin, tr]);
 
   const promptRenamePage = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
