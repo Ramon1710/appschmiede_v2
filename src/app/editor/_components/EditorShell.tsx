@@ -4136,7 +4136,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const toolboxContent = (
-    <div className="h-full overflow-y-auto pr-1">
+    <div className="pr-1">
       <CategorizedToolbox onAdd={addNode} />
     </div>
   );
@@ -4211,10 +4211,10 @@ export default function EditorShell({ initialPageId }: Props) {
         <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
           <aside
-            className="hidden flex-shrink-0 flex-col border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex"
+            className="hidden flex-shrink-0 flex-col overflow-y-auto border-r border-[#222] bg-[#05070e]/70 backdrop-blur-sm lg:flex"
             style={{ width: `${leftPanelWidth}px` }}
           >
-            <div className="flex h-full flex-col gap-3 overflow-hidden p-3">
+            <div className="flex min-h-full flex-col gap-3 p-3">
               <section className={`border border-white/10 bg-[#0b0b0f]/95 ${leftPanelSections.editor ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4'}`} data-tour-id="editor-actions">
                 {renderLeftPanelToggle('editor', 'Editor', tr('Aktionen & Tools', 'Actions & tools'))}
                 {!leftPanelSections.editor && (
@@ -4316,10 +4316,10 @@ export default function EditorShell({ initialPageId }: Props) {
                 )}
               </section>
 
-              <section className={`min-h-0 border border-white/10 bg-white/5 ${leftPanelSections.elements ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4 flex flex-1 flex-col'}`} data-tour-id="editor-toolbox">
+              <section className={`border border-white/10 bg-white/5 ${leftPanelSections.elements ? 'rounded-xl px-3 py-2' : 'rounded-2xl p-4'}`} data-tour-id="editor-toolbox">
                 {renderLeftPanelToggle('elements', tr('Elemente', 'Elements'), tr('Bausteine & Vorlagen', 'Blocks & templates'))}
                 {!leftPanelSections.elements && (
-                  <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden">
+                  <div className="mt-4 flex flex-col">
                     {editorCostSummary}
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
@@ -4341,11 +4341,11 @@ export default function EditorShell({ initialPageId }: Props) {
                         </button>
                       ))}
                     </div>
-                    <div className="mt-4 flex-1 overflow-hidden">
+                    <div className="mt-4">
                       {toolboxTab === 'components' && toolboxContent}
                       {toolboxTab === 'quick-buttons' && <QuickButtonsPanel onCreatePage={createQuickPresetPage} />}
                       {toolboxTab === 'templates' && (
-                        <div className="h-full overflow-y-auto space-y-3 pr-1">{templateContent}</div>
+                        <div className="space-y-3 pr-1">{templateContent}</div>
                       )}
                     </div>
                   </div>
