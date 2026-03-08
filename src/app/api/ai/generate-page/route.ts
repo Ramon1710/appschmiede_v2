@@ -285,6 +285,118 @@ function buildGenericPage(prompt: string, desiredName?: string): PageTree {
   };
 }
 
+function isHomepagePrompt(prompt: string) {
+  return /(startseite|homepage|home page|landingpage|landing page|hero section|hero-bereich|moderne startseite)/i.test(prompt);
+}
+
+function buildModernHomepage(prompt: string, desiredName?: string): PageTree {
+  const background = 'linear-gradient(145deg,#041225,#091a34,#050914)';
+  const title = desiredName?.trim() || 'Startseite';
+  const heroHeadline = /modern/i.test(prompt) ? 'Moderne Startseite' : 'Willkommen bei deiner App';
+
+  const nodes: Node[] = [
+    createNode('container', {
+      x: 20,
+      y: 20,
+      w: 320,
+      h: 56,
+      props: {
+        component: 'navbar',
+        navItems: [
+          { id: makeId(), label: 'Home', targetPage: 'Startseite', target: '#startseite' },
+          { id: makeId(), label: 'Features', targetPage: 'Features', target: '#features' },
+          { id: makeId(), label: 'Kontakt', targetPage: 'Kontakt', target: '#kontakt' },
+        ],
+      },
+    }),
+    createNode('text', {
+      x: 24,
+      y: 98,
+      w: 300,
+      h: 82,
+      props: { text: heroHeadline },
+      style: { fontSize: 30, fontWeight: 700, lineHeight: 1.15 },
+    }),
+    createNode('text', {
+      x: 24,
+      y: 188,
+      w: 300,
+      h: 84,
+      props: { text: 'Klare Botschaft, moderne Gestaltung und starke Call-to-Actions fur deine Besucherinnen und Besucher.' },
+      style: { fontSize: 15, lineHeight: 1.55, color: '#cbd5f5' },
+    }),
+    createNode('button', {
+      x: 24,
+      y: 286,
+      w: 136,
+      props: { label: 'Jetzt starten', action: 'navigate', targetPage: 'Features', target: '#features' },
+    }),
+    createNode('button', {
+      x: 172,
+      y: 286,
+      w: 136,
+      props: { label: 'Mehr erfahren', action: 'navigate', targetPage: 'Kontakt', target: '#kontakt' },
+    }),
+    createNode('image', {
+      x: 24,
+      y: 356,
+      w: 296,
+      h: 176,
+      props: { src: 'https://placehold.co/1200x720/0b1731/e2e8f0?text=Hero+Preview', alt: 'Hero visual' },
+    }),
+    createNode('text', {
+      x: 24,
+      y: 552,
+      w: 296,
+      h: 40,
+      props: { text: 'Highlights' },
+      style: { fontSize: 22, fontWeight: 700 },
+    }),
+    createNode('container', {
+      x: 24,
+      y: 606,
+      w: 296,
+      h: 118,
+      props: { component: 'content' },
+    }),
+    createNode('text', {
+      x: 36,
+      y: 622,
+      w: 240,
+      h: 26,
+      props: { text: 'Schneller Einstieg' },
+      style: { fontSize: 18, fontWeight: 600 },
+    }),
+    createNode('text', {
+      x: 36,
+      y: 654,
+      w: 248,
+      h: 52,
+      props: { text: 'Prasentiere dein Produkt direkt mit klaren Vorteilen und modernem Aufbau.' },
+      style: { fontSize: 14, lineHeight: 1.5, color: '#cbd5f5' },
+    }),
+  ];
+
+  return {
+    name: title,
+    tree: {
+      id: 'root',
+      type: 'container',
+      props: { bg: background },
+      children: nodes,
+    },
+  };
+}
+
+function hasHomePageMismatch(page: PageTree, homepageRequested: boolean) {
+  if (!homepageRequested) return false;
+  const children = page.tree.children ?? [];
+  return children.some((node) => {
+    const component = typeof node.props?.component === 'string' ? node.props.component : null;
+    return component === 'chat' || component === 'time-tracking' || component === 'support';
+  });
+}
+
 type GeneratePageBody = {
   prompt?: unknown;
   pageName?: unknown;
@@ -304,12 +416,13 @@ export async function POST(request: Request) {
   const userPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 
   const normalized = userPrompt.toLowerCase();
+  const wantsHomepage = isHomepagePrompt(userPrompt);
   const wantsAuth = /\blogin\b|anmelden|sign\s*in|registr|sign\s*up|reset|passwort/.test(normalized);
   const wantsChat = /chat|messag|support|konversation|unterhaltung/.test(normalized);
   const wantsTime = /zeiterfassung|arbeitszeit|stunden|stundenzettel|time\s*tracking|tracking\b|timesheet/.test(normalized);
 
   // Wenn die aktuelle Seite z.B. "Login" heißt, soll das die KI nicht in Richtung Auth ziehen.
-  const pageNameForModel = !pageName
+  const pageNameForModel = !pageName || wantsHomepage
     ? undefined
     : wantsAuth
       ? pageName
@@ -319,7 +432,9 @@ export async function POST(request: Request) {
 
   // Fallback ohne OpenAI oder ohne Prompt
   if (!OPENAI_API_KEY || !userPrompt) {
-    const singlePage = wantsAuth
+    const singlePage = wantsHomepage
+      ? buildModernHomepage(userPrompt, pageName)
+      : wantsAuth
       ? buildStandardLoginPage(pageName ?? userPrompt)
       : wantsTime
         ? buildSimpleTimeTrackingPage(userPrompt, pageName)
@@ -389,8 +504,11 @@ export async function POST(request: Request) {
     }
 
     const page =
-      parsed ??
-      (wantsAuth
+      parsed && !hasHomePageMismatch(parsed, wantsHomepage)
+        ? parsed
+        : wantsHomepage
+          ? buildModernHomepage(userPrompt, pageName)
+          : wantsAuth
         ? buildStandardLoginPage(pageName ?? userPrompt)
         : wantsTime
           ? buildSimpleTimeTrackingPage(userPrompt, pageName)
@@ -398,10 +516,16 @@ export async function POST(request: Request) {
             ? buildSimpleChatPage(pageName ?? userPrompt)
             : buildGenericPage(userPrompt, pageName));
 
-    return NextResponse.json({ page, source: parsed ? 'openai' : 'fallback', diagnostics: parsed ? undefined : { reason: 'parse_failed_or_empty' } });
+    return NextResponse.json({
+      page,
+      source: parsed && !hasHomePageMismatch(parsed, wantsHomepage) ? 'openai' : 'fallback',
+      diagnostics: parsed && !hasHomePageMismatch(parsed, wantsHomepage) ? undefined : { reason: 'parse_failed_or_empty' },
+    });
   } catch (error) {
     console.error('AI generation failed, falling back', error);
-    const fallback = wantsAuth
+    const fallback = wantsHomepage
+      ? buildModernHomepage(userPrompt, pageName)
+      : wantsAuth
       ? buildStandardLoginPage(pageName ?? userPrompt)
       : wantsTime
         ? buildSimpleTimeTrackingPage(userPrompt, pageName)
