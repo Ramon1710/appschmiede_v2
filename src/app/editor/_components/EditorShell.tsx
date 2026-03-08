@@ -14,6 +14,7 @@ import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, createPageWithContent, deletePage, renamePage, loadPage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
+import { COIN_COSTS } from '@/config/coins';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import JSZip from 'jszip';
@@ -919,6 +920,9 @@ export default function EditorShell({ initialPageId }: Props) {
   const canEditMainTemplates = canManageMainTemplates(user?.email);
   const { lang } = useI18n();
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
+  const pageCoinCost = COIN_COSTS.page;
+  const templateCoinCost = COIN_COSTS.template;
+  const aiCoinCost = COIN_COSTS.ai;
   const requireCoinsForAction = useCallback(
     async (action: 'ai' | 'template' | 'page') => {
       if (!user) {
@@ -3736,6 +3740,20 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const templateContent = (
     <div className="space-y-4">
+      <div className="rounded-xl border border-amber-400/25 bg-amber-500/10 p-3 text-xs text-amber-50">
+        <div className="font-semibold text-amber-100">{tr('Coin-Kosten im Editor', 'Coin costs in the editor')}</div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Neue Seite', 'New page')}: {pageCoinCost} {tr('Coin', 'coin')}{pageCoinCost === 1 ? '' : 's'}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            KI: {aiCoinCost} {tr('Coins', 'coins')}
+          </span>
+          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
+            {tr('Vorlage', 'Template')}: {templateCoinCost} {tr('Coins', 'coins')}
+          </span>
+        </div>
+      </div>
       <p className="text-xs text-neutral-400">
         {tr(
           'Wähle eine Vorlage, um die aktuelle Seite durch ein kuratiertes Layout zu ersetzen.',
@@ -3847,6 +3865,9 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
             <div className="mt-3 text-lg font-semibold text-white">{tr(tpl.title.de, tpl.title.en)}</div>
             <p className="text-sm text-neutral-300">{tr(tpl.description.de, tpl.description.en)}</p>
+            <div className="mt-3 inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
+              {templateCoinCost} {tr('Coins pro Anwendung', 'coins per use')}
+            </div>
             <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-300">
               {tr('Vorlage anwenden', 'Apply template')}
               <span className="ml-1 transition group-hover:translate-x-1">→</span>
@@ -3882,6 +3903,9 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
                 <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
                 {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
+                <div className="mt-3 inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">
+                  {templateCoinCost} {tr('Coins pro Anwendung', 'coins per use')}
+                </div>
                 {isAdmin && !templateControlsDisabled && (
                   <div className="mt-3 flex gap-2">
                     <button
@@ -4163,7 +4187,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         handlePageSelection(id || null, { placeholderName: defaultName });
                       }}
                     >
-                      {tr('+ Seite', '+ Page')}
+                      {tr('+ Seite', '+ Page')} · {pageCoinCost}
                     </button>
                   </div>
                 </div>
@@ -4252,7 +4276,7 @@ export default function EditorShell({ initialPageId }: Props) {
                     }}
                   >
                     <span className="text-base">✨</span>
-                    <span>{tr('KI', 'AI')}</span>
+                    <span>{tr('KI', 'AI')} · {aiCoinCost}</span>
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 text-xs">
@@ -4285,7 +4309,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       handlePageSelection(id || null, { placeholderName: defaultName });
                     }}
                   >
-                    {tr('+ Seite', '+ Page')}
+                    {tr('+ Seite', '+ Page')} · {pageCoinCost}
                   </button>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-xs">
@@ -4568,6 +4592,9 @@ export default function EditorShell({ initialPageId }: Props) {
               <p className="text-sm text-neutral-400">
                 Beschreibe, was wir für dich bauen sollen – egal ob komplette App oder nur die aktuelle Seite.
               </p>
+              <div className="inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                {aiCoinCost} {tr('Coins pro KI-Lauf', 'coins per AI run')}
+              </div>
             </div>
             <p className="text-sm text-neutral-300">
               Die KI aktualisiert ausschließlich die aktuell geöffnete Seite. Beschreibe kurz, was angepasst oder ergänzt werden soll – je konkreter du bist, desto besser werden Layout, Texte, Abschnitte oder Call-to-Actions.
