@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { COIN_COSTS } from '@/config/coins';
 import { useI18n } from '@/lib/i18n';
 
@@ -49,6 +49,8 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const quickButtonCostLabel = tr(`${COIN_COSTS.quickButton} Coin`, `${COIN_COSTS.quickButton} coin`);
+  const [expanded, setExpanded] = useState<string[]>(['contact']);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const categories: PresetCategory[] = [
     {
@@ -118,30 +120,67 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
     },
   ];
 
+  const toggle = (categoryId: string) => {
+    setExpanded((prev) => (prev.includes(categoryId) ? prev.filter((entry) => entry !== categoryId) : [...prev, categoryId]));
+  };
+
+  const filteredCategories = categories
+    .map((category) => ({
+      ...category,
+      items: category.items.filter((item) => tr(item.label.de, item.label.en).toLowerCase().includes(searchQuery.toLowerCase())),
+    }))
+    .filter((category) => category.items.length > 0);
+
   return (
-    <div className="h-full overflow-y-auto space-y-4 pr-1">
-      {categories.map((category) => (
-        <div key={category.id} className="space-y-2">
-          <div className="text-xs font-semibold text-neutral-200">{tr(category.name.de, category.name.en)}</div>
-          <div className="grid grid-cols-2 gap-2">
-            {category.items.map((item) => (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-[#222] p-3">
+        <input
+          type="text"
+          placeholder={tr('Fertige Buttons suchen...', 'Search quick buttons...')}
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className="w-full rounded border border-[#333] bg-neutral-900 px-3 py-2 text-sm placeholder:text-neutral-500"
+        />
+      </div>
+
+      <div className="flex-1 space-y-1 overflow-y-auto p-2">
+        {filteredCategories.map((category) => {
+          const isExpanded = expanded.includes(category.id);
+          return (
+            <div key={category.id} className="overflow-hidden rounded-lg border border-white/10">
               <button
-                key={`${category.id}-${item.preset}`}
                 type="button"
-                onClick={() => onCreatePage(item.preset)}
-                className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
-                title={tr(item.label.de, item.label.en)}
+                onClick={() => toggle(category.id)}
+                className="flex w-full items-center gap-2 bg-neutral-900 px-3 py-2 text-left text-sm font-semibold hover:bg-neutral-800"
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="text-base leading-none">{item.icon}</span>
-                  <span className="truncate">{tr(item.label.de, item.label.en)}</span>
-                </span>
+                <span className="flex-1">{tr(category.name.de, category.name.en)}</span>
                 <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">{quickButtonCostLabel}</span>
+                <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
               </button>
-            ))}
-          </div>
-        </div>
-      ))}
+
+              {isExpanded && (
+                <div className="space-y-1 bg-neutral-950/50 p-2">
+                  {category.items.map((item) => (
+                    <button
+                      key={`${category.id}-${item.preset}`}
+                      type="button"
+                      onClick={() => onCreatePage(item.preset)}
+                      className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 px-3 py-2 text-left text-sm hover:bg-white/10"
+                      title={tr(item.label.de, item.label.en)}
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-neutral-100">
+                        <span>{item.icon}</span>
+                        <span className="truncate">{tr(item.label.de, item.label.en)}</span>
+                      </span>
+                      <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">{quickButtonCostLabel}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
