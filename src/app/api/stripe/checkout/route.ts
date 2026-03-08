@@ -22,7 +22,6 @@ type CheckoutPayload = {
 };
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-const adminDb = getFirebaseAdminDb();
 
 export async function POST(request: Request) {
   try {
@@ -36,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'kind required' }, { status: 400 });
     }
 
-    const snap = await adminDb.collection('users').doc(uid).get();
+    const snap = await getFirebaseAdminDb().collection('users').doc(uid).get();
     if (!snap.exists()) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }

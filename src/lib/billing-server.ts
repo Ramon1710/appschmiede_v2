@@ -8,7 +8,10 @@ import type { AppPlanId, AppUserProfile, PlanStatus } from '@/types/user';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const STRIPE_EVENT_COLLECTION = 'stripe_events';
-const adminDb = getFirebaseAdminDb();
+
+function adminDb() {
+  return getFirebaseAdminDb();
+}
 
 type StripeEventStatus = 'processing' | 'completed' | 'failed';
 export type BillingErrorCode = 'insufficient_coins' | 'project_limit' | 'subscription_missing';
@@ -45,7 +48,7 @@ function buildProjectLimitMessage(maxProjects: number): string {
 }
 
 async function loadUserDoc(uid: string): Promise<{ ref: FirebaseFirestore.DocumentReference; data: UserDocData } | null> {
-  const ref = adminDb.collection('users').doc(uid);
+  const ref = adminDb().collection('users').doc(uid);
   const snap = await ref.get();
   if (!snap.exists()) {
     return null;
@@ -59,7 +62,7 @@ export async function creditCoins(uid: string, coins: number): Promise<void> {
   if (!ref) {
     throw new Error(`User ${uid} nicht gefunden, Coins konnten nicht gutgeschrieben werden.`);
   }
-  await adminDb.runTransaction(async (tx) => {
+  await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) {
       throw new Error(`User ${uid} nicht gefunden.`);
@@ -96,7 +99,7 @@ export async function activatePlan(
     throw new Error(`User ${uid} nicht gefunden, Plan ${planId} konnte nicht gesetzt werden.`);
   }
   const plan = getPlanConfig(planId);
-  await adminDb.runTransaction(async (tx) => {
+  await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) {
       throw new Error(`User ${uid} nicht gefunden.`);
@@ -193,7 +196,7 @@ export async function assertCanCreateProject(uid: string): Promise<void> {
     return;
   }
 
-  const projectsSnap = await adminDb.collection('projects').where('ownerId', '==', uid).get();
+  const projectsSnap = await adminDb().collection('projects').where('ownerId', '==', uid).get();
   if (projectsSnap.size >= maxProjects) {
     throw new BillingError('project_limit', buildProjectLimitMessage(maxProjects));
   }
@@ -206,7 +209,7 @@ export async function chargeCoins(uid: string, coins: number, actionLabel: strin
     throw new Error(`User ${uid} nicht gefunden, Coins konnten nicht belastet werden.`);
   }
 
-  await adminDb.runTransaction(async (tx) => {
+  await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (!snap.exists()) {
       throw new Error(`User ${uid} nicht gefunden.`);
@@ -263,9 +266,9 @@ export async function getStripeSubscriptionId(uid: string): Promise<string> {
 }
 
 export async function claimStripeEvent(eventId: string): Promise<boolean> {
-  const ref = adminDb.collection(STRIPE_EVENT_COLLECTION).doc(eventId);
+  const ref = adminDb().collection(STRIPE_EVENT_COLLECTION).doc(eventId);
   let alreadyProcessed = true;
-  await adminDb.runTransaction(async (tx) => {
+  await adminDb().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     if (snap.exists()) {
       alreadyProcessed = true;

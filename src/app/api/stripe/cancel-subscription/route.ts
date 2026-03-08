@@ -7,13 +7,12 @@ import { isRequestAuthError, requireAuthenticatedUid } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const adminDb = getFirebaseAdminDb();
 
 export async function POST(request: Request) {
   try {
     const uid = await requireAuthenticatedUid(request);
 
-    const userSnap = await adminDb.collection('users').doc(uid).get();
+    const userSnap = await getFirebaseAdminDb().collection('users').doc(uid).get();
     if (!userSnap.exists()) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }
