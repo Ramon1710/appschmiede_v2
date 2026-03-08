@@ -7,6 +7,7 @@ import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
 import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
+import PricingModalTrigger from './PricingModalTrigger';
 import { useI18n } from '@/lib/i18n';
 
 export default function Header() {
@@ -96,8 +97,16 @@ export default function Header() {
             <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
           </>
         )}
-        <Link href="/#preise" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
-        <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
+        <PricingModalTrigger
+          label={t('nav_pricing')}
+          initialTab="subscriptions"
+          className="hover:text-cyan-400 transition text-sm uppercase tracking-wide"
+        />
+        <PricingModalTrigger
+          label={t('nav_coins')}
+          initialTab="coins"
+          className="hover:text-cyan-400 transition text-sm uppercase tracking-wide"
+        />
       </nav>
 
       <div className="flex items-center gap-3 text-sm">
@@ -126,14 +135,11 @@ export default function Header() {
           </button>
         </div>
         {profile && formattedCoins && (
-          <Link
-            href="/tools/billing"
+          <PricingModalTrigger
+            label={`${t('coins_label')} ${formattedCoins} ${t('coins_topup')}`}
+            initialTab="coins"
             className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white transition hover:border-cyan-400/50 hover:bg-white/10"
-          >
-            <span className="text-[10px] uppercase tracking-[0.35em] text-neutral-300">{t('coins_label')}</span>
-            <span className="text-sm font-semibold">{formattedCoins}</span>
-            <span className="text-[11px] text-cyan-300">{t('coins_topup')}</span>
-          </Link>
+          />
         )}
         {!loading && user ? (
           <div className="relative" ref={menuRef}>

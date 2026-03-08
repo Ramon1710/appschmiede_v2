@@ -304,6 +304,116 @@ function WorkflowPreview({
   );
 }
 
+function SpotlightVisual({ title }: { title: string }) {
+  if (/Projekte|Control projects/i.test(title)) {
+    return (
+      <div className="grid gap-2">
+        <div className="flex items-center gap-2 rounded-xl bg-black/25 px-3 py-2 text-[11px] text-white/80">
+          <span className="h-2 w-2 rounded-full bg-cyan-300" />
+          Workspace Alpha
+        </div>
+        <div className="flex items-center gap-2 rounded-xl bg-black/15 px-3 py-2 text-[11px] text-white/65">
+          <span className="h-2 w-2 rounded-full bg-emerald-300" />
+          Mobile Support
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="h-10 rounded-xl bg-black/20" />
+          <div className="h-10 rounded-xl bg-black/10" />
+          <div className="h-10 rounded-xl bg-black/20" />
+        </div>
+      </div>
+    );
+  }
+
+  if (/KI|AI/i.test(title)) {
+    return (
+      <div className="space-y-2">
+        <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] text-white/80">
+          Build a service app for field teams
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {['Dashboard', 'Tasks', 'Chat'].map((item) => (
+            <span key={item} className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] text-white/70">
+              {item}
+            </span>
+          ))}
+        </div>
+        <div className="h-8 rounded-xl bg-black/15" />
+      </div>
+    );
+  }
+
+  if (/Visuell|Edit visually/i.test(title)) {
+    return (
+      <div className="grid grid-cols-[56px_1fr] gap-2">
+        <div className="space-y-2 rounded-xl bg-black/20 p-2">
+          <div className="h-6 rounded-lg bg-white/10" />
+          <div className="h-6 rounded-lg bg-white/5" />
+          <div className="h-6 rounded-lg bg-white/10" />
+        </div>
+        <div className="rounded-xl bg-black/15 p-2">
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-white/10" />
+          <div className="mt-2 h-8 rounded-xl bg-white/10" />
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="h-8 rounded-lg bg-white/5" />
+            <div className="h-8 rounded-lg bg-white/10" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2 text-[11px] text-white/75">
+        <span>Preview</span>
+        <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">Live</span>
+      </div>
+      <div className="mx-auto flex h-14 w-10 flex-col rounded-[14px] border border-white/10 bg-black/20 p-1.5">
+        <div className="mx-auto h-1 w-5 rounded-full bg-white/10" />
+        <div className="mt-2 h-5 rounded-lg bg-white/10" />
+        <div className="mt-1 h-2 rounded-full bg-white/15" />
+      </div>
+      <div className="h-6 rounded-xl bg-black/15" />
+    </div>
+  );
+}
+
+function AiPromptVisual() {
+  return (
+    <>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-400">Screen</div>
+          <div className="mt-2 h-10 rounded-xl bg-white/10" />
+          <div className="mt-2 h-2.5 w-2/3 rounded-full bg-white/20" />
+          <div className="mt-1 h-2.5 w-1/2 rounded-full bg-white/10" />
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-300">Flow</div>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-8 flex-1 rounded-xl bg-white/10" />
+            <div className="h-px w-4 bg-cyan-300/60" />
+            <div className="h-8 flex-1 rounded-xl bg-white/20" />
+          </div>
+          <div className="mt-3 h-2.5 w-3/4 rounded-full bg-white/15" />
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-400">Blocks</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {['Chat', 'Foto', 'Zeit'].map((item) => (
+              <span key={item} className="rounded-full bg-black/20 px-2 py-1 text-[10px] text-white/75">
+                {item}
+              </span>
+            ))}
+          </div>
+          <div className="mt-3 h-6 rounded-xl bg-white/10" />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default async function HomePage() {
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
@@ -318,10 +428,6 @@ export default async function HomePage() {
   const {
     workflowSteps,
     kiHighlights,
-    coinPricingCards,
-    subscriptionPlans,
-    subscriptionPlanOrder,
-    planFeatureRows,
   } = getHomeContent(lang);
 
   return (
@@ -417,7 +523,9 @@ export default async function HomePage() {
                       <div className="grid gap-4 md:grid-cols-3">
                         {spotlightCards.slice(0, 3).map((item) => (
                           <div key={item.title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
-                            <div className="h-24 rounded-2xl bg-black/20" />
+                            <div className="rounded-2xl bg-black/20 p-3">
+                              <SpotlightVisual title={item.title} />
+                            </div>
                             <div className="mt-4 text-sm font-semibold text-white">{item.title}</div>
                             <div className="mt-1 text-xs text-neutral-200">{item.text}</div>
                           </div>
@@ -468,7 +576,9 @@ export default async function HomePage() {
             {spotlightCards.map((feature) => (
               <article key={feature.title} className="overflow-hidden rounded-3xl border border-white/10 bg-[#070b16] p-4 shadow-lg">
                 <div className={`rounded-2xl bg-gradient-to-br ${feature.accent} p-4`}>
-                  <div className="h-24 rounded-2xl bg-black/20" />
+                  <div className="rounded-2xl bg-black/20 p-3">
+                    <SpotlightVisual title={feature.title} />
+                  </div>
                 </div>
                 <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
                 <p className="mt-2 text-sm text-neutral-300">{feature.text}</p>
@@ -505,11 +615,7 @@ export default async function HomePage() {
                     'Build a service app with jobs, photos, chat, and time tracking for mobile teams.'
                   )}
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="h-24 rounded-2xl bg-white/5" />
-                  <div className="h-24 rounded-2xl bg-white/10" />
-                  <div className="h-24 rounded-2xl bg-white/5" />
-                </div>
+                <AiPromptVisual />
               </div>
             </div>
             <div>
@@ -596,121 +702,6 @@ export default async function HomePage() {
                 {item}
               </div>
             ))}
-          </div>
-        </section>
-
-        <section id="preise" className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
-          <header className="space-y-3 text-center">
-            <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">
-              {tr('Preise & Guthaben', 'Pricing & balance')}
-            </p>
-            <h2 className="text-3xl font-semibold">
-              {tr('Coins für jede Aktion, Abos für planbare Budgets', 'Coins for every action, subscriptions for predictable budgets')}
-            </h2>
-            <p className="text-base text-neutral-300">
-              {tr(
-                'Jeder Baustein, jede Vorlage und jede KI-Funktion verbraucht Coins. Lade ein Paket auf oder sichere dir monatliche Kontingente über eines der Abos. Alles läuft über Stripe – per Kreditkarte oder PayPal.',
-                'Every building block, template and AI feature consumes coins. Top up with a package or get monthly budgets via a subscription. Payments run via Stripe — card or PayPal.'
-              )}
-            </p>
-          </header>
-          <div className="mt-8 space-y-10">
-            <div>
-              <div className="flex flex-col gap-2 text-center">
-                <h3 className="text-2xl font-semibold">{tr('Coin-Pakete', 'Coin packages')}</h3>
-                <p className="text-sm text-neutral-400">
-                  {tr(
-                    'Sofort verfügbar nach Kauf – perfekt für spontane KI-Läufe oder zusätzliche Bausteine.',
-                    'Available instantly after purchase — perfect for quick AI runs or extra building blocks.'
-                  )}
-                </p>
-              </div>
-              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {coinPricingCards.map((plan) => (
-                  <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
-                    <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
-                    <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
-                    <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
-                    <ul className="mt-4 space-y-2 text-sm text-neutral-200">
-                      {plan.highlights.map((highlight) => (
-                        <li key={highlight}>✓ {highlight}</li>
-                      ))}
-                    </ul>
-                    <Link
-                      href="/tools/billing"
-                      className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
-                    >
-                      {tr('Coins kaufen', 'Buy coins')}
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex flex-col gap-2 text-center">
-                <h3 className="text-2xl font-semibold">{tr('Abomodelle', 'Subscriptions')}</h3>
-                <p className="text-sm text-neutral-400">
-                  {tr(
-                    'Plane feste Budgets, sichere dir monatliche Coins und zusätzliche Funktionen.',
-                    'Plan fixed budgets, get monthly coins, and unlock additional features.'
-                  )}
-                </p>
-              </div>
-              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {subscriptionPlans.map((plan) => (
-                  <div key={plan.id} className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">{plan.badge}</p>
-                    <h3 className="mt-2 text-2xl font-semibold">{plan.title}</h3>
-                    <p className="text-lg font-semibold text-cyan-300">{plan.price}</p>
-                    <p className="mt-2 text-sm text-neutral-300">{plan.description}</p>
-                    <ul className="mt-4 space-y-2 text-sm text-neutral-200">
-                      {plan.highlights.map((highlight) => (
-                        <li key={highlight}>✓ {highlight}</li>
-                      ))}
-                    </ul>
-                    <Link
-                      href="/tools/billing"
-                      className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200"
-                    >
-                      {tr('Abo wählen', 'Choose plan')}
-                    </Link>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/5">
-                <table className="w-full text-sm text-neutral-200">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-[0.3em] text-neutral-400">
-                      <th className="px-4 py-3">{tr('Funktion', 'Feature')}</th>
-                      {subscriptionPlanOrder.map((planId) => {
-                        const plan = subscriptionPlans.find((entry) => entry.id === planId);
-                        if (!plan) return null;
-                        return (
-                          <th key={plan.id} className="px-4 py-3 text-center">
-                            {plan.title}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {planFeatureRows.map((row) => (
-                      <tr key={row.feature} className="border-t border-white/10">
-                        <td className="px-4 py-4 font-semibold text-white">{row.feature}</td>
-                        {subscriptionPlanOrder.map((planId) => (
-                          <td key={`${row.feature}-${planId}`} className="px-4 py-4 text-center text-neutral-100">
-                            {row.values[planId]}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
         </section>
 
