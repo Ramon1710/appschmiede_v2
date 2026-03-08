@@ -1010,6 +1010,31 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [pages, setPages] = useState<PageTree[]>([]);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
+  const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
+  const [toolboxTab, setToolboxTab] = useState<'components' | 'quick-buttons' | 'templates'>('components');
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [pageTemplates, setPageTemplates] = useState<StoredPageTemplate[]>([]);
+  const [loadingPageTemplates, setLoadingPageTemplates] = useState(false);
+  const [savingPageTemplate, setSavingPageTemplate] = useState(false);
+  const [savingAppTemplate, setSavingAppTemplate] = useState(false);
+  const [appTemplates, setAppTemplates] = useState<StoredAppTemplate[]>([]);
+  const [loadingAppTemplates, setLoadingAppTemplates] = useState(false);
+  const [editingPageTemplateId, setEditingPageTemplateId] = useState<string | null>(null);
+  const [editingAppTemplateId, setEditingAppTemplateId] = useState<string | null>(null);
+  const [savingTemplateOverwrite, setSavingTemplateOverwrite] = useState<'page' | 'app' | null>(null);
+  const [appTemplateApplying, setAppTemplateApplying] = useState(false);
+  const [canvasZoom, setCanvasZoom] = useState(DEFAULT_CANVAS_ZOOM);
+  const [layoutInitialized, setLayoutInitialized] = useState(false);
+  const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedLayoutRef = useRef<EditorLayoutPreferences | null>(null);
   const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
   useEffect(() => {
     latestTree.current = tree;
@@ -1115,11 +1140,6 @@ export default function EditorShell({ initialPageId }: Props) {
     setManualProjectId(fallbackId);
   }, [_projectId, projects]);
 
-  const [pages, setPages] = useState<PageTree[]>([]);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const propagateBackgroundToAllPages = useCallback(
     async ({ color, layers, background }: { color: string; layers: BackgroundLayer[]; background: string }) => {
       setPages((prev) =>
@@ -1162,28 +1182,6 @@ export default function EditorShell({ initialPageId }: Props) {
     [_projectId, pages]
   );
   
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
-  const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
-  const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
-  const [toolboxTab, setToolboxTab] = useState<'components' | 'quick-buttons' | 'templates'>('components');
-  const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
-  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
-  const [pageTemplates, setPageTemplates] = useState<StoredPageTemplate[]>([]);
-  const [loadingPageTemplates, setLoadingPageTemplates] = useState(false);
-  const [savingPageTemplate, setSavingPageTemplate] = useState(false);
-  const [savingAppTemplate, setSavingAppTemplate] = useState(false);
-  const [appTemplates, setAppTemplates] = useState<StoredAppTemplate[]>([]);
-  const [loadingAppTemplates, setLoadingAppTemplates] = useState(false);
-
-  const [editingPageTemplateId, setEditingPageTemplateId] = useState<string | null>(null);
-  const [editingAppTemplateId, setEditingAppTemplateId] = useState<string | null>(null);
-  const [savingTemplateOverwrite, setSavingTemplateOverwrite] = useState<'page' | 'app' | null>(null);
-  const [appTemplateApplying, setAppTemplateApplying] = useState(false);
-  const [canvasZoom, setCanvasZoom] = useState(DEFAULT_CANVAS_ZOOM);
-  const [layoutInitialized, setLayoutInitialized] = useState(false);
-  const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSavedLayoutRef = useRef<EditorLayoutPreferences | null>(null);
-
   const stepZoom = (direction: 'in' | 'out') => {
     const delta = direction === 'in' ? CANVAS_ZOOM_STEP : -CANVAS_ZOOM_STEP;
     setCanvasZoom((prev) => clampZoomValue(Number((prev + delta).toFixed(3))));
