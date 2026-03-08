@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 function getOpenAiApiKey() {
   const candidates: Array<[string, string | undefined]> = [
@@ -27,10 +26,10 @@ export async function GET() {
   return NextResponse.json(
     {
       ok: true,
-      ts: Date.now(),
-      env: process.env.NODE_ENV,
+      runtime: 'nodejs',
+      nodeEnv: process.env.NODE_ENV ?? null,
       vercelEnv: process.env.VERCEL_ENV ?? null,
-      ver: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local',
+      build: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local',
       openAi,
     },
     { status: 200 }
