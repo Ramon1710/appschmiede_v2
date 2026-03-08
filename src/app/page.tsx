@@ -67,6 +67,173 @@ const trustFacts = {
   ],
 } as const;
 
+function WorkflowPreview({
+  index,
+  lang,
+}: {
+  index: number;
+  lang: Lang;
+}) {
+  if (index === 0) {
+    return (
+      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.18),_transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.16),_transparent_40%)]" />
+        <div className="relative rounded-[22px] border border-white/10 bg-[#050914]/95 p-4">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-3 rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-neutral-400">
+              {lang === 'en' ? 'Template Hub' : 'Vorlagen-Hub'}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {[
+              {
+                title: lang === 'en' ? 'Support App' : 'Support-App',
+                accent: 'from-cyan-500/30 to-blue-500/10',
+              },
+              {
+                title: lang === 'en' ? 'Time Tracking' : 'Zeiterfassung',
+                accent: 'from-emerald-500/30 to-teal-500/10',
+              },
+              {
+                title: lang === 'en' ? 'Analytics Board' : 'Analytics-Board',
+                accent: 'from-fuchsia-500/30 to-violet-500/10',
+              },
+              {
+                title: lang === 'en' ? 'Task Space' : 'Task-Space',
+                accent: 'from-amber-500/30 to-orange-500/10',
+              },
+            ].map((item) => (
+              <div key={item.title} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">{item.title}</div>
+                  <div className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
+                    MVP
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2">
+                  <div className="h-2.5 w-3/4 rounded-full bg-white/20" />
+                  <div className="h-2.5 w-1/2 rounded-full bg-white/10" />
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className="h-14 rounded-xl bg-black/20" />
+                    <div className="h-14 rounded-xl bg-black/10" />
+                    <div className="h-14 rounded-xl bg-black/20" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (index === 1) {
+    return (
+      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.18),_transparent_40%)]" />
+        <div className="relative rounded-[22px] border border-white/10 bg-[#040816]/95 p-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'AI Generator' : 'KI-Generator'}</div>
+              <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Prompt to app structure' : 'Prompt zur App-Struktur'}</div>
+            </div>
+            <div className="rounded-full bg-cyan-500/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
+              Live
+            </div>
+          </div>
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Prompt' : 'Eingabe'}</div>
+            <div className="mt-2 rounded-2xl border border-cyan-400/20 bg-[#0b1731] px-4 py-3 text-sm leading-6 text-neutral-200">
+              {lang === 'en'
+                ? 'Build a mobile app for field technicians with tasks, time logs, photo uploads, and status updates.'
+                : 'Erstelle eine mobile App für Servicetechniker mit Aufgaben, Zeiterfassung, Foto-Uploads und Status-Updates.'}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Generated pages' : 'Generierte Seiten'}</div>
+              <div className="mt-3 space-y-2">
+                {[
+                  lang === 'en' ? 'Dashboard' : 'Dashboard',
+                  lang === 'en' ? 'Task details' : 'Aufgabendetails',
+                  lang === 'en' ? 'Time tracking' : 'Zeiterfassung',
+                  lang === 'en' ? 'Media upload' : 'Medien-Upload',
+                ].map((item) => (
+                  <div key={item} className="flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
+                    <span className="h-2 w-2 rounded-full bg-cyan-300" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 to-cyan-500/10 p-4">
+              <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Suggested stack' : 'Vorgeschlagene Bausteine'}</div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/80">
+                {['Chat', 'Support', 'QR', 'Analytics', 'Tasks', 'Preview'].map((item) => (
+                  <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_center,_rgba(56,189,248,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(244,114,182,0.14),_transparent_35%)]" />
+      <div className="relative rounded-[22px] border border-white/10 bg-[#040816]/95 p-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'Visual Editor' : 'Visueller Editor'}</div>
+            <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Drag, preview, adjust' : 'Ziehen, prüfen, anpassen'}</div>
+          </div>
+          <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
+            {lang === 'en' ? 'Preview' : 'Vorschau'}
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)_220px]">
+          <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+            {['Hero', 'Features', 'CTA', 'Support'].map((item) => (
+              <div key={item} className="rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
+                {item}
+              </div>
+            ))}
+          </div>
+          <div className="rounded-[28px] border border-cyan-400/20 bg-[#0b1731] p-3">
+            <div className="mx-auto flex h-[260px] max-w-[180px] flex-col rounded-[26px] border border-white/10 bg-[#02050d] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+              <div className="mx-auto h-1.5 w-14 rounded-full bg-white/10" />
+              <div className="mt-4 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/10" />
+              <div className="mt-3 h-3 w-2/3 rounded-full bg-white/20" />
+              <div className="mt-2 h-3 w-1/2 rounded-full bg-white/10" />
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="h-16 rounded-2xl bg-white/5" />
+                <div className="h-16 rounded-2xl bg-white/10" />
+              </div>
+              <div className="mt-3 h-10 rounded-2xl bg-cyan-500/20" />
+            </div>
+          </div>
+          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+            <div className="h-10 rounded-xl bg-black/20" />
+            <div className="h-20 rounded-2xl bg-black/10" />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-16 rounded-2xl bg-black/20" />
+              <div className="h-16 rounded-2xl bg-black/10" />
+            </div>
+            <div className="h-12 rounded-2xl bg-fuchsia-500/15" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function HomePage() {
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
@@ -148,15 +315,18 @@ export default async function HomePage() {
               )}
             </p>
           </header>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
+          <div className="mt-8 grid gap-6 xl:grid-cols-3">
             {workflowSteps.map((step, index) => (
-              <div key={step.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400">
-                  {tr('Schritt', 'Step')} {index + 1}
-                </span>
-                <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
-                <p className="mt-3 text-sm text-neutral-300">{step.description}</p>
-              </div>
+              <article key={step.title} className="rounded-[30px] border border-white/10 bg-white/5 p-4 shadow-xl">
+                <WorkflowPreview index={index} lang={lang} />
+                <div className="px-1 pb-2 pt-5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400">
+                    {tr('Schritt', 'Step')} {index + 1}
+                  </span>
+                  <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-neutral-300">{step.description}</p>
+                </div>
+              </article>
             ))}
           </div>
         </section>
