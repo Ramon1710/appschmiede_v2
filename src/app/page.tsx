@@ -137,6 +137,234 @@ const reasonPills = {
   en: ['Faster start', 'Less coordination', 'Better demos', 'Earlier feedback'],
 } as const;
 
+function TemplateGalleryMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
+  const items = [
+    {
+      title: lang === 'en' ? 'Support App' : 'Support-App',
+      description: lang === 'en' ? 'Tickets, chat, and help center.' : 'Tickets, Chat und Helpdesk.',
+    },
+    {
+      title: lang === 'en' ? 'Time Tracking' : 'Zeiterfassung',
+      description: lang === 'en' ? 'Timesheets, reports, and teams.' : 'Zeiten, Auswertung und Teams.',
+    },
+    {
+      title: lang === 'en' ? 'Analytics Board' : 'Analytics-Board',
+      description: lang === 'en' ? 'KPIs, dashboards, and exports.' : 'KPIs, Dashboards und Exporte.',
+    },
+  ];
+
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-neutral-950/90 p-4 shadow-2xl">
+      <div className="space-y-1 border-b border-white/10 pb-3">
+        <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{lang === 'en' ? 'Templates' : 'Vorlagen'}</div>
+        <div className="text-sm font-semibold text-white">{lang === 'en' ? 'Build from ready-made apps' : 'Mit fertigen Apps starten'}</div>
+      </div>
+      <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-1' : 'md:grid-cols-3'}`}>
+        {items.slice(0, compact ? 2 : 3).map((item) => (
+          <article key={item.title} className="rounded-2xl border border-white/10 bg-neutral-900/80 p-3 shadow-lg shadow-black/20">
+            <div className="h-20 rounded-xl bg-gradient-to-br from-cyan-500/20 via-blue-500/10 to-transparent" />
+            <div className="mt-3 text-sm font-medium text-neutral-100">{item.title}</div>
+            <div className="mt-1 text-xs text-neutral-400">{item.description}</div>
+            <div className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-center text-xs font-semibold text-neutral-100">
+              {lang === 'en' ? 'Create project' : 'Projekt anlegen'}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-neutral-950/90 p-4 shadow-2xl">
+      <div className="flex items-center gap-3 pb-3">
+        <div className="text-lg font-semibold text-white">Dashboard</div>
+        <div className="ml-auto text-xs text-neutral-500">hello@appschmiede.dev</div>
+      </div>
+      <div className="rounded-2xl border border-white/10 bg-neutral-900/80 p-4">
+        <div className="text-[11px] uppercase tracking-[0.35em] text-cyan-400/80">{lang === 'en' ? 'Welcome back' : 'Willkommen zurück'}</div>
+        <div className="mt-2 text-xl font-semibold text-white">{lang === 'en' ? 'Build your next app in minutes.' : 'Baue deine nächste App in Minuten.'}</div>
+        <div className="mt-3 flex gap-2 text-xs">
+          <div className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-3 py-2 font-semibold text-white">{lang === 'en' ? 'Open projects' : 'Projekte öffnen'}</div>
+          <div className="rounded-full border border-white/20 px-3 py-2 font-semibold text-neutral-100">{lang === 'en' ? 'Go to editor' : 'Direkt zum Editor'}</div>
+        </div>
+      </div>
+      <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-3' : 'md:grid-cols-3'}`}>
+        {[
+          lang === 'en' ? 'Projects' : 'Projekte',
+          lang === 'en' ? 'Editor' : 'Editor',
+          lang === 'en' ? 'Templates' : 'Vorlagen',
+        ].map((item) => (
+          <div key={item} className={`rounded-2xl border border-white/10 bg-neutral-900/80 text-center font-semibold text-neutral-100 ${compact ? 'p-2 text-[11px]' : 'p-4 text-sm'}`}>
+            {item}
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 rounded-2xl border border-white/10 bg-neutral-900/80 p-3">
+        <div className="text-sm font-semibold text-white">{lang === 'en' ? 'Recently edited' : 'Zuletzt bearbeitet'}</div>
+        <div className="mt-3 space-y-2">
+          {['Space Desk', 'Field Ops', 'Client Portal'].slice(0, compact ? 2 : 3).map((item, index) => (
+            <div key={item} className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${index === 0 ? 'border-cyan-400/40 bg-cyan-500/5' : 'border-white/10 bg-transparent'}`}>
+              <div className="grid h-9 w-9 place-items-center rounded-xl bg-white/5 text-base">{index === 0 ? 'S' : index === 1 ? 'F' : 'C'}</div>
+              <div className="flex-1">
+                <div className="font-medium text-white">{item}</div>
+                <div className="text-xs text-neutral-400">08.03 • 12:48</div>
+              </div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-cyan-300">{index === 0 ? (lang === 'en' ? 'Active' : 'Aktiv') : (lang === 'en' ? 'Continue' : 'Weiter')}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditorMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-[#040816]/95 p-4 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'Visual Editor' : 'Visueller Editor'}</div>
+          <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Blocks, canvas, properties' : 'Bausteine, Canvas, Eigenschaften'}</div>
+        </div>
+        <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
+          {lang === 'en' ? 'Preview' : 'Vorschau'}
+        </div>
+      </div>
+      <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-[86px_minmax(0,1fr)_110px]' : 'lg:grid-cols-[160px_minmax(0,1fr)_180px]'}`}>
+        <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+          {[
+            lang === 'en' ? 'Blocks' : 'Bausteine',
+            lang === 'en' ? 'Buttons' : 'Buttons',
+            lang === 'en' ? 'Templates' : 'Vorlagen',
+          ].map((item, index) => (
+            <div key={item} className={`rounded-lg border px-2 py-2 text-center text-[11px] ${index === 0 ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-100' : 'border-white/10 bg-white/5 text-neutral-300'}`}>
+              {item}
+            </div>
+          ))}
+          <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] text-neutral-300">Hero</div>
+          <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] text-neutral-300">Chat</div>
+          <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] text-neutral-300">CTA</div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-[#070a13]/80 p-3 shadow-2xl">
+          <div className="mb-3 flex items-center justify-between text-[11px] text-neutral-400">
+            <span>{lang === 'en' ? 'Canvas' : 'Canvas'}</span>
+            <span>100%</span>
+          </div>
+          <div className="mx-auto flex h-[220px] max-w-[150px] flex-col rounded-[28px] border border-white/10 bg-[#02050d] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+            <div className="mx-auto h-1.5 w-12 rounded-full bg-white/10" />
+            <div className="mt-4 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/10" />
+            <div className="mt-3 h-2.5 w-2/3 rounded-full bg-white/20" />
+            <div className="mt-2 h-2.5 w-1/2 rounded-full bg-white/10" />
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="h-12 rounded-xl bg-white/5" />
+              <div className="h-12 rounded-xl bg-white/10" />
+            </div>
+            <div className="mt-3 h-8 rounded-xl bg-cyan-500/20" />
+          </div>
+        </div>
+        <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+          <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] font-semibold text-neutral-200">{lang === 'en' ? 'Properties' : 'Eigenschaften'}</div>
+          <div className="h-9 rounded-xl bg-black/15" />
+          <div className="h-16 rounded-2xl bg-black/10" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-10 rounded-xl bg-black/20" />
+            <div className="h-10 rounded-xl bg-black/10" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PhonePreviewMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-[#06101d]/95 p-4 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'Preview' : 'Vorschau'}</div>
+          <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Real mobile layout' : 'Echtes Mobile-Layout'}</div>
+        </div>
+        <div className="rounded-full bg-emerald-400/20 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-emerald-200">Live</div>
+      </div>
+      <div className={`mt-4 flex items-center ${compact ? 'gap-2' : 'gap-4'}`}>
+        <div className={`mx-auto flex flex-col rounded-[28px] border border-white/10 bg-[#02050d] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.04)] ${compact ? 'h-[160px] w-[92px]' : 'h-[220px] w-[126px]'}`}>
+          <div className="mx-auto h-1.5 w-12 rounded-full bg-white/10" />
+          <div className={`rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/10 ${compact ? 'mt-3 h-10' : 'mt-4 h-16'}`} />
+          <div className="mt-3 h-2.5 w-2/3 rounded-full bg-white/20" />
+          <div className="mt-2 h-2.5 w-1/2 rounded-full bg-white/10" />
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className={`rounded-xl bg-white/5 ${compact ? 'h-8' : 'h-12'}`} />
+            <div className={`rounded-xl bg-white/10 ${compact ? 'h-8' : 'h-12'}`} />
+          </div>
+          <div className={`mt-3 rounded-xl bg-cyan-500/20 ${compact ? 'h-6' : 'h-8'}`} />
+        </div>
+        <div className="flex-1 space-y-2">
+          <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-neutral-300">{lang === 'en' ? 'Preview URL and QR code' : 'Preview-URL und QR-Code'}</div>
+          <div className="rounded-xl bg-black/15 px-3 py-2 text-xs text-neutral-400">{lang === 'en' ? 'Open on your phone instantly' : 'Direkt auf dem Smartphone testen'}</div>
+          {!compact && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-12 rounded-xl bg-black/20" />
+              <div className="h-12 rounded-xl bg-black/10" />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AIGeneratorMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-[#040816]/95 p-4 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'AI Generator' : 'KI-Generator'}</div>
+          <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Prompt to app structure' : 'Prompt zur App-Struktur'}</div>
+        </div>
+        <div className="rounded-full bg-cyan-500/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">Live</div>
+      </div>
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Prompt' : 'Eingabe'}</div>
+        <div className="mt-2 rounded-2xl border border-cyan-400/20 bg-[#0b1731] px-4 py-3 text-sm leading-6 text-neutral-200">
+          {lang === 'en'
+            ? 'Build a mobile app for field technicians with tasks, time logs, photo uploads, and status updates.'
+            : 'Erstelle eine mobile App für Servicetechniker mit Aufgaben, Zeiterfassung, Foto-Uploads und Status-Updates.'}
+        </div>
+      </div>
+      <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-[1.1fr_0.9fr]'}`}>
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Generated pages' : 'Generierte Seiten'}</div>
+          <div className="mt-3 space-y-2">
+            {[
+              lang === 'en' ? 'Dashboard' : 'Dashboard',
+              lang === 'en' ? 'Task details' : 'Aufgabendetails',
+              lang === 'en' ? 'Time tracking' : 'Zeiterfassung',
+              lang === 'en' ? 'Media upload' : 'Medien-Upload',
+            ].slice(0, compact ? 3 : 4).map((item) => (
+              <div key={item} className="flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
+                <span className="h-2 w-2 rounded-full bg-cyan-300" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 to-cyan-500/10 p-4">
+          <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Suggested stack' : 'Vorgeschlagene Bausteine'}</div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/80">
+            {['Chat', 'Support', 'QR', 'Analytics', 'Tasks', 'Preview'].map((item) => (
+              <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WorkflowPreview({
   index,
   lang,
@@ -145,273 +373,34 @@ function WorkflowPreview({
   lang: Lang;
 }) {
   if (index === 0) {
-    return (
-      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.18),_transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.16),_transparent_40%)]" />
-        <div className="relative rounded-[22px] border border-white/10 bg-[#050914]/95 p-4">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-3">
-            <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-            <div className="ml-3 rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-neutral-400">
-              {lang === 'en' ? 'Template Hub' : 'Vorlagen-Hub'}
-            </div>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {[
-              {
-                title: lang === 'en' ? 'Support App' : 'Support-App',
-                accent: 'from-cyan-500/30 to-blue-500/10',
-              },
-              {
-                title: lang === 'en' ? 'Time Tracking' : 'Zeiterfassung',
-                accent: 'from-emerald-500/30 to-teal-500/10',
-              },
-              {
-                title: lang === 'en' ? 'Analytics Board' : 'Analytics-Board',
-                accent: 'from-fuchsia-500/30 to-violet-500/10',
-              },
-              {
-                title: lang === 'en' ? 'Task Space' : 'Task-Space',
-                accent: 'from-amber-500/30 to-orange-500/10',
-              },
-            ].map((item) => (
-              <div key={item.title} className={`rounded-2xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">{item.title}</div>
-                  <div className="rounded-full border border-white/15 bg-black/20 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
-                    MVP
-                  </div>
-                </div>
-                <div className="mt-3 space-y-2">
-                  <div className="h-2.5 w-3/4 rounded-full bg-white/20" />
-                  <div className="h-2.5 w-1/2 rounded-full bg-white/10" />
-                  <div className="grid grid-cols-3 gap-2 pt-1">
-                    <div className="h-14 rounded-xl bg-black/20" />
-                    <div className="h-14 rounded-xl bg-black/10" />
-                    <div className="h-14 rounded-xl bg-black/20" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <TemplateGalleryMini lang={lang} />;
   }
 
   if (index === 1) {
-    return (
-      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.16),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.18),_transparent_40%)]" />
-        <div className="relative rounded-[22px] border border-white/10 bg-[#040816]/95 p-4">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'AI Generator' : 'KI-Generator'}</div>
-              <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Prompt to app structure' : 'Prompt zur App-Struktur'}</div>
-            </div>
-            <div className="rounded-full bg-cyan-500/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">
-              Live
-            </div>
-          </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Prompt' : 'Eingabe'}</div>
-            <div className="mt-2 rounded-2xl border border-cyan-400/20 bg-[#0b1731] px-4 py-3 text-sm leading-6 text-neutral-200">
-              {lang === 'en'
-                ? 'Build a mobile app for field technicians with tasks, time logs, photo uploads, and status updates.'
-                : 'Erstelle eine mobile App für Servicetechniker mit Aufgaben, Zeiterfassung, Foto-Uploads und Status-Updates.'}
-            </div>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Generated pages' : 'Generierte Seiten'}</div>
-              <div className="mt-3 space-y-2">
-                {[
-                  lang === 'en' ? 'Dashboard' : 'Dashboard',
-                  lang === 'en' ? 'Task details' : 'Aufgabendetails',
-                  lang === 'en' ? 'Time tracking' : 'Zeiterfassung',
-                  lang === 'en' ? 'Media upload' : 'Medien-Upload',
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
-                    <span className="h-2 w-2 rounded-full bg-cyan-300" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 to-cyan-500/10 p-4">
-              <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Suggested stack' : 'Vorgeschlagene Bausteine'}</div>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/80">
-                {['Chat', 'Support', 'QR', 'Analytics', 'Tasks', 'Preview'].map((item) => (
-                  <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <AIGeneratorMini lang={lang} />;
   }
 
-  return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-[#091120] p-4 shadow-2xl">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_center,_rgba(56,189,248,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(244,114,182,0.14),_transparent_35%)]" />
-      <div className="relative rounded-[22px] border border-white/10 bg-[#040816]/95 p-4">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'Visual Editor' : 'Visueller Editor'}</div>
-            <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Drag, preview, adjust' : 'Ziehen, prüfen, anpassen'}</div>
-          </div>
-          <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
-            {lang === 'en' ? 'Preview' : 'Vorschau'}
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3 lg:grid-cols-[200px_minmax(0,1fr)_220px]">
-          <div className="space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3">
-            {['Hero', 'Features', 'CTA', 'Support'].map((item) => (
-              <div key={item} className="rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="rounded-[28px] border border-cyan-400/20 bg-[#0b1731] p-3">
-            <div className="mx-auto flex h-[260px] max-w-[180px] flex-col rounded-[26px] border border-white/10 bg-[#02050d] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
-              <div className="mx-auto h-1.5 w-14 rounded-full bg-white/10" />
-              <div className="mt-4 h-20 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/10" />
-              <div className="mt-3 h-3 w-2/3 rounded-full bg-white/20" />
-              <div className="mt-2 h-3 w-1/2 rounded-full bg-white/10" />
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="h-16 rounded-2xl bg-white/5" />
-                <div className="h-16 rounded-2xl bg-white/10" />
-              </div>
-              <div className="mt-3 h-10 rounded-2xl bg-cyan-500/20" />
-            </div>
-          </div>
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-            <div className="h-10 rounded-xl bg-black/20" />
-            <div className="h-20 rounded-2xl bg-black/10" />
-            <div className="grid grid-cols-2 gap-2">
-              <div className="h-16 rounded-2xl bg-black/20" />
-              <div className="h-16 rounded-2xl bg-black/10" />
-            </div>
-            <div className="h-12 rounded-2xl bg-fuchsia-500/15" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <EditorMini lang={lang} />;
 }
 
-function SpotlightVisual({ title }: { title: string }) {
+function SpotlightVisual({ title, lang }: { title: string; lang: Lang }) {
   if (/Projekte|Control projects/i.test(title)) {
-    return (
-      <div className="grid gap-2">
-        <div className="flex items-center gap-2 rounded-xl bg-black/25 px-3 py-2 text-[11px] text-white/80">
-          <span className="h-2 w-2 rounded-full bg-cyan-300" />
-          Workspace Alpha
-        </div>
-        <div className="flex items-center gap-2 rounded-xl bg-black/15 px-3 py-2 text-[11px] text-white/65">
-          <span className="h-2 w-2 rounded-full bg-emerald-300" />
-          Mobile Support
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="h-10 rounded-xl bg-black/20" />
-          <div className="h-10 rounded-xl bg-black/10" />
-          <div className="h-10 rounded-xl bg-black/20" />
-        </div>
-      </div>
-    );
+    return <DashboardMini lang={lang} compact />;
   }
 
   if (/KI|AI/i.test(title)) {
-    return (
-      <div className="space-y-2">
-        <div className="rounded-xl bg-black/20 px-3 py-2 text-[11px] text-white/80">
-          Build a service app for field teams
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['Dashboard', 'Tasks', 'Chat'].map((item) => (
-            <span key={item} className="rounded-full border border-white/10 bg-black/20 px-2 py-1 text-[10px] text-white/70">
-              {item}
-            </span>
-          ))}
-        </div>
-        <div className="h-8 rounded-xl bg-black/15" />
-      </div>
-    );
+    return <AIGeneratorMini lang={lang} compact />;
   }
 
   if (/Visuell|Edit visually/i.test(title)) {
-    return (
-      <div className="grid grid-cols-[56px_1fr] gap-2">
-        <div className="space-y-2 rounded-xl bg-black/20 p-2">
-          <div className="h-6 rounded-lg bg-white/10" />
-          <div className="h-6 rounded-lg bg-white/5" />
-          <div className="h-6 rounded-lg bg-white/10" />
-        </div>
-        <div className="rounded-xl bg-black/15 p-2">
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-white/10" />
-          <div className="mt-2 h-8 rounded-xl bg-white/10" />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="h-8 rounded-lg bg-white/5" />
-            <div className="h-8 rounded-lg bg-white/10" />
-          </div>
-        </div>
-      </div>
-    );
+    return <EditorMini lang={lang} compact />;
   }
 
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between rounded-xl bg-black/20 px-3 py-2 text-[11px] text-white/75">
-        <span>Preview</span>
-        <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] text-emerald-200">Live</span>
-      </div>
-      <div className="mx-auto flex h-14 w-10 flex-col rounded-[14px] border border-white/10 bg-black/20 p-1.5">
-        <div className="mx-auto h-1 w-5 rounded-full bg-white/10" />
-        <div className="mt-2 h-5 rounded-lg bg-white/10" />
-        <div className="mt-1 h-2 rounded-full bg-white/15" />
-      </div>
-      <div className="h-6 rounded-xl bg-black/15" />
-    </div>
-  );
+  return <PhonePreviewMini lang={lang} compact />;
 }
 
-function AiPromptVisual() {
-  return (
-    <>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-400">Screen</div>
-          <div className="mt-2 h-10 rounded-xl bg-white/10" />
-          <div className="mt-2 h-2.5 w-2/3 rounded-full bg-white/20" />
-          <div className="mt-1 h-2.5 w-1/2 rounded-full bg-white/10" />
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-300">Flow</div>
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-8 flex-1 rounded-xl bg-white/10" />
-            <div className="h-px w-4 bg-cyan-300/60" />
-            <div className="h-8 flex-1 rounded-xl bg-white/20" />
-          </div>
-          <div className="mt-3 h-2.5 w-3/4 rounded-full bg-white/15" />
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-          <div className="text-[10px] uppercase tracking-[0.25em] text-neutral-400">Blocks</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {['Chat', 'Foto', 'Zeit'].map((item) => (
-              <span key={item} className="rounded-full bg-black/20 px-2 py-1 text-[10px] text-white/75">
-                {item}
-              </span>
-            ))}
-          </div>
-          <div className="mt-3 h-6 rounded-xl bg-white/10" />
-        </div>
-      </div>
-    </>
-  );
+function AiPromptVisual({ lang }: { lang: Lang }) {
+  return <AIGeneratorMini lang={lang} />;
 }
 
 export default async function HomePage() {
@@ -524,7 +513,7 @@ export default async function HomePage() {
                         {spotlightCards.slice(0, 3).map((item) => (
                           <div key={item.title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
                             <div className="rounded-2xl bg-black/20 p-3">
-                              <SpotlightVisual title={item.title} />
+                              <SpotlightVisual title={item.title} lang={lang} />
                             </div>
                             <div className="mt-4 text-sm font-semibold text-white">{item.title}</div>
                             <div className="mt-1 text-xs text-neutral-200">{item.text}</div>
@@ -577,7 +566,7 @@ export default async function HomePage() {
               <article key={feature.title} className="overflow-hidden rounded-3xl border border-white/10 bg-[#070b16] p-4 shadow-lg">
                 <div className={`rounded-2xl bg-gradient-to-br ${feature.accent} p-4`}>
                   <div className="rounded-2xl bg-black/20 p-3">
-                    <SpotlightVisual title={feature.title} />
+                    <SpotlightVisual title={feature.title} lang={lang} />
                   </div>
                 </div>
                 <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
@@ -615,7 +604,7 @@ export default async function HomePage() {
                     'Build a service app with jobs, photos, chat, and time tracking for mobile teams.'
                   )}
                 </div>
-                <AiPromptVisual />
+                <AiPromptVisual lang={lang} />
               </div>
             </div>
             <div>
