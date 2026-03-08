@@ -383,20 +383,162 @@ function WorkflowPreview({
   return <EditorMini lang={lang} />;
 }
 
+function HeroShowcase({ lang }: { lang: Lang }) {
+  return (
+    <div className="relative mx-auto max-w-[820px]">
+      <div className="absolute -left-6 top-10 h-28 w-28 rounded-full bg-cyan-500/20 blur-3xl" />
+      <div className="absolute -right-6 bottom-8 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-3xl" />
+      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="rounded-[32px] border border-white/10 bg-[#06101d]/92 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            <div className="ml-3 rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-neutral-400">
+              {lang === 'en' ? 'Dashboard view' : 'Dashboard-Ansicht'}
+            </div>
+          </div>
+          <div className="mt-4 rounded-[28px] border border-white/10 bg-[#040816] p-5">
+            <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
+              <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
+                {[
+                  lang === 'en' ? 'Dashboard' : 'Dashboard',
+                  lang === 'en' ? 'Projects' : 'Projekte',
+                  lang === 'en' ? 'Templates' : 'Vorlagen',
+                  lang === 'en' ? 'Editor' : 'Editor',
+                ].map((item, index) => (
+                  <div key={item} className={`rounded-2xl px-4 py-3 text-sm ${index === 1 ? 'bg-cyan-500/15 text-cyan-100' : 'bg-black/20 text-neutral-200'}`}>
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div className="grid gap-4">
+                <div className="rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/15 to-blue-500/5 p-5">
+                  <div className="text-[11px] uppercase tracking-[0.35em] text-cyan-200/80">{lang === 'en' ? 'Welcome back' : 'Willkommen zurück'}</div>
+                  <div className="mt-3 max-w-md text-2xl font-semibold text-white">
+                    {lang === 'en' ? 'Build, test, and refine apps in one workspace.' : 'Apps in einem Workspace bauen, testen und verfeinern.'}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <div className="rounded-full bg-cyan-500 px-3 py-2 font-semibold text-white">{lang === 'en' ? 'Open projects' : 'Projekte öffnen'}</div>
+                    <div className="rounded-full border border-white/20 px-3 py-2 font-semibold text-neutral-100">{lang === 'en' ? 'Go to editor' : 'Zum Editor'}</div>
+                  </div>
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    lang === 'en' ? 'Active projects' : 'Aktive Projekte',
+                    lang === 'en' ? 'Editor access' : 'Editor-Zugang',
+                    lang === 'en' ? 'Template start' : 'Vorlagen-Start',
+                  ].map((item, index) => (
+                    <div key={item} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-[10px] uppercase tracking-[0.3em] text-neutral-500">0{index + 1}</div>
+                      <div className="mt-4 text-sm font-semibold text-neutral-100">{item}</div>
+                      <div className="mt-2 h-2 rounded-full bg-white/10">
+                        <div className={`h-2 rounded-full ${index === 0 ? 'w-4/5 bg-cyan-400' : index === 1 ? 'w-3/5 bg-emerald-400' : 'w-2/3 bg-fuchsia-400'}`} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <div className="rounded-[28px] border border-white/10 bg-[#070b16]/95 p-4 shadow-2xl">
+            <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'AI prompt' : 'KI-Prompt'}</div>
+            <div className="mt-3 rounded-2xl border border-cyan-400/20 bg-[#0b1731] px-4 py-4 text-sm leading-6 text-neutral-200">
+              {lang === 'en'
+                ? 'Service app with jobs, photos, chat, and time tracking for field teams.'
+                : 'Service-App mit Einsätzen, Fotos, Chat und Zeiterfassung für Außendienst-Teams.'}
+            </div>
+            <div className="mt-4 space-y-2">
+              {[
+                lang === 'en' ? 'Dashboard' : 'Dashboard',
+                lang === 'en' ? 'Task details' : 'Aufgabendetails',
+                lang === 'en' ? 'Time tracking' : 'Zeiterfassung',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-sm text-neutral-200">
+                  <span className="h-2 w-2 rounded-full bg-cyan-300" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-[28px] border border-white/10 bg-[#08111f]/95 p-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.3em] text-emerald-300">{lang === 'en' ? 'Mobile preview' : 'Mobile-Vorschau'}</div>
+                <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Directly test on phone' : 'Direkt auf dem Handy testen'}</div>
+              </div>
+              <div className="rounded-full bg-emerald-400/20 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-emerald-200">Live</div>
+            </div>
+            <div className="mt-4 flex items-center gap-4">
+              <div className="mx-auto flex h-[190px] w-[112px] flex-col rounded-[28px] border border-white/10 bg-[#02050d] p-3 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+                <div className="mx-auto h-1.5 w-12 rounded-full bg-white/10" />
+                <div className="mt-4 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/10" />
+                <div className="mt-3 h-2.5 w-2/3 rounded-full bg-white/20" />
+                <div className="mt-2 h-2.5 w-1/2 rounded-full bg-white/10" />
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="h-9 rounded-xl bg-white/5" />
+                  <div className="h-9 rounded-xl bg-white/10" />
+                </div>
+                <div className="mt-3 h-7 rounded-xl bg-cyan-500/20" />
+              </div>
+              <div className="flex-1 space-y-2">
+                <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-neutral-300">{lang === 'en' ? 'Preview URL and QR code' : 'Preview-URL und QR-Code'}</div>
+                <div className="rounded-xl bg-black/15 px-3 py-2 text-xs text-neutral-400">{lang === 'en' ? 'Share with team or client in seconds' : 'In Sekunden mit Team oder Kunden teilen'}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-11 rounded-xl bg-black/20" />
+                  <div className="h-11 rounded-xl bg-black/10" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SpotlightVisual({ title, lang }: { title: string; lang: Lang }) {
-  if (/Projekte|Control projects/i.test(title)) {
-    return <DashboardMini lang={lang} compact />;
-  }
+  const projectLike = /Projekte|Control projects/i.test(title);
+  const aiLike = /KI|AI/i.test(title);
+  const editorLike = /Visuell|Edit visually/i.test(title);
 
-  if (/KI|AI/i.test(title)) {
-    return <AIGeneratorMini lang={lang} compact />;
-  }
-
-  if (/Visuell|Edit visually/i.test(title)) {
-    return <EditorMini lang={lang} compact />;
-  }
-
-  return <PhonePreviewMini lang={lang} compact />;
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em] text-neutral-400">
+        <span>
+          {projectLike
+            ? lang === 'en'
+              ? 'Workspace'
+              : 'Workspace'
+            : aiLike
+              ? lang === 'en'
+                ? 'Generator'
+                : 'Generator'
+              : editorLike
+                ? lang === 'en'
+                  ? 'Editor'
+                  : 'Editor'
+                : lang === 'en'
+                  ? 'Preview'
+                  : 'Vorschau'}
+        </span>
+        <span>{projectLike ? '01' : aiLike ? '02' : editorLike ? '03' : '04'}</span>
+      </div>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <div className={`h-20 rounded-2xl ${projectLike ? 'bg-gradient-to-br from-cyan-500/25 to-blue-500/10' : aiLike ? 'bg-gradient-to-br from-fuchsia-500/25 to-cyan-500/10' : editorLike ? 'bg-gradient-to-br from-emerald-500/25 to-teal-500/10' : 'bg-gradient-to-br from-amber-500/25 to-orange-500/10'}`} />
+        <div className="mt-3 space-y-2">
+          <div className="h-2.5 w-2/3 rounded-full bg-white/20" />
+          <div className="h-2.5 w-1/2 rounded-full bg-white/10" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-10 rounded-xl bg-black/20" />
+            <div className="h-10 rounded-xl bg-black/10" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AiPromptVisual({ lang }: { lang: Lang }) {
@@ -460,70 +602,7 @@ export default async function HomePage() {
               </div>
             </div>
             <div className="relative min-h-[420px]">
-              <div className="absolute left-8 top-2 h-28 w-28 rounded-full bg-cyan-500/20 blur-3xl" />
-              <div className="absolute bottom-6 right-10 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-3xl" />
-              <div className="relative mx-auto max-w-[760px]">
-                <div className="relative rounded-[34px] border border-white/10 bg-[#06101d]/90 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
-                  <div className="flex items-center gap-2 border-b border-white/10 pb-4">
-                    <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    <div className="ml-3 rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-neutral-400">
-                      {tr('Live Workspace', 'Live workspace')}
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-                    <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
-                      {[
-                        tr('Dashboard', 'Dashboard'),
-                        tr('Projekte', 'Projects'),
-                        tr('Vorlagen', 'Templates'),
-                        tr('Editor', 'Editor'),
-                      ].map((item, index) => (
-                        <div key={item} className={`rounded-2xl px-4 py-3 text-sm ${index === 1 ? 'bg-cyan-500/15 text-cyan-100' : 'bg-black/20 text-neutral-200'}`}>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid gap-4">
-                      <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-                        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 p-5">
-                          <div className="text-xs uppercase tracking-[0.35em] text-cyan-100/80">{tr('App Preview', 'App preview')}</div>
-                          <div className="mt-4 rounded-[28px] border border-white/10 bg-[#02050d] p-4">
-                            <div className="mx-auto h-1.5 w-16 rounded-full bg-white/10" />
-                            <div className="mt-4 h-24 rounded-3xl bg-white/10" />
-                            <div className="mt-4 h-3 w-2/3 rounded-full bg-white/20" />
-                            <div className="mt-2 h-3 w-1/2 rounded-full bg-white/10" />
-                            <div className="mt-4 grid grid-cols-2 gap-3">
-                              <div className="h-16 rounded-2xl bg-white/5" />
-                              <div className="h-16 rounded-2xl bg-white/10" />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                          <div className="text-xs uppercase tracking-[0.35em] text-neutral-400">{tr('Bausteine', 'Blocks')}</div>
-                          <div className="mt-4 space-y-3">
-                            {['Hero', 'Chat', 'Tasks', 'Analytics'].map((item) => (
-                              <div key={item} className="rounded-2xl bg-black/20 px-4 py-3 text-sm text-neutral-200">{item}</div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid gap-4 md:grid-cols-3">
-                        {spotlightCards.slice(0, 3).map((item) => (
-                          <div key={item.title} className={`rounded-3xl border border-white/10 bg-gradient-to-br ${item.accent} p-4`}>
-                            <div className="rounded-2xl bg-black/20 p-3">
-                              <SpotlightVisual title={item.title} lang={lang} />
-                            </div>
-                            <div className="mt-4 text-sm font-semibold text-white">{item.title}</div>
-                            <div className="mt-1 text-xs text-neutral-200">{item.text}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <HeroShowcase lang={lang} />
             </div>
           </div>
         </section>
