@@ -20,6 +20,8 @@ function formatRegisterError(error: unknown) {
       return 'Das Passwort ist zu schwach. Bitte wähle mindestens 6 Zeichen.';
     case 'auth/network-request-failed':
       return 'Netzwerkfehler. Bitte prüfe deine Verbindung und versuche es erneut.';
+    case 'permission-denied':
+      return 'Dein Konto wurde angelegt, aber das Profil konnte wegen einer Firestore-Berechtigung nicht gespeichert werden. Bitte versuche es noch einmal.';
     default:
       return 'Registrierung fehlgeschlagen. Bitte versuche es erneut.';
   }

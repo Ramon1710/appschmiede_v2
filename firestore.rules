@@ -57,7 +57,8 @@ service cloud.firestore {
         'editorLayout',
         'onboarding'
       ]) &&
-      request.resource.data.email == authEmail() &&
+      request.resource.data.email is string &&
+      (authEmail() == '' || request.resource.data.email == authEmail()) &&
       request.resource.data.role == (isAdminEmail() ? 'admin' : 'user') &&
       request.resource.data.plan == (isAdminEmail() ? 'business' : 'free') &&
       request.resource.data.planStatus == 'trialing' &&
@@ -67,16 +68,18 @@ service cloud.firestore {
     }
 
     function validUserUpdate() {
-      return request.resource.data.role == resource.data.role &&
+      return request.resource.data.email is string &&
+        request.resource.data.email == authEmail() &&
+        request.resource.data.role == resource.data.role &&
         request.resource.data.plan == resource.data.plan &&
         request.resource.data.planStatus == resource.data.planStatus &&
         request.resource.data.planSince == resource.data.planSince &&
         request.resource.data.planExpiresAt == resource.data.planExpiresAt &&
-        request.resource.data.subscriptionRenewsAt == resource.data.subscriptionRenewsAt &&
-        request.resource.data.subscriptionCancelAtPeriodEnd == resource.data.subscriptionCancelAtPeriodEnd &&
+        request.resource.data.subscriptionRenewsAt == ('subscriptionRenewsAt' in resource.data ? resource.data.subscriptionRenewsAt : null) &&
+        request.resource.data.subscriptionCancelAtPeriodEnd == ('subscriptionCancelAtPeriodEnd' in resource.data ? resource.data.subscriptionCancelAtPeriodEnd : false) &&
         request.resource.data.coinsBalance == resource.data.coinsBalance &&
-        request.resource.data.stripeCustomerId == resource.data.stripeCustomerId &&
-        request.resource.data.stripeSubscriptionId == resource.data.stripeSubscriptionId;
+        request.resource.data.stripeCustomerId == ('stripeCustomerId' in resource.data ? resource.data.stripeCustomerId : null) &&
+        request.resource.data.stripeSubscriptionId == ('stripeSubscriptionId' in resource.data ? resource.data.stripeSubscriptionId : null);
     }
 
     match /users/{uid} {
