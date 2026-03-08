@@ -4,8 +4,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
@@ -15,11 +18,14 @@ import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import { getStoredProjectId } from '@/lib/editor-storage';
 import { useI18n } from '@/lib/i18n';
+import useUserProfile from '@/hooks/useUserProfile';
 
 export default function DashboardPage() {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const locale = lang === 'en' ? 'en-US' : 'de-DE';
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const dashboardAdsLeft = [
     {
@@ -50,6 +56,10 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const { profile, loading: profileLoading } = useUserProfile(user?.uid);
+
+  const forceStartToken = searchParams.get('tour') === 'welcome' ? 'welcome' : null;
+  const shouldAutoStartTour = !profileLoading && Boolean(profile?.onboarding?.welcomeTourPending);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
 
@@ -65,6 +75,25 @@ export default function DashboardPage() {
     window.addEventListener('storage', hydrate);
     return () => window.removeEventListener('storage', hydrate);
   }, []);
+
+  useEffect(() => {
+    if (forceStartToken !== 'welcome') return;
+    router.replace('/dashboard');
+  }, [forceStartToken, router]);
+
+  useEffect(() => {
+    if (!user?.uid || !shouldAutoStartTour) return;
+    void setDoc(
+      doc(db, 'users', user.uid),
+      {
+        onboarding: {
+          welcomeTourPending: false,
+        },
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }, [shouldAutoStartTour, user?.uid]);
 
   if (!user)
     return (
@@ -271,7 +300,7 @@ export default function DashboardPage() {
         </div>
       </main>
       <LegalModalTrigger className="fixed bottom-4 left-4" />
-      <GuidedTour storageKey="tour-dashboard" steps={tourSteps} />
+      <GuidedTour storageKey="tour-dashboard" steps={tourSteps} autoStart={shouldAutoStartTour} forceStartToken={forceStartToken} />
     </>
   );
 }

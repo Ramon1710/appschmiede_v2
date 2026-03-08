@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export type TourStep = {
@@ -14,8 +14,10 @@ export type GuidedTourProps = {
   storageKey: string;
   steps: TourStep[];
   autoStart?: boolean;
+  forceStartToken?: string | number | null;
   restartLabel?: string;
   className?: string;
+  showRestartButton?: boolean;
 };
 
 const PADDING = 12;
@@ -23,13 +25,16 @@ const PADDING = 12;
 export default function GuidedTour({
   storageKey,
   steps,
-  autoStart = true,
+  autoStart = false,
+  forceStartToken,
   restartLabel = 'Tutorial',
   className,
+  showRestartButton = false,
 }: GuidedTourProps) {
   const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState<number | null>(null);
   const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
+  const previousForceStartToken = useRef<string | number | null | undefined>(undefined);
 
   useEffect(() => setMounted(true), []);
 
@@ -71,6 +76,17 @@ export default function GuidedTour({
       start();
     }
   }, [autoStart, seenKey, start, steps.length]);
+
+  useEffect(() => {
+    if (!steps.length) return;
+    if (forceStartToken == null) {
+      previousForceStartToken.current = forceStartToken;
+      return;
+    }
+    if (previousForceStartToken.current === forceStartToken) return;
+    previousForceStartToken.current = forceStartToken;
+    start();
+  }, [forceStartToken, start, steps.length]);
 
   useEffect(() => {
     if (active === null) return;
@@ -131,6 +147,10 @@ export default function GuidedTour({
       {restartLabel}
     </button>
   );
+
+  if (!showRestartButton && active === null) {
+    return null;
+  }
 
   if (active === null) {
     return restartButton;

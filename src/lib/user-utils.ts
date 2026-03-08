@@ -33,5 +33,8 @@ export function buildInitialUserDoc(
     planSince: serverTimestamp() as unknown as AppUserProfile['planSince'],
     createdAt: serverTimestamp() as unknown as AppUserProfile['createdAt'],
     updatedAt: serverTimestamp() as unknown as AppUserProfile['updatedAt'],
+    onboarding: {
+      welcomeTourPending: true,
+    },
   };
 }

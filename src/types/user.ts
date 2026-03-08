@@ -21,6 +21,10 @@ export interface EditorLayoutPreferences {
   canvasZoom?: number;
 }
 
+export interface OnboardingPreferences {
+  welcomeTourPending?: boolean;
+}
+
 export interface AppUserProfile {
   email: string | null;
   displayName?: string | null;
@@ -39,6 +43,7 @@ export interface AppUserProfile {
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
   editorLayout?: EditorLayoutPreferences | null;
+  onboarding?: OnboardingPreferences | null;
 }
 
 export const DEFAULT_FREE_PLAN = 'free';

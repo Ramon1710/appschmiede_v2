@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
-import GoogleAdSlot from '@/components/GoogleAdSlot';
 
 import { getHomeContent } from '@/lib/home-content';
 import { cookies } from 'next/headers';
@@ -19,8 +18,6 @@ export default async function HomePage() {
     audience,
     kiHighlights,
     reasons,
-    adSlotsLeft,
-    adSlotsRight,
     coinPricingCards,
     subscriptionPlans,
     subscriptionPlanOrder,
@@ -31,25 +28,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-[#03050a] text-white">
       <Header />
       <main className="w-full px-4 py-12 lg:px-10">
-        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_280px]">
-          <aside className="hidden lg:block">
-            <div className="sticky top-6 space-y-4">
-              {adSlotsLeft.map((ad) => (
-                <GoogleAdSlot
-                  key={ad.slotKey}
-                  slotKey={ad.slotKey}
-                  backgroundFallback={
-                    <>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
-                      <p className="mt-2 text-sm text-white/80">{ad.description}</p>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </aside>
-
-          <div className="flex flex-col gap-12">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-12">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-10 shadow-2xl">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
             <div className="flex-1 text-center lg:text-left">
@@ -345,24 +324,6 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
-          </div>
-
-          <aside className="hidden lg:block">
-            <div className="sticky top-6 space-y-4">
-              {adSlotsRight.map((ad) => (
-                <GoogleAdSlot
-                  key={ad.slotKey}
-                  slotKey={ad.slotKey}
-                  backgroundFallback={
-                    <>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{ad.title}</h3>
-                      <p className="mt-2 text-sm text-white/80">{ad.description}</p>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </aside>
         </div>
       </main>
 

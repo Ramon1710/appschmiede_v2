@@ -157,6 +157,13 @@ export default function Header() {
                 >
                   {profileLabel}
                 </Link>
+                <Link
+                  href="/dashboard?tour=welcome"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10 transition"
+                  onClick={() => setOpen(false)}
+                >
+                  {lang === 'en' ? 'Show website tour' : 'Website-Erklärung anzeigen'}
+                </Link>
                 <div className="mt-2 border-t border-white/10 pt-2">
                   <LogoutButton />
                 </div>
