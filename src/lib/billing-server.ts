@@ -238,12 +238,18 @@ export async function chargeCoins(uid: string, coins: number, actionLabel: strin
 
 export async function chargeCoinsForAction(uid: string, action: CoinActionKey, multiplier = 1): Promise<void> {
   const perAction = COIN_COSTS[action];
-  if (!perAction) return;
+  if (perAction == null || perAction <= 0) return;
 
   const total = perAction * Math.max(1, multiplier);
   const label =
     action === 'ai'
       ? 'Diese KI-Aktion'
+      : action === 'quickButton'
+        ? 'Dieser fertige Button'
+        : action === 'component'
+          ? 'Dieser Baustein'
+          : action === 'basicComponent'
+            ? 'Dieser Basis-Baustein'
       : action === 'template'
         ? 'Diese Vorlage'
         : action === 'page'

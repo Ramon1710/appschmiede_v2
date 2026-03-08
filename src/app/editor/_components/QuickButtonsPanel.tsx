@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { COIN_COSTS } from '@/config/coins';
 import { useI18n } from '@/lib/i18n';
 
 export type QuickButtonPresetKey =
@@ -47,6 +48,7 @@ interface QuickButtonsPanelProps {
 export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelProps) {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const quickButtonCostLabel = tr(`${COIN_COSTS.quickButton} Coin`, `${COIN_COSTS.quickButton} coin`);
 
   const categories: PresetCategory[] = [
     {
@@ -127,11 +129,14 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
                 key={`${category.id}-${item.preset}`}
                 type="button"
                 onClick={() => onCreatePage(item.preset)}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
+                className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
                 title={tr(item.label.de, item.label.en)}
               >
-                <span className="text-base leading-none">{item.icon}</span>
-                <span className="truncate">{tr(item.label.de, item.label.en)}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="text-base leading-none">{item.icon}</span>
+                  <span className="truncate">{tr(item.label.de, item.label.en)}</span>
+                </span>
+                <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">{quickButtonCostLabel}</span>
               </button>
             ))}
           </div>

@@ -1,11 +1,12 @@
 // src/app/editor/_components/CategorizedToolbox.tsx
 'use client';
 import React, { useState } from 'react';
+import { COIN_COSTS, type CoinActionKey } from '@/config/coins';
 import type { NodeType, NodeProps, NavbarItem } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
 
 interface ToolboxProps {
-  onAdd: (type: NodeType, defaultProps?: NodeProps) => void;
+  onAdd: (type: NodeType, defaultProps?: NodeProps, options?: { coinAction?: CoinActionKey }) => void | Promise<void>;
 }
 
 type Category = {
@@ -18,6 +19,9 @@ type Category = {
 export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
+  const formatCoins = (value: number) =>
+    new Intl.NumberFormat(numberLocale, { minimumFractionDigits: value % 1 === 0 ? 0 : 1, maximumFractionDigits: 1 }).format(value);
 
   const [expanded, setExpanded] = useState<string[]>(['basic']);
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,6 +152,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       ],
     },
     {
+      id: 'business',
       name: 'Unternehmen',
       icon: '🏢',
       items: [
@@ -310,6 +315,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       ],
     },
     {
+      id: 'media',
       name: 'Medien & Inhalte',
       icon: '📹',
       items: [
@@ -364,6 +370,7 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       ],
     },
     {
+      id: 'fun',
       name: 'Spaß & Games',
       icon: '🎮',
       items: [
@@ -422,6 +429,16 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
     }))
     .filter((cat) => cat.items.length > 0);
 
+  const getCoinActionForCategory = (categoryId: string): CoinActionKey => (categoryId === 'basic' ? 'basicComponent' : 'component');
+
+  const getCoinLabel = (action: CoinActionKey) => {
+    const amount = COIN_COSTS[action];
+    if (amount <= 0) {
+      return tr('Kostenfrei', 'Free');
+    }
+    return tr(`${formatCoins(amount)} Coin`, `${formatCoins(amount)} coin`);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Search Bar */}
@@ -439,6 +456,8 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
       <div className="flex-1 overflow-y-auto space-y-1 p-2">
         {filteredCategories.map((cat) => {
           const isExpanded = expanded.includes(cat.id);
+          const coinAction = getCoinActionForCategory(cat.id);
+          const coinLabel = getCoinLabel(coinAction);
           return (
             <div key={cat.id} className="border border-white/10 rounded-lg overflow-hidden">
               <button
@@ -447,6 +466,9 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
               >
                 <span>{cat.icon}</span>
                 <span className="flex-1">{cat.name}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${coinAction === 'basicComponent' ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'}`}>
+                  {coinLabel}
+                </span>
                 <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
               </button>
               {isExpanded && (
@@ -454,11 +476,16 @@ export default function CategorizedToolbox({ onAdd }: ToolboxProps) {
                   {cat.items.map((item) => (
                     <button
                       key={`${cat.id}-${item.label}`}
-                      onClick={() => onAdd(item.type, item.defaultProps)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
+                      onClick={() => void onAdd(item.type, item.defaultProps, { coinAction })}
+                      className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg border border-white/10 hover:bg-white/10 text-left"
                     >
-                      <span>{item.icon}</span>
-                      <span>{item.label}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span>{item.icon}</span>
+                        <span className="truncate">{item.label}</span>
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${coinAction === 'basicComponent' ? 'bg-emerald-500/15 text-emerald-200' : 'bg-amber-500/15 text-amber-200'}`}>
+                        {coinLabel}
+                      </span>
                     </button>
                   ))}
                 </div>

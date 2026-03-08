@@ -19,6 +19,11 @@ export interface EditorLayoutPreferences {
   leftPanelWidth?: number;
   rightPanelWidth?: number;
   canvasZoom?: number;
+  leftPanelSections?: {
+    editorCollapsed?: boolean;
+    projectCollapsed?: boolean;
+    elementsCollapsed?: boolean;
+  };
 }
 
 export interface OnboardingPreferences {
