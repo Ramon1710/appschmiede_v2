@@ -16,7 +16,6 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
-import { chargeCoinsForAction } from '@/lib/billing-server';
 import type { CoinActionKey } from '@/config/coins';
 
 export type { PageTree } from '@/lib/editorTypes';
@@ -97,9 +96,6 @@ export async function createPage(
   folder: string | null = null,
   options?: PageWriteOptions
 ) {
-  if (options?.actorUid) {
-    await chargeCoinsForAction(options.actorUid, options.coinAction ?? 'page');
-  }
   const ref = await addDoc(collection(db, 'projects', projectId, 'pages'), {
     name,
     tree: createFallbackTree(),
@@ -115,9 +111,6 @@ export async function createPageWithContent(
   page: Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
   options?: PageWriteOptions
 ): Promise<string> {
-  if (options?.actorUid) {
-    await chargeCoinsForAction(options.actorUid, options.coinAction ?? 'page');
-  }
   const col = collection(db, 'projects', projectId, 'pages');
   const ref = page.id ? doc(col, page.id) : doc(col);
   await setDoc(ref, {

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
 
 export class RequestAuthError extends Error {

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { getPlanConfig } from '@/config/billing';
 import { COIN_COSTS, type CoinActionKey } from '@/config/coins';
 import { getFirebaseAdminDb } from '@/lib/firebase-admin';

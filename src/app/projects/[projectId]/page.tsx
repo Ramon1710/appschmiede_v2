@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import type { Project } from '@/types/editor';
 import { useI18n } from '@/lib/i18n';
+import { chargeCoinsForClientAction } from '@/lib/billing-client';
 
 export default function ProjectDetailPage({ params }: { params: { projectId: string } }) {
   const { projectId } = params;
@@ -66,6 +67,7 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
     if (!projectId || !user) return;
     setBusy(true);
     try {
+      await chargeCoinsForClientAction(user, 'page');
       const id = await createPage(projectId, newName || tr('Neue Seite', 'New page'), newFolder || null);
       setNewName('');
       setNewFolder('');

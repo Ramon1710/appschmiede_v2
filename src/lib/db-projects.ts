@@ -15,7 +15,6 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { assertCanCreateProject } from '@/lib/billing-server';
 
 export const PROJECT_ICON_CHOICES = ['📱', '🚀', '🎨', '🧱', '⚡', '💡', '🛠️', '🤖', '📊', '🧪'] as const;
 export const DEFAULT_PROJECT_ICON = PROJECT_ICON_CHOICES[0];
@@ -34,7 +33,6 @@ export type Project = {
 };
 
 export async function createProject(name: string, ownerId: string) {
-  await assertCanCreateProject(ownerId);
   const ref = await addDoc(collection(db, 'projects'), {
     name,
     ownerId,

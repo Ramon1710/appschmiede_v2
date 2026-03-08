@@ -15,7 +15,7 @@ import { createPageWithContent } from '@/lib/db-editor';
 import { useI18n } from '@/lib/i18n';
 import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
 import { createProject } from '@/lib/db-projects';
-import { chargeCoinsForAction } from '@/lib/billing-server';
+import { assertCanCreateProjectClient, chargeCoinsForClientAction } from '@/lib/billing-client';
 
 const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
@@ -185,7 +185,8 @@ function TemplatesPageComponent() {
     setCreatingTemplateId(tpl.id);
 
     try {
-      await chargeCoinsForAction(user.uid, 'template');
+      await assertCanCreateProjectClient(auth.currentUser);
+      await chargeCoinsForClientAction(auth.currentUser, 'template');
       const projectId = await createProject(tpl.projectName, user.uid);
 
       await Promise.all(

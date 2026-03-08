@@ -12,6 +12,7 @@ import { useI18n } from '@/lib/i18n';
 import { createPageWithContent } from '@/lib/db-editor';
 import { createProject as createWorkspaceProject } from '@/lib/db-projects';
 import { buildAuthHeaders } from '@/lib/client-auth';
+import { assertCanCreateProjectClient } from '@/lib/billing-client';
 
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
@@ -389,6 +390,8 @@ export default function TradesWizardPage() {
       if (pages.length === 0) {
         throw new Error('No pages generated');
       }
+
+      await assertCanCreateProjectClient(user);
 
       const projectId = await createWorkspaceProject(
         answers.projectName?.trim() ? answers.projectName.trim() : selectedIndustry.label.de,

@@ -29,7 +29,7 @@ import {
 } from '@/lib/editor-storage';
 import { touchProject } from '@/lib/db-projects';
 import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
-import { chargeCoinsForAction } from '@/lib/billing-server';
+import { chargeCoinsForClientAction } from '@/lib/billing-client';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
@@ -921,12 +921,12 @@ export default function EditorShell({ initialPageId }: Props) {
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
   const requireCoinsForAction = useCallback(
     async (action: 'ai' | 'template' | 'page') => {
-      if (!user?.uid) {
+      if (!user) {
         throw new Error(tr('Bitte melde dich an, um diese Funktion zu nutzen.', 'Please sign in to use this feature.'));
       }
-      await chargeCoinsForAction(user.uid, action);
+      await chargeCoinsForClientAction(user, action);
     },
-    [user?.uid, tr]
+    [user, tr]
   );
 
   const queryAppTemplateId = searchParams.get('appTemplateId')?.trim() || null;
@@ -2599,6 +2599,7 @@ export default function EditorShell({ initialPageId }: Props) {
         } else {
           (async () => {
             try {
+              await requireCoinsForAction('page');
               const id = await createPage(_projectId, 'Seite 1', null, { actorUid: user?.uid ?? null });
               setCurrentPageId(id);
             } catch (error) {
@@ -3639,6 +3640,7 @@ export default function EditorShell({ initialPageId }: Props) {
       } as any);
 
       try {
+        await requireCoinsForAction('page');
         const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree }, { actorUid: user?.uid ?? null });
 
         const meta = presetMeta[preset];
@@ -4156,6 +4158,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
                         const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
+                        await requireCoinsForAction('page');
                         const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                         handlePageSelection(id || null, { placeholderName: defaultName });
                       }}
@@ -4277,6 +4280,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
                       const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
+                      await requireCoinsForAction('page');
                       const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                       handlePageSelection(id || null, { placeholderName: defaultName });
                     }}
