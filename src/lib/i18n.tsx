@@ -1,6 +1,7 @@
 // src/lib/i18n.tsx
 'use client';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, startTransition, useContext, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { dict, Lang } from './i18n-dict';
 
 type Ctx = {
@@ -32,14 +33,33 @@ export function I18nProvider({
   children: React.ReactNode;
   initialLang?: Lang;
 }) {
+  const router = useRouter();
   const [lang, setLang] = useState<Lang>(initialLang && dict[initialLang] ? initialLang : 'de');
+
+  const updateLang = (nextLang: Lang) => {
+    if (!dict[nextLang]) return;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lang', nextLang);
+    }
+    writeCookieLang(nextLang);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = nextLang;
+      document.body.setAttribute('data-lang', nextLang);
+    }
+    setLang(nextLang);
+    startTransition(() => {
+      router.refresh();
+    });
+  };
 
   useEffect(() => {
     const fromLocalStorage = (typeof window !== 'undefined' && (localStorage.getItem('lang') as Lang)) || null;
     const fromCookie = readCookieLang();
     const saved = (fromLocalStorage && dict[fromLocalStorage] ? fromLocalStorage : null) ?? fromCookie;
-    if (saved && dict[saved]) setLang(saved);
-  }, []);
+    if (saved && dict[saved] && saved !== lang) {
+      setLang(saved);
+    }
+  }, [lang]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') localStorage.setItem('lang', lang);
@@ -52,7 +72,7 @@ export function I18nProvider({
 
   const t = useMemo(() => (key: keyof typeof dict['de']) => dict[lang][key], [lang]);
 
-  return <I18nCtx.Provider value={{ lang, t, setLang }}>{children}</I18nCtx.Provider>;
+  return <I18nCtx.Provider value={{ lang, t, setLang: updateLang }}>{children}</I18nCtx.Provider>;
 }
 
 export function useI18n() {

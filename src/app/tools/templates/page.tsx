@@ -12,7 +12,7 @@ import GuidedTour from '@/components/GuidedTour';
 import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
-import { isAdminEmail } from '@/lib/user-utils';
+import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
 import { DEFAULT_PROJECT_ICON } from '@/lib/db-projects';
 
 const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
@@ -220,7 +220,7 @@ function TemplatesPageComponent() {
         // ignore
       }
 
-      const adminMode = isAdminEmail(user.email);
+      const adminMode = canManageMainTemplates(user.email);
       const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
       router.push(`/editor?projectId=${projectId}${suffix}`);
     } catch (e) {
@@ -232,10 +232,11 @@ function TemplatesPageComponent() {
   };
 
   const isAdmin = isAdminEmail(user?.email);
+  const canEditMainTemplates = canManageMainTemplates(user?.email);
 
   const deleteTemplate = async (tpl: Template) => {
     if (!user) return;
-    if (!isAdmin) return;
+    if (!canEditMainTemplates) return;
     if (!tpl.id) return;
 
     setError(null);
@@ -306,7 +307,7 @@ function TemplatesPageComponent() {
                     {creatingTemplateId === tpl.id ? copy.creatingProject : copy.createProject}
                   </button>
 
-                  {isAdmin && (
+                  {canEditMainTemplates && (
                     <button
                       type="button"
                       onClick={() => void deleteTemplate(tpl)}

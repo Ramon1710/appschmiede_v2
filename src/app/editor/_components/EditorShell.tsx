@@ -28,7 +28,7 @@ import {
   setStoredProjectId as persistStoredProjectId,
 } from '@/lib/editor-storage';
 import { touchProject } from '@/lib/db-projects';
-import { isAdminEmail } from '@/lib/user-utils';
+import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -914,6 +914,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
   const isAdmin = isAdminEmail(user?.email);
+  const canEditMainTemplates = canManageMainTemplates(user?.email);
   const { lang } = useI18n();
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
 
@@ -936,11 +937,11 @@ export default function EditorShell({ initialPageId }: Props) {
   const _projectId = derivedProjectId ?? manualProjectId ?? null;
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!canEditMainTemplates) return;
     if (!queryAppTemplateId) return;
     setEditingPageTemplateId(null);
     setEditingAppTemplateId(queryAppTemplateId);
-  }, [isAdmin, queryAppTemplateId]);
+  }, [canEditMainTemplates, queryAppTemplateId]);
 
   useEffect(() => {
     if (!_projectId) {
@@ -2291,7 +2292,7 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [isAdmin, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice, tr]);
 
   const handleSaveAppTemplate = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canEditMainTemplates) {
       setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen speichern.', 'Only admins can save app templates.'));
       return;
     }
@@ -2344,10 +2345,10 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setSavingAppTemplate(false);
     }
-  }, [isAdmin, _projectId, pages, project?.name, user?.uid, setTemplateNotice, tr]);
+  }, [canEditMainTemplates, _projectId, pages, project?.name, user?.uid, setTemplateNotice, tr]);
 
   const handleOverwriteAppTemplate = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canEditMainTemplates) {
       setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen speichern.', 'Only admins can save app templates.'));
       return;
     }
@@ -2419,7 +2420,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
     }
-  }, [isAdmin, editingAppTemplateId, _projectId, pages, currentPageId, setTemplateNotice, tr]);
+  }, [canEditMainTemplates, editingAppTemplateId, _projectId, pages, currentPageId, setTemplateNotice, tr]);
 
   const startEditingPageTemplate = useCallback(
     (template: StoredPageTemplate) => {
@@ -2434,7 +2435,7 @@ export default function EditorShell({ initialPageId }: Props) {
 
   const applySavedAppTemplateToProject = useCallback(
     async (template: StoredAppTemplate) => {
-      if (!isAdmin) {
+      if (!canEditMainTemplates) {
         setTemplateNotice(tr('Nur Admins dürfen App-Vorlagen bearbeiten.', 'Only admins can edit app templates.'));
         return;
       }
@@ -2490,7 +2491,7 @@ export default function EditorShell({ initialPageId }: Props) {
         setAppTemplateApplying(false);
       }
     },
-    [isAdmin, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr]
+    [canEditMainTemplates, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr]
   );
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
@@ -3846,7 +3847,7 @@ export default function EditorShell({ initialPageId }: Props) {
         )}
       </div>
 
-      {isAdmin && (
+      {canEditMainTemplates && (
         <div className="space-y-2">
           <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">Gespeicherte App-Vorlagen</div>
           {loadingAppTemplates ? (

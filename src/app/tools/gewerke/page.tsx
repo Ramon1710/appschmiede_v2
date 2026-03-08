@@ -252,6 +252,7 @@ export default function TradesWizardPage() {
             unauth: 'Sign in to create an app from an industry wizard.',
             title: 'Industries & App Wizard',
             subtitle: 'Pick your industry, answer a few questions and we create a ready-to-edit app project.',
+            stepName: 'Name your project',
             stepIndustry: 'Choose an industry',
             stepVariant: 'Choose an app type',
             stepQa: 'Quick questions',
@@ -286,6 +287,7 @@ export default function TradesWizardPage() {
             unauth: 'Melde dich an, um über den Gewerk-Assistenten eine App zu erstellen.',
             title: 'Gewerke & App-Assistent',
             subtitle: 'Gewerk auswählen, kurz Fragen beantworten und wir erstellen im Hintergrund ein fertiges Projekt.',
+            stepName: 'Projekt benennen',
             stepIndustry: 'Gewerk auswählen',
             stepVariant: 'App-Typ auswählen',
             stepQa: 'Kurzfragen',
@@ -464,22 +466,22 @@ export default function TradesWizardPage() {
         <section className="mt-8 rounded-2xl border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-sm">
           {step === 0 && (
             <div className="space-y-4">
-              <div className="text-sm font-semibold">{lang === 'en' ? 'Name it' : 'Name it'}</div>
-              <label className="space-y-2 rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
-                <div className="text-xs uppercase tracking-widest text-neutral-500">{copy.projectName}</div>
+              <div className="text-sm font-semibold">{copy.stepName}</div>
+              <div className="rounded-2xl border border-white/10 bg-neutral-950/40 p-4">
+                <label className="block text-xs uppercase tracking-widest text-neutral-500">{copy.projectName}</label>
                 <input
                   value={answers.projectName}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, projectName: e.target.value }))}
-                  className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+                  className="mt-3 block w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-400/50"
                   placeholder={lang === 'en' ? 'e.g. Hair Studio' : 'z.B. Haarstudio'}
                 />
-              </label>
+              </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   onClick={goChooseIt}
-                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold transition hover:bg-white/10"
+                  className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold transition hover:bg-white/10"
                 >
                   {copy.next}
                 </button>
@@ -538,7 +540,7 @@ export default function TradesWizardPage() {
           {step === 2 && selectedIndustry && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">{lang === 'en' ? 'Choose it' : 'Choose it'}</div>
+                <div className="text-sm font-semibold">{copy.stepVariant}</div>
                 <button type="button" className="text-sm text-neutral-300 hover:text-white" onClick={goChooseIt}>
                   {copy.back}
                 </button>

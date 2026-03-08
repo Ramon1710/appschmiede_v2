@@ -5,6 +5,9 @@ import { ADMIN_EMAIL, DEFAULT_FREE_COINS } from '@/types/user';
 export const isAdminEmail = (email?: string | null) =>
   (email ?? '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
+export const canManageMainTemplates = (email?: string | null) =>
+  (email ?? '').trim().toLowerCase() === 'ramon.meyer@hotmail.de';
+
 export const defaultPlanForEmail = (email?: string | null): AppPlanId =>
   isAdminEmail(email) ? 'business' : 'free';
 

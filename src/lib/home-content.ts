@@ -254,7 +254,7 @@ const de: HomeContent = {
         free: '0 (nur Startguthaben)',
         starter: '80 Coins',
         pro: '150 Coins',
-        business: 'Individuell vereinbar',
+        business: 'Unbegrenzt',
       },
     },
     {
