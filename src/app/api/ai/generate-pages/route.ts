@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import type { Node, PageTree } from '@/lib/editorTypes';
+import { chargeCoinsForAction, isBillingError } from '@/lib/billing-server';
+import { requireAuthenticatedUid } from '@/lib/server-auth';
 
 type GeneratedPage = Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -1042,6 +1044,21 @@ export async function POST(request: Request) {
 
   const prompt = typeof body.prompt === 'string' ? body.prompt : '';
   const pages = buildPages(prompt.trim());
+  let uid: string;
+  try {
+    uid = await requireAuthenticatedUid(request);
+  } catch (error) {
+    return NextResponse.json({ error: 'authentication required' }, { status: 401 });
+  }
+
+  try {
+    await chargeCoinsForAction(uid, 'ai');
+  } catch (error) {
+    if (isBillingError(error)) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 402 });
+    }
+    throw error;
+  }
 
   return NextResponse.json({
     pages,

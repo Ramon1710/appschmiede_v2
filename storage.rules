@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdminEmail() {
+      return signedIn() && request.auth.token.email != null && request.auth.token.email.matches('(?i)^ramon\\.meyer@hotmail\\.de$');
+    }
+
+    match /chat/{projectId}/{userId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn() && (request.auth.uid == userId || isAdminEmail());
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

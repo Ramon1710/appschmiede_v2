@@ -2,17 +2,45 @@ import { NextResponse } from 'next/server';
 import { getStripe } from '@/lib/stripe';
 import type { CoinPackageKey } from '@/config/billing';
 import { COIN_PACKAGES, getPlanConfig } from '@/config/billing';
-import type { AppPlanId } from '@/types/user';
-import { activatePlan, claimStripeEvent, creditCoins, finalizeStripeEvent } from '@/lib/billing-server';
+import type { AppPlanId, PlanStatus } from '@/types/user';
+import { activatePlan, claimStripeEvent, creditCoins, downgradeToFreePlan, finalizeStripeEvent, syncPlanBillingState } from '@/lib/billing-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type StripeMetadata = Record<string, string | null | undefined>;
-type StripeCheckoutSession = { metadata?: StripeMetadata };
+type StripeCheckoutSession = {
+  metadata?: StripeMetadata;
+  customer?: string | { id: string } | null;
+  subscription?: string | { id: string } | null;
+};
 type StripeInvoicePayload = {
   subscription?: string | { id: string } | null;
 };
+type StripeSubscriptionPayload = {
+  id: string;
+  status?: string | null;
+  metadata?: StripeMetadata;
+  customer?: string | { id: string } | null;
+  current_period_end?: number | null;
+  cancel_at_period_end?: boolean;
+};
+
+function normalizePlanStatus(status?: string | null): PlanStatus {
+  if (status === 'active') return 'active';
+  if (status === 'trialing') return 'trialing';
+  return 'canceled';
+}
+
+function toDateOrNull(unixSeconds?: number | null): Date | null {
+  if (!unixSeconds || !Number.isFinite(unixSeconds)) return null;
+  return new Date(unixSeconds * 1000);
+}
+
+function readStripeId(value?: string | { id: string } | null): string | null {
+  if (!value) return null;
+  return typeof value === 'string' ? value : value.id;
+}
 
 async function handleCheckoutSession(session: StripeCheckoutSession) {
   const metadata = session.metadata ?? {};
@@ -32,7 +60,22 @@ async function handleCheckoutSession(session: StripeCheckoutSession) {
   if (kind === 'plan') {
     const planId = metadata.planId as AppPlanId | undefined;
     if (!planId) return;
-    await activatePlan(uid, planId);
+    const stripe = getStripe() as any;
+    const subscriptionId = readStripeId(session.subscription);
+    const customerId = readStripeId(session.customer);
+    let subscription: StripeSubscriptionPayload | null = null;
+
+    if (subscriptionId) {
+      subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    }
+
+    await activatePlan(uid, planId, {
+      customerId,
+      subscriptionId,
+      subscriptionRenewsAt: toDateOrNull(subscription?.current_period_end),
+      planStatus: normalizePlanStatus(subscription?.status),
+      cancelAtPeriodEnd: Boolean(subscription?.cancel_at_period_end),
+    });
   }
 }
 
@@ -50,6 +93,35 @@ async function handleInvoicePaymentSucceeded(invoice: StripeInvoicePayload) {
 
   const plan = getPlanConfig(planId);
   await creditCoins(uid, plan.includedCoinsPerMonth);
+  await syncPlanBillingState(uid, {
+    planId,
+    planStatus: normalizePlanStatus(subscription.status),
+    customerId: readStripeId(subscription.customer),
+    subscriptionId,
+    subscriptionRenewsAt: toDateOrNull(subscription.current_period_end),
+    cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+  });
+}
+
+async function handleSubscriptionUpdated(subscription: StripeSubscriptionPayload) {
+  const uid = subscription.metadata?.uid;
+  const planId = subscription.metadata?.planId as AppPlanId | undefined;
+  if (!uid || !planId) return;
+
+  await syncPlanBillingState(uid, {
+    planId,
+    planStatus: normalizePlanStatus(subscription.status),
+    customerId: readStripeId(subscription.customer),
+    subscriptionId: subscription.id,
+    subscriptionRenewsAt: toDateOrNull(subscription.current_period_end),
+    cancelAtPeriodEnd: Boolean(subscription.cancel_at_period_end),
+  });
+}
+
+async function handleSubscriptionDeleted(subscription: StripeSubscriptionPayload) {
+  const uid = subscription.metadata?.uid;
+  if (!uid) return;
+  await downgradeToFreePlan(uid);
 }
 
 export async function POST(request: Request) {
@@ -82,6 +154,12 @@ export async function POST(request: Request) {
           break;
         case 'invoice.payment_succeeded':
           await handleInvoicePaymentSucceeded(event.data.object as StripeInvoicePayload);
+          break;
+        case 'customer.subscription.updated':
+          await handleSubscriptionUpdated(event.data.object as StripeSubscriptionPayload);
+          break;
+        case 'customer.subscription.deleted':
+          await handleSubscriptionDeleted(event.data.object as StripeSubscriptionPayload);
           break;
         default:
           break;

@@ -29,6 +29,8 @@ import {
 } from '@/lib/editor-storage';
 import { touchProject } from '@/lib/db-projects';
 import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
+import { chargeCoinsForAction } from '@/lib/billing-server';
+import { buildAuthHeaders } from '@/lib/client-auth';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
   props?: Record<string, unknown>;
@@ -917,6 +919,15 @@ export default function EditorShell({ initialPageId }: Props) {
   const canEditMainTemplates = canManageMainTemplates(user?.email);
   const { lang } = useI18n();
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
+  const requireCoinsForAction = useCallback(
+    async (action: 'ai' | 'template' | 'page') => {
+      if (!user?.uid) {
+        throw new Error(tr('Bitte melde dich an, um diese Funktion zu nutzen.', 'Please sign in to use this feature.'));
+      }
+      await chargeCoinsForAction(user.uid, action);
+    },
+    [user?.uid, tr]
+  );
 
   const queryAppTemplateId = searchParams.get('appTemplateId')?.trim() || null;
 
@@ -2159,6 +2170,19 @@ export default function EditorShell({ initialPageId }: Props) {
     return persistTemplateApplication(nextTree, preservedName);
   }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice, currentPageMeta, tree.name]);
 
+  const applyTemplateWithCharge = useCallback(
+    async (template: string) => {
+      try {
+        await requireCoinsForAction('template');
+      } catch (error) {
+        setTemplateNotice(error instanceof Error ? error.message : tr('Vorlage konnte nicht geladen werden.', 'Template could not be loaded.'));
+        return false;
+      }
+      return applyTemplate(template);
+    },
+    [applyTemplate, requireCoinsForAction, setTemplateNotice, tr]
+  );
+
   const applySavedPageTemplate = useCallback(
     (template: StoredPageTemplate) => {
       if (!_projectId) {
@@ -2187,6 +2211,19 @@ export default function EditorShell({ initialPageId }: Props) {
       return persistTemplateApplication(nextTree, preservedName);
     },
     [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate, persistTemplateApplication, setTemplateNotice, tr]
+  );
+
+  const applySavedPageTemplateWithCharge = useCallback(
+    async (template: StoredPageTemplate) => {
+      try {
+        await requireCoinsForAction('template');
+      } catch (error) {
+        setTemplateNotice(error instanceof Error ? error.message : tr('Vorlage konnte nicht geladen werden.', 'Template could not be loaded.'));
+        return false;
+      }
+      return applySavedPageTemplate(template);
+    },
+    [applySavedPageTemplate, requireCoinsForAction, setTemplateNotice, tr]
   );
 
   const handleSavePageTemplate = useCallback(async () => {
@@ -2458,6 +2495,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setEditingPageTemplateId(null);
 
       try {
+        await requireCoinsForAction('template');
         setCurrentPageId(null);
         setSelectedId(null);
         clearUndoHistory();
@@ -2491,15 +2529,13 @@ export default function EditorShell({ initialPageId }: Props) {
         setAppTemplateApplying(false);
       }
     },
-    [canEditMainTemplates, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr]
+    [canEditMainTemplates, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr, requireCoinsForAction]
   );
 
   const addNode = useCallback((type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
-      const applied = applyTemplate(defaultProps.template);
-      if (applied) {
-        return;
-      }
+      void applyTemplateWithCharge(defaultProps.template);
+      return;
     }
 
     const nodeProps = { ...defaultProps } as NodeProps;
@@ -2525,7 +2561,7 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
     setSelectedId(newNode.id);
-  }, [applyTemplate, applyTreeUpdate]);
+  }, [applyTemplateWithCharge, applyTreeUpdate]);
 
   useEffect(() => {
     if (!(_projectId && currentPageId)) return;
@@ -2562,8 +2598,16 @@ export default function EditorShell({ initialPageId }: Props) {
           }
         } else {
           (async () => {
-            const id = await createPage(_projectId, 'Seite 1');
-            setCurrentPageId(id);
+            try {
+              const id = await createPage(_projectId, 'Seite 1', null, { actorUid: user?.uid ?? null });
+              setCurrentPageId(id);
+            } catch (error) {
+              setTemplateNotice(
+                error instanceof Error
+                  ? error.message
+                  : tr('Die erste Seite konnte nicht erstellt werden.', 'The first page could not be created.')
+              );
+            }
           })();
         }
       } else {
@@ -2639,17 +2683,18 @@ export default function EditorShell({ initialPageId }: Props) {
     try {
       const response = await fetch('/api/ai/generate-page', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(user, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ prompt: aiPrompt, pageName: tree.name ?? undefined }),
       });
-      if (!response.ok) {
-        throw new Error('Die KI konnte die Seite nicht aktualisieren.');
-      }
       const data = (await response.json()) as {
+        error?: string;
         page?: PageTree;
         source?: 'openai' | 'fallback';
         diagnostics?: { reason?: string; expectedEnv?: string; vercelEnv?: string | null; keySource?: string | null; runtime?: string };
       };
+      if (!response.ok) {
+        throw new Error(data.error || 'Die KI konnte die Seite nicht aktualisieren.');
+      }
       if (!data.page || !data.page.tree) {
         throw new Error('Keine Seitenergebnisse erhalten.');
       }
@@ -2698,7 +2743,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setAiBusy(false);
     }
-  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta, isAdmin, tr]);
+  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta, isAdmin, tr, user?.uid]);
 
   const promptRenamePage = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
@@ -3594,7 +3639,7 @@ export default function EditorShell({ initialPageId }: Props) {
       } as any);
 
       try {
-        const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree });
+        const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree }, { actorUid: user?.uid ?? null });
 
         const meta = presetMeta[preset];
 
@@ -3646,10 +3691,14 @@ export default function EditorShell({ initialPageId }: Props) {
         setTemplateNotice(null);
       } catch (error) {
         console.error('Quick preset page creation failed', error);
-        setTemplateNotice(tr('Seite konnte nicht erstellt werden. Bitte versuche es erneut.', 'Page could not be created. Please try again.'));
+        setTemplateNotice(
+          error instanceof Error
+            ? error.message
+            : tr('Seite konnte nicht erstellt werden. Bitte versuche es erneut.', 'Page could not be created. Please try again.')
+        );
       }
     },
-    [_projectId, applyTreeUpdate, createPageWithContent, currentPageId, handlePageSelection, setSelectedId, setTemplateNotice, tr]
+    [_projectId, applyTreeUpdate, createPageWithContent, currentPageId, handlePageSelection, setSelectedId, setTemplateNotice, tr, user?.uid]
   );
 
   const handleDeleteCurrentPage = useCallback(async () => {
@@ -3769,7 +3818,7 @@ export default function EditorShell({ initialPageId }: Props) {
             key={tpl.id}
             type="button"
             disabled={templateControlsDisabled}
-            onClick={() => {
+            onClick={async () => {
               if (templateControlsDisabled) {
                 setTemplateNotice(
                   tr(
@@ -3779,7 +3828,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 );
                 return;
               }
-              const applied = applyTemplate(tpl.template);
+              const applied = await applyTemplateWithCharge(tpl.template);
               if (applied) {
                 setTemplateNotice(null);
               }
@@ -3818,7 +3867,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 key={tpl.id}
                 type="button"
                 disabled={templateControlsDisabled}
-                onClick={() => applySavedPageTemplate(tpl)}
+                onClick={() => void applySavedPageTemplateWithCharge(tpl)}
                 className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
                   templateControlsDisabled
                     ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500 opacity-60'
@@ -4107,7 +4156,7 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
                         const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
-                        const id = await createPage(_projectId, defaultName);
+                        const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                         handlePageSelection(id || null, { placeholderName: defaultName });
                       }}
                     >
@@ -4228,7 +4277,7 @@ export default function EditorShell({ initialPageId }: Props) {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
                       const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
-                      const id = await createPage(_projectId, defaultName);
+                      const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                       handlePageSelection(id || null, { placeholderName: defaultName });
                     }}
                   >

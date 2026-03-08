@@ -8,6 +8,7 @@ import GuidedTour from '@/components/GuidedTour';
 import useAuth from '@/hooks/useAuth';
 import type { CoinPackageKey } from '@/config/billing';
 import { useI18n } from '@/lib/i18n';
+import { buildAuthHeaders } from '@/lib/client-auth';
 
 const COIN_BUNDLES: Array<{
   key: CoinPackageKey;
@@ -89,8 +90,8 @@ export default function BillingPage() {
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ uid: user.uid, kind: 'coins', coinPackage: packageKey }),
+        headers: await buildAuthHeaders(user, { 'content-type': 'application/json' }),
+        body: JSON.stringify({ kind: 'coins', coinPackage: packageKey }),
       });
       const data = await res.json();
       if (res.ok && data.url) {

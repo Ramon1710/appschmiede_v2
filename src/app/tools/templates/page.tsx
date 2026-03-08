@@ -5,15 +5,17 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
+import { createPageWithContent } from '@/lib/db-editor';
 import { useI18n } from '@/lib/i18n';
 import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
-import { DEFAULT_PROJECT_ICON } from '@/lib/db-projects';
+import { createProject } from '@/lib/db-projects';
+import { chargeCoinsForAction } from '@/lib/billing-server';
 
 const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
@@ -26,11 +28,6 @@ type Template = {
   pages: Array<Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>>;
   createdBy?: string | null;
 };
-
-const fallbackId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
 
 const safeString = (value: unknown, fallback = ''): string => (typeof value === 'string' ? value : fallback);
 
@@ -187,29 +184,16 @@ function TemplatesPageComponent() {
     setError(null);
     setCreatingTemplateId(tpl.id);
 
-    const projectId = fallbackId();
-
     try {
-      await setDoc(doc(db, 'projects', projectId), {
-        name: tpl.projectName,
-        ownerId: user.uid,
-        ownerUid: user.uid,
-        members: [user.uid],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastOpenedAt: serverTimestamp(),
-        icon: DEFAULT_PROJECT_ICON,
-      });
+      await chargeCoinsForAction(user.uid, 'template');
+      const projectId = await createProject(tpl.projectName, user.uid);
 
       await Promise.all(
         tpl.pages.map(async (templatePage) => {
-          const pageId = fallbackId();
-          await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
+          await createPageWithContent(projectId, {
             name: templatePage.name,
             folder: templatePage.folder ?? null,
             tree: templatePage.tree,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
           });
         })
       );
@@ -225,7 +209,13 @@ function TemplatesPageComponent() {
       router.push(`/editor?projectId=${projectId}${suffix}`);
     } catch (e) {
       console.error('Template project creation failed', e);
-      setError(lang === 'en' ? 'Project could not be created. Please try again.' : 'Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+      setError(
+        e instanceof Error
+          ? e.message
+          : lang === 'en'
+            ? 'Project could not be created. Please try again.'
+            : 'Projekt konnte nicht erstellt werden. Bitte versuche es erneut.'
+      );
     } finally {
       setCreatingTemplateId(null);
     }

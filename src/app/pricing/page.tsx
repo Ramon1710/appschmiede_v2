@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import LegalModalTrigger from '@/components/LegalModalTrigger';
+import PricingPlanAction from '@/components/PricingPlanAction';
 import { getHomeContent } from '@/lib/home-content';
 import type { Lang } from '@/lib/i18n-dict';
 
@@ -59,6 +60,7 @@ export default async function PricingPage() {
                   </div>
                 ))}
               </div>
+              <PricingPlanAction planId={plan.id} lang={lang} />
             </article>
           ))}
         </section>

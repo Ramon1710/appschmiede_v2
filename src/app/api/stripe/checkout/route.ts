@@ -3,9 +3,10 @@ import type { Stripe } from 'stripe';
 import { getStripe } from '@/lib/stripe';
 import { COIN_PACKAGES, PLAN_CONFIG, type CoinPackageKey } from '@/config/billing';
 import type { AppPlanId, AppUserProfile } from '@/types/user';
-import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { getFirebaseAdminDb } from '@/lib/firebase-admin';
 import { isAdminEmail } from '@/lib/user-utils';
+import { requireAuthenticatedUid } from '@/lib/server-auth';
+import { isRequestAuthError } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,6 @@ export const dynamic = 'force-dynamic';
 type CheckoutKind = 'plan' | 'coins';
 
 type CheckoutPayload = {
-  uid: string;
   kind: CheckoutKind;
   planId?: AppPlanId;
   coinPackage?: CoinPackageKey;
@@ -22,6 +22,7 @@ type CheckoutPayload = {
 };
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const adminDb = getFirebaseAdminDb();
 
 export async function POST(request: Request) {
   try {
@@ -29,13 +30,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'STRIPE_SECRET_KEY missing' }, { status: 500 });
     }
 
+    const uid = await requireAuthenticatedUid(request);
     const body = (await request.json()) as CheckoutPayload;
-    if (!body.uid || !body.kind) {
-      return NextResponse.json({ error: 'uid and kind required' }, { status: 400 });
+    if (!body.kind) {
+      return NextResponse.json({ error: 'kind required' }, { status: 400 });
     }
 
-    const userRef = doc(db, 'users', body.uid);
-    const snap = await getDoc(userRef);
+    const snap = await adminDb.collection('users').doc(uid).get();
     if (!snap.exists()) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     const cancelUrl = body.cancelUrl ?? `${appUrl}/tools/billing?status=cancel`;
 
     const metadata: Stripe.MetadataParam = {
-      uid: body.uid,
+      uid,
       kind: body.kind,
     };
 
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
         ],
         subscription_data: {
           metadata: {
-            uid: body.uid,
+            uid,
             planId: body.planId,
           },
         },
@@ -110,6 +111,9 @@ export async function POST(request: Request) {
     const session = await getStripe().checkout.sessions.create(params);
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error: any) {
+    if (isRequestAuthError(error)) {
+      return NextResponse.json({ error: 'authentication required' }, { status: 401 });
+    }
     console.error('Stripe Checkout Fehler', error);
     return NextResponse.json({ error: error?.message ?? 'server error' }, { status: 500 });
   }

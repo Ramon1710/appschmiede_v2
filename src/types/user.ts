@@ -37,6 +37,9 @@ export interface AppUserProfile {
   planExpiresAt?: Timestamp | null;
   planStatus?: PlanStatus;
   subscriptionRenewsAt?: Timestamp | null;
+  subscriptionCancelAtPeriodEnd?: boolean;
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
   coinsBalance: number;
   role: AppUserRole;
   billingMethod?: BillingMethodInfo | null;

@@ -3,14 +3,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { useI18n } from '@/lib/i18n';
-import { DEFAULT_PROJECT_ICON } from '@/lib/db-projects';
+import { createPageWithContent } from '@/lib/db-editor';
+import { createProject as createWorkspaceProject } from '@/lib/db-projects';
+import { buildAuthHeaders } from '@/lib/client-auth';
 
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
 
@@ -58,11 +59,6 @@ type GeneratedPage = Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'>;
 type GeneratePagesResponse = {
   pages: GeneratedPage[];
 };
-
-const fallbackId = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `id_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
 
 const INDUSTRIES: Industry[] = [
   {
@@ -212,7 +208,7 @@ export default function TradesWizardPage() {
   const pathname = usePathname();
   const { lang } = useI18n();
 
-  const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
   const initialRoute = useMemo(() => getWizardRouteState(pathname ?? ''), [pathname]);
@@ -334,7 +330,7 @@ export default function TradesWizardPage() {
   useEffect(
     () =>
       onAuthStateChanged(auth, (u) => {
-        setUser(u ? { uid: u.uid, email: u.email } : null);
+        setUser(u);
         setAuthReady(true);
       }),
     []
@@ -379,7 +375,7 @@ export default function TradesWizardPage() {
 
       const res = await fetch('/api/ai/generate-pages', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: await buildAuthHeaders(user, { 'content-type': 'application/json' }),
         body: JSON.stringify({ prompt }),
       });
 
@@ -394,28 +390,17 @@ export default function TradesWizardPage() {
         throw new Error('No pages generated');
       }
 
-      const projectId = fallbackId();
-
-      await setDoc(doc(db, 'projects', projectId), {
-        name: answers.projectName?.trim() ? answers.projectName.trim() : selectedIndustry.label.de,
-        ownerId: user.uid,
-        ownerUid: user.uid,
-        members: [user.uid],
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastOpenedAt: serverTimestamp(),
-        icon: DEFAULT_PROJECT_ICON,
-      });
+      const projectId = await createWorkspaceProject(
+        answers.projectName?.trim() ? answers.projectName.trim() : selectedIndustry.label.de,
+        user.uid
+      );
 
       await Promise.all(
         pages.map(async (p) => {
-          const pageId = fallbackId();
-          await setDoc(doc(collection(db, 'projects', projectId, 'pages'), pageId), {
+          await createPageWithContent(projectId, {
             name: p.name,
             folder: p.folder ?? null,
             tree: p.tree,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
           });
         })
       );
@@ -430,7 +415,13 @@ export default function TradesWizardPage() {
       router.push(`/editor?projectId=${projectId}`);
     } catch (e) {
       console.error('Trades wizard create failed', e);
-      setError(lang === 'en' ? 'Could not create the project. Please try again.' : 'Projekt konnte nicht erstellt werden. Bitte versuche es erneut.');
+      setError(
+        e instanceof Error
+          ? e.message
+          : lang === 'en'
+            ? 'Could not create the project. Please try again.'
+            : 'Projekt konnte nicht erstellt werden. Bitte versuche es erneut.'
+      );
     } finally {
       setCreating(false);
     }

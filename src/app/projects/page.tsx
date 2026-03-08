@@ -200,6 +200,9 @@ export default function ProjectsIndexPage() {
 
           <section className="rounded-2xl border border-white/10 bg-neutral-900/80 backdrop-blur-sm p-4 space-y-3">
             <h2 className="font-semibold">{tr('Neues Projekt', 'New project')}</h2>
+            <p className="text-xs text-neutral-400">
+              {tr('Dein Tarif bestimmt, wie viele Projekte du gleichzeitig anlegen kannst.', 'Your plan determines how many projects you can create at the same time.')}
+            </p>
             <div className="flex gap-2">
               <input
                 value={name}

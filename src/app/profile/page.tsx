@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import useAuth from '@/hooks/useAuth';
@@ -9,6 +10,7 @@ import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updatePro
 import type { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
 import type { AppPlanId, BillingMethodInfo, BillingMethodType, PlanStatus } from '@/types/user';
+import { buildAuthHeaders } from '@/lib/client-auth';
 
 interface UserProfileDoc {
   displayName?: string | null;
@@ -20,6 +22,7 @@ interface UserProfileDoc {
   plan?: AppPlanId;
   planStatus?: PlanStatus;
   subscriptionRenewsAt?: Timestamp | null;
+  subscriptionCancelAtPeriodEnd?: boolean;
   billingMethod?: BillingMethodInfo | null;
   updatedAt?: ReturnType<typeof serverTimestamp>;
 }
@@ -40,6 +43,7 @@ export default function ProfilePage() {
   const [plan, setPlan] = useState<AppPlanId>('free');
   const [planStatus, setPlanStatus] = useState<PlanStatus>('trialing');
   const [subscriptionRenewsAt, setSubscriptionRenewsAt] = useState<Date | null>(null);
+  const [subscriptionCancelAtPeriodEnd, setSubscriptionCancelAtPeriodEnd] = useState(false);
   const [billingMethod, setBillingMethod] = useState<BillingMethodInfo | null>(null);
   const [billingEditMode, setBillingEditMode] = useState(false);
   const [billingType, setBillingType] = useState<BillingMethodType>('credit-card');
@@ -74,6 +78,7 @@ export default function ProfilePage() {
         setPhone(data.phone ?? '');
         setPlan((data.plan ?? 'free') as AppPlanId);
         setPlanStatus((data.planStatus ?? 'trialing') as PlanStatus);
+        setSubscriptionCancelAtPeriodEnd(Boolean(data.subscriptionCancelAtPeriodEnd));
         setBillingMethod(data.billingMethod ?? null);
         setSubscriptionRenewsAt(data.subscriptionRenewsAt?.toDate ? data.subscriptionRenewsAt.toDate() : null);
         if (data.billingMethod?.type) {
@@ -239,6 +244,11 @@ export default function ProfilePage() {
                   {plan === 'free' ? 'Free' : plan === 'starter' ? 'Starter' : plan === 'pro' ? 'Pro' : 'Business'}-Plan
                 </h2>
                 <p className="text-sm text-neutral-400">Status: {planStatus === 'active' ? 'Aktiv' : planStatus === 'canceled' ? 'Gekündigt' : 'Testphase'}</p>
+                {subscriptionCancelAtPeriodEnd && subscriptionRenewsAt && (
+                  <p className="text-xs text-amber-300">
+                    Kündigung vorgemerkt zum {subscriptionRenewsAt.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </p>
+                )}
                 {subscriptionRenewsAt && (
                   <p className="text-xs text-neutral-400">
                     Nächste Verlängerung: {subscriptionRenewsAt.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -246,6 +256,12 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2 text-sm">
+                <Link
+                  href="/pricing"
+                  className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
+                >
+                  Abo upgraden
+                </Link>
                 <button
                   type="button"
                   className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-2 font-semibold text-rose-200 transition hover:bg-rose-500/20"
@@ -562,22 +578,21 @@ export default function ProfilePage() {
                   if (!user) return;
                   setSubscriptionBusy(true);
                   try {
-                    await setDoc(
-                      doc(db, 'users', user.uid),
-                      {
-                        plan: 'free',
-                        planStatus: 'canceled',
-                        subscriptionRenewsAt: null,
-                        updatedAt: serverTimestamp(),
-                      },
-                      { merge: true }
-                    );
-                    setPlan('free');
+                    const response = await fetch('/api/stripe/cancel-subscription', {
+                      method: 'POST',
+                      headers: await buildAuthHeaders(user, { 'content-type': 'application/json' }),
+                      body: JSON.stringify({}),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                      throw new Error(data?.error ?? 'Abo konnte nicht gekündigt werden.');
+                    }
                     setPlanStatus('canceled');
-                    setSubscriptionRenewsAt(null);
-                    setStatus('Abo wurde gekündigt. Du kannst jederzeit wieder upgraden.');
+                    setSubscriptionCancelAtPeriodEnd(true);
+                    setSubscriptionRenewsAt(data?.subscriptionRenewsAt ? new Date(data.subscriptionRenewsAt) : subscriptionRenewsAt);
+                    setStatus('Abo wurde bei Stripe zur Kündigung vorgemerkt. Du kannst es bis zum Laufzeitende weiter nutzen.');
                   } catch (error) {
-                    setStatus('Abo konnte nicht gekündigt werden. Bitte versuche es erneut.');
+                    setStatus(error instanceof Error ? error.message : 'Abo konnte nicht gekündigt werden. Bitte versuche es erneut.');
                   } finally {
                     setSubscriptionBusy(false);
                     setConfirmDialog(null);

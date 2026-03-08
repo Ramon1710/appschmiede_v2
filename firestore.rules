@@ -1,0 +1,150 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function authEmail() {
+      return signedIn() && request.auth.token.email != null ? request.auth.token.email : '';
+    }
+
+    function isAdminEmail() {
+      return signedIn() && authEmail().matches('(?i)^ramon\\.meyer@hotmail\\.de$');
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function projectDoc(projectId) {
+      return get(/databases/$(database)/documents/projects/$(projectId));
+    }
+
+    function isProjectOwner(projectId) {
+      return signedIn() && (
+        projectDoc(projectId).data.ownerId == request.auth.uid ||
+        projectDoc(projectId).data.ownerUid == request.auth.uid
+      );
+    }
+
+    function canReadProject(projectId) {
+      return signedIn() && (
+        isProjectOwner(projectId) ||
+        request.auth.uid in projectDoc(projectId).data.members
+      );
+    }
+
+    function validUserCreate(uid) {
+      return request.resource.data.keys().hasOnly([
+        'email',
+        'displayName',
+        'firstName',
+        'lastName',
+        'company',
+        'phone',
+        'plan',
+        'planSince',
+        'planExpiresAt',
+        'planStatus',
+        'subscriptionRenewsAt',
+        'subscriptionCancelAtPeriodEnd',
+        'coinsBalance',
+        'role',
+        'billingMethod',
+        'createdAt',
+        'updatedAt',
+        'editorLayout',
+        'onboarding'
+      ]) &&
+      request.resource.data.email == authEmail() &&
+      request.resource.data.role == (isAdminEmail() ? 'admin' : 'user') &&
+      request.resource.data.plan == (isAdminEmail() ? 'business' : 'free') &&
+      request.resource.data.planStatus == 'trialing' &&
+      request.resource.data.coinsBalance == (isAdminEmail() ? 9007199254740991 : 30) &&
+      (!('subscriptionRenewsAt' in request.resource.data) || request.resource.data.subscriptionRenewsAt == null) &&
+      (!('subscriptionCancelAtPeriodEnd' in request.resource.data) || request.resource.data.subscriptionCancelAtPeriodEnd == false);
+    }
+
+    function validUserUpdate() {
+      return request.resource.data.role == resource.data.role &&
+        request.resource.data.plan == resource.data.plan &&
+        request.resource.data.planStatus == resource.data.planStatus &&
+        request.resource.data.planSince == resource.data.planSince &&
+        request.resource.data.planExpiresAt == resource.data.planExpiresAt &&
+        request.resource.data.subscriptionRenewsAt == resource.data.subscriptionRenewsAt &&
+        request.resource.data.subscriptionCancelAtPeriodEnd == resource.data.subscriptionCancelAtPeriodEnd &&
+        request.resource.data.coinsBalance == resource.data.coinsBalance &&
+        request.resource.data.stripeCustomerId == resource.data.stripeCustomerId &&
+        request.resource.data.stripeSubscriptionId == resource.data.stripeSubscriptionId;
+    }
+
+    match /users/{uid} {
+      allow create: if isSelf(uid) && validUserCreate(uid);
+      allow read: if isSelf(uid) || isAdminEmail();
+      allow update: if isSelf(uid) && validUserUpdate();
+      allow delete: if isSelf(uid) || isAdminEmail();
+    }
+
+    match /projects/{projectId} {
+      allow create: if signedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.members is list &&
+        request.auth.uid in request.resource.data.members;
+      allow read: if canReadProject(projectId) || isAdminEmail();
+      allow update, delete: if isProjectOwner(projectId) || isAdminEmail();
+
+      match /pages/{pageId} {
+        allow read: if canReadProject(projectId) || isAdminEmail();
+        allow create, update, delete: if isProjectOwner(projectId) || isAdminEmail();
+      }
+    }
+
+    match /templates/{templateId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdminEmail();
+    }
+
+    match /pageTemplates/{templateId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdminEmail();
+    }
+
+    match /tickets/{ticketId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow update, delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+    }
+
+    match /times/{timeId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+    }
+
+    match /tasks/{taskId} {
+      allow create, delete: if isAdminEmail();
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+    }
+
+    match /projectChats/{projectId}/messages/{messageId} {
+      allow read: if canReadProject(projectId) || isAdminEmail();
+      allow create: if canReadProject(projectId) && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /projectChats_flat/{messageId} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow write: if false;
+    }
+
+    match /stripe_events/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -16,8 +16,15 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
+import { chargeCoinsForAction } from '@/lib/billing-server';
+import type { CoinActionKey } from '@/config/coins';
 
 export type { PageTree } from '@/lib/editorTypes';
+
+type PageWriteOptions = {
+  actorUid?: string | null;
+  coinAction?: CoinActionKey | null;
+};
 
 const DEFAULT_PAGE_BACKGROUND = 'linear-gradient(140deg,#0b0b0f,#111827)';
 
@@ -84,7 +91,15 @@ export async function listPages(projectId: string): Promise<PageTree[]> {
   return snap.docs.map((docSnap) => mapPageDoc(docSnap.id, docSnap.data()));
 }
 
-export async function createPage(projectId: string, name = 'Neue Seite', folder: string | null = null) {
+export async function createPage(
+  projectId: string,
+  name = 'Neue Seite',
+  folder: string | null = null,
+  options?: PageWriteOptions
+) {
+  if (options?.actorUid) {
+    await chargeCoinsForAction(options.actorUid, options.coinAction ?? 'page');
+  }
   const ref = await addDoc(collection(db, 'projects', projectId, 'pages'), {
     name,
     tree: createFallbackTree(),
@@ -97,8 +112,12 @@ export async function createPage(projectId: string, name = 'Neue Seite', folder:
 
 export async function createPageWithContent(
   projectId: string,
-  page: Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  page: Omit<PageTree, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+  options?: PageWriteOptions
 ): Promise<string> {
+  if (options?.actorUid) {
+    await chargeCoinsForAction(options.actorUid, options.coinAction ?? 'page');
+  }
   const col = collection(db, 'projects', projectId, 'pages');
   const ref = page.id ? doc(col, page.id) : doc(col);
   await setDoc(ref, {
