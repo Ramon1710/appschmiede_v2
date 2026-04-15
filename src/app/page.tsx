@@ -386,7 +386,7 @@ function HeroShowcase({ lang }: { lang: Lang }) {
     <div className="relative mx-auto max-w-[820px]">
       <div className="absolute -left-6 top-10 h-28 w-28 rounded-full bg-cyan-500/20 blur-3xl" />
       <div className="absolute -right-6 bottom-8 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-3xl" />
-      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
+      <div className="relative grid gap-4 2xl:grid-cols-[minmax(0,1fr)_240px]">
         <div className="rounded-[32px] border border-white/10 bg-[#06101d]/92 p-4 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
           <div className="flex items-center gap-2 border-b border-white/10 pb-4">
             <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
@@ -397,7 +397,7 @@ function HeroShowcase({ lang }: { lang: Lang }) {
             </div>
           </div>
           <div className="mt-4 rounded-[28px] border border-white/10 bg-[#040816] p-4 sm:p-5">
-            <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
+            <div className="grid gap-4 xl:grid-cols-[180px_minmax(0,1fr)]">
               <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
                 {[
                   lang === 'en' ? 'Dashboard' : 'Dashboard',
@@ -405,7 +405,7 @@ function HeroShowcase({ lang }: { lang: Lang }) {
                   lang === 'en' ? 'Templates' : 'Vorlagen',
                   lang === 'en' ? 'Editor' : 'Editor',
                 ].map((item, index) => (
-                  <div key={item} className={`rounded-2xl px-4 py-3 text-sm ${index === 1 ? 'bg-cyan-500/15 text-cyan-100' : 'bg-black/20 text-neutral-200'}`}>
+                  <div key={item} className={`min-w-0 rounded-2xl px-4 py-3 text-sm ${index === 1 ? 'bg-cyan-500/15 text-cyan-100' : 'bg-black/20 text-neutral-200'}`}>
                     {item}
                   </div>
                 ))}
@@ -416,12 +416,16 @@ function HeroShowcase({ lang }: { lang: Lang }) {
                   <div className="mt-3 max-w-md text-xl font-semibold leading-tight text-white sm:text-2xl">
                     {lang === 'en' ? 'Build, test, and refine apps in one workspace.' : 'Apps in einem Workspace bauen, testen und verfeinern.'}
                   </div>
-                  <div className="mt-4 flex flex-col items-start gap-2 text-xs sm:flex-row sm:flex-wrap">
-                    <div className="rounded-full bg-cyan-500 px-3 py-2 font-semibold text-white">{lang === 'en' ? 'Open projects' : 'Projekte öffnen'}</div>
-                    <div className="rounded-full border border-white/20 px-3 py-2 font-semibold text-neutral-100">{lang === 'en' ? 'Go to editor' : 'Zum Editor'}</div>
+                  <div className="mt-4 flex flex-col items-stretch gap-2 text-xs sm:flex-row sm:flex-wrap sm:items-start">
+                    <div className="w-full rounded-full bg-cyan-500 px-3 py-2 text-center font-semibold text-white sm:w-auto">
+                      {lang === 'en' ? 'Open projects' : 'Projekte öffnen'}
+                    </div>
+                    <div className="w-full rounded-full border border-white/20 px-3 py-2 text-center font-semibold text-neutral-100 sm:w-auto">
+                      {lang === 'en' ? 'Go to editor' : 'Zum Editor'}
+                    </div>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
                   {[
                     lang === 'en' ? 'Active projects' : 'Aktive Projekte',
                     lang === 'en' ? 'Editor access' : 'Editor-Zugang',
@@ -429,7 +433,7 @@ function HeroShowcase({ lang }: { lang: Lang }) {
                   ].map((item, index) => (
                     <div key={item} className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-4">
                       <div className="text-[10px] uppercase tracking-[0.3em] text-neutral-500">0{index + 1}</div>
-                      <div className="mt-4 text-sm font-semibold leading-snug text-neutral-100">{item}</div>
+                      <div className="mt-4 text-sm font-semibold leading-snug break-words text-neutral-100">{item}</div>
                       <div className="mt-2 h-2 rounded-full bg-white/10">
                         <div className={`h-2 rounded-full ${index === 0 ? 'w-4/5 bg-cyan-400' : index === 1 ? 'w-3/5 bg-emerald-400' : 'w-2/3 bg-fuchsia-400'}`} />
                       </div>
