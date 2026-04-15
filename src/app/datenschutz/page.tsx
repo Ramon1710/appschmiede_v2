@@ -3,7 +3,7 @@ import LegalPageShell from '@/components/LegalPageShell';
 
 export const metadata: Metadata = {
 	title: 'Datenschutzerklärung',
-	description: 'Datenschutzerklärung für myappschmiede.com mit Vercel, Firebase, Stripe und Consent-Einstellungen.',
+	description: 'Datenschutzerklärung für myappschmiede.com mit Vercel, Firebase, Stripe, Google AdSense und Consent-Einstellungen.',
 };
 
 export default function Datenschutz() {
@@ -11,7 +11,7 @@ export default function Datenschutz() {
 		<LegalPageShell
 			title="Datenschutzerklärung"
 			subtitle="für myappschmiede.com"
-			updatedAt="08.03.2026"
+			updatedAt="15.04.2026"
 		>
 			<section>
 				<h2>1. Verantwortlicher</h2>
@@ -30,7 +30,7 @@ export default function Datenschutz() {
 
 			<section>
 				<h2>2. Allgemeine Hinweise zur Datenverarbeitung</h2>
-				<p>Wir verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung unserer Website und Web-App, zur Einrichtung und Durchführung von Nutzerkonten, zur Zahlungsabwicklung, zur Sicherstellung der technischen Sicherheit und soweit Sie eingewilligt haben zur Analyse und Optimierung unseres Angebots erforderlich ist.</p>
+				<p>Wir verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung unserer Website und Web-App, zur Einrichtung und Durchführung von Nutzerkonten, zur Zahlungsabwicklung, zur Sicherstellung der technischen Sicherheit und soweit Sie eingewilligt haben zur Analyse, Optimierung und werblichen Finanzierung unseres Angebots erforderlich ist.</p>
 				<p>Personenbezogene Daten sind alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen.</p>
 			</section>
 
@@ -150,6 +150,22 @@ export default function Datenschutz() {
 				<p>Art. 6 Abs. 1 lit. a DSGVO</p>
 				<p>Soweit hierfür Informationen auf Ihrem Endgerät gespeichert oder ausgelesen werden, erfolgt dies zusätzlich auf Grundlage von § 25 Abs. 1 TDDDG.</p>
 				<p>Sie können Ihre Einwilligung jederzeit über den Link Datenschutzeinstellungen mit Wirkung für die Zukunft widerrufen.</p>
+
+				<h3>5.5 Google AdSense</h3>
+				<p>Soweit Sie im Consent-Tool eingewilligt haben und Google AdSense auf unserer Website aktiviert ist, nutzen wir Google AdSense zur Einbindung und Ausspielung von Werbung.</p>
+				<p>Dabei können insbesondere verarbeitet werden:</p>
+				<ul>
+					<li>IP-Adresse</li>
+					<li>Informationen zu Browser, Gerät und Bildschirmgröße</li>
+					<li>aufgerufene Seiten und Zeitpunkte von Seitenaufrufen</li>
+					<li>pseudonyme Kennungen, Cookies oder ähnliche Technologien</li>
+					<li>Informationen zur Auslieferung, Messung und Begrenzung von Anzeigen</li>
+				</ul>
+				<p>Die Verarbeitung erfolgt zur werblichen Finanzierung unseres öffentlichen Angebots sowie zur Anzeige und Messung von Werbeanzeigen.</p>
+				<p>Rechtsgrundlage:</p>
+				<p>Art. 6 Abs. 1 lit. a DSGVO</p>
+				<p>Soweit hierfür Informationen auf Ihrem Endgerät gespeichert oder ausgelesen werden, erfolgt dies zusätzlich auf Grundlage von § 25 Abs. 1 TDDDG.</p>
+				<p>Sie können Ihre Einwilligung jederzeit über den Link Datenschutzeinstellungen mit Wirkung für die Zukunft widerrufen.</p>
 			</section>
 
 			<section>
@@ -180,7 +196,7 @@ export default function Datenschutz() {
 					<li>Speicherung von Einstellungen</li>
 					<li>technisch notwendige Abläufe der Web-App</li>
 				</ul>
-				<p>Analyse-Technologien setzen wir nur ein, wenn Sie zuvor eingewilligt haben.</p>
+				<p>Analyse- und Werbe-Technologien setzen wir nur ein, wenn Sie zuvor eingewilligt haben.</p>
 				<p>Weitere Informationen zu eingesetzten Kategorien und Ihren Auswahlmöglichkeiten finden Sie in unserem Consent-Tool unter Datenschutzeinstellungen.</p>
 			</section>
 
@@ -197,6 +213,7 @@ export default function Datenschutz() {
 					<li>Kommunikation mit Nutzern</li>
 					<li>Versand von Push-Benachrichtigungen, soweit aktiviert</li>
 					<li>Analyse und Optimierung unseres Angebots, soweit eingewilligt</li>
+					<li>Einbindung und Messung von Werbung, soweit eingewilligt</li>
 				</ul>
 			</section>
 
@@ -208,6 +225,7 @@ export default function Datenschutz() {
 					<li>Cloud- und Datenbank-Dienstleister</li>
 					<li>Zahlungsdienstleister</li>
 					<li>IT- und Support-Dienstleister</li>
+					<li>Werbe- und Messdienstleister</li>
 					<li>Behörden oder sonstige Stellen, soweit wir hierzu gesetzlich verpflichtet sind</li>
 				</ul>
 			</section>

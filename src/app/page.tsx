@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import Header from '@/components/Header';
 
 import { getHomeContent } from '@/lib/home-content';
@@ -397,8 +396,8 @@ function HeroShowcase({ lang }: { lang: Lang }) {
               {lang === 'en' ? 'Dashboard view' : 'Dashboard-Ansicht'}
             </div>
           </div>
-          <div className="mt-4 rounded-[28px] border border-white/10 bg-[#040816] p-5">
-            <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
+          <div className="mt-4 rounded-[28px] border border-white/10 bg-[#040816] p-4 sm:p-5">
+            <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
               <div className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-4">
                 {[
                   lang === 'en' ? 'Dashboard' : 'Dashboard',
@@ -411,26 +410,26 @@ function HeroShowcase({ lang }: { lang: Lang }) {
                   </div>
                 ))}
               </div>
-              <div className="grid gap-4">
-                <div className="rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/15 to-blue-500/5 p-5">
+              <div className="min-w-0 grid gap-4">
+                <div className="rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/15 to-blue-500/5 p-4 sm:p-5">
                   <div className="text-[11px] uppercase tracking-[0.35em] text-cyan-200/80">{lang === 'en' ? 'Welcome back' : 'Willkommen zurück'}</div>
-                  <div className="mt-3 max-w-md text-2xl font-semibold text-white">
+                  <div className="mt-3 max-w-md text-xl font-semibold leading-tight text-white sm:text-2xl">
                     {lang === 'en' ? 'Build, test, and refine apps in one workspace.' : 'Apps in einem Workspace bauen, testen und verfeinern.'}
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                  <div className="mt-4 flex flex-col items-start gap-2 text-xs sm:flex-row sm:flex-wrap">
                     <div className="rounded-full bg-cyan-500 px-3 py-2 font-semibold text-white">{lang === 'en' ? 'Open projects' : 'Projekte öffnen'}</div>
                     <div className="rounded-full border border-white/20 px-3 py-2 font-semibold text-neutral-100">{lang === 'en' ? 'Go to editor' : 'Zum Editor'}</div>
                   </div>
                 </div>
-                <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {[
                     lang === 'en' ? 'Active projects' : 'Aktive Projekte',
                     lang === 'en' ? 'Editor access' : 'Editor-Zugang',
                     lang === 'en' ? 'Template start' : 'Vorlagen-Start',
                   ].map((item, index) => (
-                    <div key={item} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div key={item} className="min-w-0 rounded-2xl border border-white/10 bg-white/5 p-4">
                       <div className="text-[10px] uppercase tracking-[0.3em] text-neutral-500">0{index + 1}</div>
-                      <div className="mt-4 text-sm font-semibold text-neutral-100">{item}</div>
+                      <div className="mt-4 text-sm font-semibold leading-snug text-neutral-100">{item}</div>
                       <div className="mt-2 h-2 rounded-full bg-white/10">
                         <div className={`h-2 rounded-full ${index === 0 ? 'w-4/5 bg-cyan-400' : index === 1 ? 'w-3/5 bg-emerald-400' : 'w-2/3 bg-fuchsia-400'}`} />
                       </div>
@@ -559,9 +558,67 @@ export default async function HomePage() {
     workflowSteps,
     kiHighlights,
   } = getHomeContent(lang);
+  const exampleFlow = [
+    {
+      title: tr('Ausgangslage', 'Starting point'),
+      description: tr(
+        'Ein kleines Service-Team will Aufträge, Fotos vom Einsatzort, Statusmeldungen und Zeiterfassung nicht mehr über WhatsApp, Excel und Telefon parallel organisieren.',
+        'A small service team wants to stop juggling jobs, on-site photos, status updates, and time tracking across WhatsApp, spreadsheets, and phone calls.'
+      ),
+    },
+    {
+      title: tr('Erster Prototyp', 'First prototype'),
+      description: tr(
+        'In AppSchmiede entsteht daraus ein erstes Setup mit Dashboard, Aufgabenliste, Detailseite pro Einsatz, Upload-Bereich und mobiler Vorschau.',
+        'In AppSchmiede this turns into an initial setup with a dashboard, task list, per-job detail page, upload area, and a mobile preview.'
+      ),
+    },
+    {
+      title: tr('Interner Test', 'Internal test'),
+      description: tr(
+        'Der Prototyp wird per Vorschau-Link oder QR-Code auf echten Smartphones geprüft. Erst danach wird entschieden, welche Funktionen wirklich in eine produktive Entwicklung gehören.',
+        'The prototype is tested via preview link or QR code on real phones. Only then does the team decide which functions belong in a production build.'
+      ),
+    },
+  ];
+  const fitChecks = {
+    good: [
+      tr('Du willst ein internes Tool, MVP oder klickbaren Ablauf sichtbar machen.', 'You want to make an internal tool, MVP, or clickable workflow visible.'),
+      tr('Du brauchst schnelle Abstimmung mit Team, Kundschaft oder Stakeholdern.', 'You need fast feedback loops with team members, clients, or stakeholders.'),
+      tr('Du willst Anforderungen erst am sichtbaren Prototyp schärfen.', 'You want to refine requirements on a visible prototype instead of in a document.'),
+    ],
+    bad: [
+      tr('Du suchst keinen App-Prototypen, sondern eine fertige Individualentwicklung mit Backend-Prozessen, Migrationen und Betrieb.', 'You are not looking for an app prototype but for full custom delivery with backend processes, migrations, and operations.'),
+      tr('Du brauchst bereits vor dem Test exakte Prozessfreigaben, Rollenmodelle und tiefe Systemintegration.', 'You already need exact process approvals, role models, and deep system integrations before testing.'),
+      tr('Du willst ausschließlich eine klassische Marketing-Website ohne App-Logik bauen.', 'You only want to build a classic marketing website without app logic.'),
+    ],
+  };
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'AppSchmiede',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    inLanguage: lang,
+    description:
+      lang === 'en'
+        ? 'AppSchmiede is a browser-based no-code workspace for building, testing, and refining clickable app prototypes with templates, AI assistance, visual editing, and mobile previews.'
+        : 'AppSchmiede ist eine browserbasierte No-Code-Arbeitsumgebung, mit der klickbare App-Prototypen über Vorlagen, KI-Unterstützung, visuellen Editor und mobile Vorschau gebaut, getestet und verfeinert werden können.',
+    url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://myappschmiede.com',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#03050a] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       <main className="w-full px-4 py-12 lg:px-10">
         <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-12">
@@ -586,10 +643,10 @@ export default async function HomePage() {
                   {tr('Jetzt kostenlos starten', 'Start for free')}
                 </Link>
                 <Link
-                  href="/projects"
+                  href="#workflow"
                   className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
                 >
-                  {tr('Beispiele ansehen', 'See examples')}
+                  {tr('So funktioniert es', 'See how it works')}
                 </Link>
               </div>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -599,6 +656,12 @@ export default async function HomePage() {
                   </div>
                 ))}
               </div>
+              <p className="mt-6 max-w-3xl text-sm leading-7 text-neutral-300 lg:text-base">
+                {tr(
+                  'Die Plattform richtet sich an Teams, die eine App-Idee zuerst sichtbar und testbar machen möchten. Statt nur über Features zu sprechen, entsteht ein konkreter Ablauf mit Seiten, Bausteinen, Vorschau und öffentlicher Abstimmung im Browser.',
+                  'The platform is aimed at teams that want to make an app idea visible and testable first. Instead of only discussing features, they get a concrete workflow with screens, blocks, previews, and browser-based review.'
+                )}
+              </p>
             </div>
             <div className="relative min-h-[420px]">
               <HeroShowcase lang={lang} />
@@ -606,7 +669,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+        <section id="workflow" className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg scroll-mt-24">
           <header className="space-y-3 text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Ablauf', 'Workflow')}</p>
             <h2 className="text-3xl font-semibold">{tr('So funktioniert die AppSchmiede', 'How AppSchmiede works')}</h2>
@@ -630,6 +693,32 @@ export default async function HomePage() {
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#08111f] p-8 shadow-lg">
+          <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Konkretes Beispiel', 'Concrete example')}</p>
+              <h2 className="mt-3 text-3xl font-semibold">
+                {tr('Wie aus einer losen Idee ein testbarer Ablauf wird', 'How a loose idea turns into a testable workflow')}
+              </h2>
+              <p className="mt-4 text-base leading-7 text-neutral-300">
+                {tr(
+                  'Ein typischer Start ist kein fertiges Lastenheft, sondern ein praktisches Problem. Genau dafür ist die Startseite jetzt klarer ausgerichtet: Sie erklärt nicht nur, dass es einen Editor gibt, sondern wie ein reales Team mit Vorlagen, KI und Vorschau zu einer Entscheidung kommt.',
+                  'A typical starting point is not a finished specification document but a practical problem. That is why the homepage is now more explicit: it explains not only that there is an editor, but how a real team uses templates, AI, and preview links to reach a decision.'
+                )}
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {exampleFlow.map((item, index) => (
+                <article key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                  <div className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">0{index + 1}</div>
+                  <h3 className="mt-4 text-lg font-semibold text-white">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-neutral-300">{item.description}</p>
+                </article>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -698,7 +787,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-[#08111f] p-8 shadow-lg">
+        <section id="praxis" className="rounded-3xl border border-white/10 bg-[#08111f] p-8 shadow-lg scroll-mt-24">
           <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Praxis', 'Real-world use')}</p>
@@ -751,6 +840,33 @@ export default async function HomePage() {
           </div>
         </section>
 
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+          <header className="space-y-3 text-center">
+            <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Einordnung', 'Fit check')}</p>
+            <h2 className="text-3xl font-semibold">
+              {tr('Wofür AppSchmiede gut passt – und wofür nicht', 'What AppSchmiede fits well — and what it does not')}
+            </h2>
+          </header>
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            <article className="rounded-3xl border border-emerald-400/20 bg-emerald-500/5 p-6">
+              <h3 className="text-xl font-semibold text-white">{tr('Passt gut, wenn …', 'Good fit if …')}</h3>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-neutral-200">
+                {fitChecks.good.map((item) => (
+                  <li key={item}>✓ {item}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="rounded-3xl border border-amber-400/20 bg-amber-500/5 p-6">
+              <h3 className="text-xl font-semibold text-white">{tr('Weniger passend, wenn …', 'Less suitable if …')}</h3>
+              <ul className="mt-4 space-y-3 text-sm leading-6 text-neutral-200">
+                {fitChecks.bad.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </section>
+
         <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
           <header className="space-y-3 text-center">
             <h2 className="text-3xl font-semibold">
@@ -766,18 +882,49 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+        <section id="faq" className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg scroll-mt-24">
           <header className="space-y-3 text-center">
             <p className="text-xs uppercase tracking-[0.4em] text-amber-300">FAQ</p>
             <h2 className="text-3xl font-semibold">{tr('Häufige Fragen zur Plattform', 'Common questions about the platform')}</h2>
           </header>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {faq.slice(0, 3).map((entry) => (
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {faq.map((entry) => (
               <details key={entry.question} className="rounded-2xl border border-white/10 bg-[#070b16] p-5">
                 <summary className="cursor-pointer list-none text-lg font-semibold text-white">{entry.question}</summary>
                 <p className="mt-3 text-sm leading-6 text-neutral-300">{entry.answer}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Öffentliche Informationen', 'Public information')}</p>
+              <h2 className="mt-3 text-3xl font-semibold">
+                {tr('Was Besucher ohne Login prüfen können', 'What visitors can verify without logging in')}
+              </h2>
+              <p className="mt-4 text-base leading-7 text-neutral-300">
+                {tr(
+                  'Für eine hochwertige Website reicht es nicht, nur Buttons zur Registrierung zu zeigen. Deshalb verlinkt die Startseite jetzt deutlicher auf öffentlich erreichbare Informationen zu Produkt, Preisen, Datenschutz und Impressum.',
+                  'A higher-quality website needs more than registration buttons. That is why the homepage now links more clearly to publicly available information about the product, pricing, privacy, and legal details.'
+                )}
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link href="/about" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                {tr('Produkt und Arbeitsweise', 'Product and workflow')}
+              </Link>
+              <Link href="/pricing" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                {tr('Preise und Coins', 'Pricing and coins')}
+              </Link>
+              <Link href="/datenschutz" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                {tr('Datenschutz', 'Privacy policy')}
+              </Link>
+              <Link href="/impressum" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                {tr('Impressum', 'Imprint')}
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -797,10 +944,10 @@ export default async function HomePage() {
               {tr('Jetzt kostenlos registrieren', 'Register for free')}
             </Link>
             <Link
-              href="/projects"
+              href="/pricing"
               className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
             >
-              {tr('Projekt anlegen und loslegen', 'Create a project and get started')}
+              {tr('Preise und Funktionsumfang ansehen', 'View pricing and feature scope')}
             </Link>
           </div>
         </section>

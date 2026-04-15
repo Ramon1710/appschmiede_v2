@@ -63,9 +63,9 @@ function ConsentSettingsDialog({
           <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-semibold text-white">Analyse</h3>
+                <h3 className="text-base font-semibold text-white">Analyse und Werbung</h3>
                 <p className="mt-2 leading-6 text-neutral-300">
-                  Mit Ihrer Einwilligung nutzen wir Firebase Analytics, um zu verstehen, wie unsere Website und Web-App verwendet werden. So können wir Reichweite, Nutzung und Funktionen verbessern. Dabei können Cookies oder vergleichbare Technologien auf Ihrem Endgerät eingesetzt und Nutzungsdaten pseudonym verarbeitet werden.
+                  Mit Ihrer Einwilligung nutzen wir Firebase Analytics und Google AdSense, um Reichweite, Nutzung und Finanzierung unseres Angebots zu ermöglichen. Dabei können Cookies oder vergleichbare Technologien auf Ihrem Endgerät eingesetzt und Nutzungsdaten pseudonym verarbeitet werden.
                 </p>
               </div>
               <label className="inline-flex cursor-pointer items-center gap-3 rounded-full border border-white/10 bg-[#050814] px-3 py-2">
@@ -153,7 +153,7 @@ export default function ConsentBanner() {
         <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-white/10 bg-[#050814]/95 px-4 py-4 shadow-2xl backdrop-blur-md">
           <div className="mx-auto flex max-w-6xl flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <p className="max-w-4xl text-sm leading-6 text-neutral-200">
-              Wir verwenden technisch notwendige Cookies und ähnliche Technologien, damit myappschmiede.com sicher funktioniert, Logins möglich sind und grundlegende Einstellungen gespeichert werden können. Analyse-Technologien (Firebase Analytics) verwenden wir nur mit Ihrer Einwilligung. Sie können Ihre Auswahl jederzeit über Datenschutzeinstellungen im Footer ändern.
+              Wir verwenden technisch notwendige Cookies und ähnliche Technologien, damit myappschmiede.com sicher funktioniert, Logins möglich sind und grundlegende Einstellungen gespeichert werden können. Analyse- und Werbe-Technologien wie Firebase Analytics und Google AdSense verwenden wir nur mit Ihrer Einwilligung. Sie können Ihre Auswahl jederzeit über Datenschutzeinstellungen im Footer ändern.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-shrink-0">
               <button
