@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import type { Lang } from '@/lib/i18n-dict';
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default async function AboutPage() {
   const raw = cookieStore.get('lang')?.value;
   const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   const principles = [
     {
@@ -56,8 +58,8 @@ export default async function AboutPage() {
           <h1 className="mt-3 text-4xl font-semibold">{tr('Was AppSchmiede leisten soll', 'What AppSchmiede is built to do')}</h1>
           <p className="mt-5 max-w-4xl text-base leading-7 text-neutral-200">
             {tr(
-              'AppSchmiede ist eine browserbasierte Arbeitsumgebung für Teams, die App-Ideen, interne Werkzeuge oder klickbare MVPs deutlich schneller testen möchten. Statt monatelang Konzepte zu diskutieren, wird in kurzer Zeit etwas Sichtbares gebaut, intern geteilt und anhand von echtem Feedback verbessert.',
-              'AppSchmiede is a browser-based workspace for teams that want to test app ideas, internal tools, or clickable MVPs much faster. Instead of discussing concepts for months, teams build something visible quickly, share it internally, and improve it based on real feedback.'
+              `AppSchmiede ist eine browserbasierte Arbeitsumgebung für Teams, die App-Ideen, interne Werkzeuge oder klickbare MVPs deutlich schneller testen möchten. Bis ${freePhaseLabel} sind Vorlagen, Seiten, Projekte und Funktionen für alle Nutzer kostenfrei; nur KI-Aktionen werden separat berechnet.`,
+              `AppSchmiede is a browser-based workspace for teams that want to test app ideas, internal tools, or clickable MVPs much faster. Until ${freePhaseLabel}, templates, pages, projects, and features are free for every user; only AI actions are billed separately.`
             )}
           </p>
         </section>

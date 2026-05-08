@@ -1,5 +1,7 @@
 import type { Lang } from './i18n-dict';
 
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
+
 type WorkflowStep = { title: string; description: string };
 
 type Feature = { title: string; description: string };
@@ -47,6 +49,8 @@ export type HomeContent = {
 };
 
 const subscriptionPlanOrder: SubscriptionPlanId[] = ['free', 'starter', 'pro', 'business'];
+const freePhaseDe = TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
+const freePhaseEn = TEMP_FREE_ACCESS_CUTOFF_LABEL_EN;
 
 const de: HomeContent = {
   workflowSteps: [
@@ -95,7 +99,9 @@ const de: HomeContent = {
     {
       title: 'Abrechnung & Billing-Bereich',
       description:
-        'Upgrade dein Konto, wenn du mehr brauchst: Integriertes Billing mit Stripe, klar getrennte Projekte und jederzeit erweiterbar.',
+        TEMP_FREE_ACCESS_ENABLED
+          ? `Bis ${freePhaseDe} ist alles außer KI kostenfrei nutzbar. Im Billing-Bereich brauchst du derzeit nur Coins für KI-Aktionen.`
+          : 'Upgrade dein Konto, wenn du mehr brauchst: Integriertes Billing mit Stripe, klar getrennte Projekte und jederzeit erweiterbar.',
     },
     {
       title: 'Rechtlich sauber unterwegs',
@@ -143,7 +149,9 @@ const de: HomeContent = {
     },
     {
       title: 'Skalierbar durch Abos & Funktionen',
-      description: 'Starte klein, erweitere bei Bedarf – ohne den Überblick über deine Projekte zu verlieren.',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? `Starte jetzt ohne Einstiegskosten und nutze bis ${freePhaseDe} alle Nicht-KI-Funktionen frei.`
+        : 'Starte klein, erweitere bei Bedarf – ohne den Überblick über deine Projekte zu verlieren.',
     },
   ],
   adSlotsLeft: [
@@ -218,31 +226,43 @@ const de: HomeContent = {
       badge: 'Kostenlos',
       title: 'Ohne Abo',
       price: '0 € pro Monat',
-      description: 'Starte mit 30 Start-Coins und zahle nur, wenn du mehr benötigst.',
-      highlights: ['1 Projekt verwalten', 'Basis-Bausteine & Vorlagen', 'Community-Support'],
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? `Bis ${freePhaseDe} mit allen Funktionen außer KI kostenlos nutzbar.`
+        : 'Starte mit 30 Start-Coins und zahle nur, wenn du mehr benötigst.',
+      highlights: TEMP_FREE_ACCESS_ENABLED
+        ? ['Unbegrenzte Projekte', 'Alle Vorlagen & Bausteine', 'KI separat per Coins']
+        : ['1 Projekt verwalten', 'Basis-Bausteine & Vorlagen', 'Community-Support'],
     },
     {
       id: 'starter',
       badge: 'Neu',
       title: 'Spar Abo',
-      price: '9,99 € pro Monat',
-      description: 'Regelmäßige Coin-Aufladung für Solo-Maker:innen und kleine Teams.',
-      highlights: ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools'],
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Geplant ab 2027' : '9,99 € pro Monat',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Vorschau auf den geplanten Tarif nach der kostenfreien Startphase.'
+        : 'Regelmäßige Coin-Aufladung für Solo-Maker:innen und kleine Teams.',
+      highlights: TEMP_FREE_ACCESS_ENABLED
+        ? ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools']
+        : ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools'],
     },
     {
       id: 'pro',
       badge: 'Beliebt',
       title: 'Standard Abo',
-      price: '19,99 € pro Monat',
-      description: 'Für Teams, die parallel mehrere Konzepte testen und launchen.',
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Geplant ab 2027' : '19,99 € pro Monat',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Vorschau auf den geplanten Tarif für Teams nach der kostenfreien Phase.'
+        : 'Für Teams, die parallel mehrere Konzepte testen und launchen.',
       highlights: ['150 Coins pro Monat inklusive', 'Bis zu 6 parallele Projekte', 'Priorisierte QR- & Export-Links'],
     },
     {
       id: 'business',
       badge: 'Premium',
       title: 'Premium Abo',
-      price: '59,99 € pro Monat',
-      description: 'Agenturen & Corporates mit individuellen Coin- und Support-Bedürfnissen.',
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Geplant ab 2027' : '59,99 € pro Monat',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Vorschau auf den geplanten Agentur- und Business-Tarif nach der kostenfreien Phase.'
+        : 'Agenturen & Corporates mit individuellen Coin- und Support-Bedürfnissen.',
       highlights: ['Individuelle Coin-Budgets', 'Unbegrenzte Projekte', 'Bevorzugter Support & Workshops'],
     },
   ],
@@ -251,7 +271,7 @@ const de: HomeContent = {
     {
       feature: 'Coins pro Monat',
       values: {
-        free: '0 (nur Startguthaben)',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Nur für KI nötig' : '0 (nur Startguthaben)',
         starter: '80 Coins',
         pro: '150 Coins',
         business: 'Unbegrenzt',
@@ -260,7 +280,7 @@ const de: HomeContent = {
     {
       feature: 'Aktive Projekte',
       values: {
-        free: '1 Projekt',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Unbegrenzt bis 2027' : '1 Projekt',
         starter: '3 Projekte',
         pro: '6 Projekte',
         business: 'Unbegrenzt',
@@ -269,7 +289,7 @@ const de: HomeContent = {
     {
       feature: 'Vorlagen & Bausteine',
       values: {
-        free: 'Basis-Bibliothek',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Alle Vorlagen & Bausteine' : 'Basis-Bibliothek',
         starter: 'Alle Vorlagen',
         pro: 'Alle + KI-Varianten',
         business: 'Alle + Custom Libraries',
@@ -334,7 +354,9 @@ const en: HomeContent = {
     {
       title: 'Billing & payments',
       description:
-        'Upgrade whenever you need more: integrated Stripe billing, clearly separated projects, and scalable as you grow.',
+        TEMP_FREE_ACCESS_ENABLED
+          ? `Everything except AI stays free ${freePhaseEn}. Right now, the billing area is only needed for AI coins.`
+          : 'Upgrade whenever you need more: integrated Stripe billing, clearly separated projects, and scalable as you grow.',
     },
     {
       title: 'Legal pages included',
@@ -379,7 +401,9 @@ const en: HomeContent = {
     },
     {
       title: 'Scales with subscriptions & features',
-      description: 'Start small and expand when needed — without losing track of your projects.',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? `Start without an entry cost and use all non-AI features free ${freePhaseEn}.`
+        : 'Start small and expand when needed — without losing track of your projects.',
     },
   ],
   adSlotsLeft: [
@@ -454,31 +478,41 @@ const en: HomeContent = {
       badge: 'Free',
       title: 'No subscription',
       price: '€0 / month',
-      description: 'Start with 30 starter coins and pay only when you need more.',
-      highlights: ['Manage 1 project', 'Basic building blocks & templates', 'Community support'],
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? `Use every feature except AI for free ${freePhaseEn}.`
+        : 'Start with 30 starter coins and pay only when you need more.',
+      highlights: TEMP_FREE_ACCESS_ENABLED
+        ? ['Unlimited projects', 'All templates & building blocks', 'AI billed separately via coins']
+        : ['Manage 1 project', 'Basic building blocks & templates', 'Community support'],
     },
     {
       id: 'starter',
       badge: 'New',
       title: 'Saver plan',
-      price: '€9.99 / month',
-      description: 'Regular coin top-ups for solo makers and small teams.',
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Planned from 2027' : '€9.99 / month',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Preview of the planned entry plan after the free-access phase.'
+        : 'Regular coin top-ups for solo makers and small teams.',
       highlights: ['80 coins per month included', 'Up to 3 active projects', 'All templates & AI tools'],
     },
     {
       id: 'pro',
       badge: 'Popular',
       title: 'Standard plan',
-      price: '€19.99 / month',
-      description: 'For teams testing and launching multiple concepts in parallel.',
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Planned from 2027' : '€19.99 / month',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Preview of the planned team plan after the free-access phase.'
+        : 'For teams testing and launching multiple concepts in parallel.',
       highlights: ['150 coins per month included', 'Up to 6 parallel projects', 'Priority QR & export links'],
     },
     {
       id: 'business',
       badge: 'Premium',
       title: 'Premium plan',
-      price: '€59.99 / month',
-      description: 'Agencies & corporates with custom coin and support needs.',
+      price: TEMP_FREE_ACCESS_ENABLED ? 'Planned from 2027' : '€59.99 / month',
+      description: TEMP_FREE_ACCESS_ENABLED
+        ? 'Preview of the planned agency and business plan after the free-access phase.'
+        : 'Agencies & corporates with custom coin and support needs.',
       highlights: ['Custom coin budgets', 'Unlimited projects', 'Priority support & workshops'],
     },
   ],
@@ -487,7 +521,7 @@ const en: HomeContent = {
     {
       feature: 'Coins per month',
       values: {
-        free: '0 (starter coins only)',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Only needed for AI' : '0 (starter coins only)',
         starter: '80 coins',
         pro: '150 coins',
         business: 'Custom',
@@ -496,7 +530,7 @@ const en: HomeContent = {
     {
       feature: 'Active projects',
       values: {
-        free: '1 project',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Unlimited until 2027' : '1 project',
         starter: '3 projects',
         pro: '6 projects',
         business: 'Unlimited',
@@ -505,7 +539,7 @@ const en: HomeContent = {
     {
       feature: 'Templates & building blocks',
       values: {
-        free: 'Basic library',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'All templates & building blocks' : 'Basic library',
         starter: 'All templates',
         pro: 'All + AI variants',
         business: 'All + custom libraries',

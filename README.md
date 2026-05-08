@@ -42,3 +42,37 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Vercel CLI: direkt kopierbar
+
+Falls du den Deploy lieber per Terminal ausfuhrst, kannst du diese Befehle direkt kopieren.
+
+Erstmalig Projekt mit Vercel verknupfen:
+
+```bash
+npm install -g vercel
+vercel login
+vercel
+```
+
+Neuen Preview-Deploy erstellen:
+
+```bash
+vercel
+```
+
+Direkt auf Production pushen:
+
+```bash
+vercel --prod
+```
+
+Falls du den aktuellen Code erst zu GitHub pushen willst:
+
+```bash
+git add .
+git commit -m "Update project"
+git push origin main
+```
+
+Wenn Vercel bereits mit dem GitHub-Repository verbunden ist, startet der Production-Deploy in der Regel auch automatisch nach dem Push auf `main`.

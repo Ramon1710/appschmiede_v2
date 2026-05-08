@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import GuidedTour from '@/components/GuidedTour';
 import useAuth from '@/hooks/useAuth';
-import type { CoinPackageKey } from '@/config/billing';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, type CoinPackageKey } from '@/config/billing';
 import { useI18n } from '@/lib/i18n';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
@@ -25,8 +25,8 @@ const COIN_BUNDLES: Array<{
     coins: 50,
     priceLabel: '6,99 €',
     description: {
-      de: 'Perfekt, um neue Bausteine auszuprobieren oder erste KI-Läufe zu starten.',
-      en: 'Perfect for trying new building blocks or running your first AI actions.',
+      de: 'Perfekt für erste KI-Läufe und generierte Inhalte.',
+      en: 'Perfect for your first AI runs and generated content.',
     },
   },
   {
@@ -36,8 +36,8 @@ const COIN_BUNDLES: Array<{
     coins: 80,
     priceLabel: '8,99 €',
     description: {
-      de: 'Für kleinere Projekte, die regelmäßig neue Seiten oder Vorlagen brauchen.',
-      en: 'For smaller projects that regularly need new pages or templates.',
+      de: 'Für kleinere Projekte mit regelmäßiger KI-Nutzung.',
+      en: 'For smaller projects with recurring AI usage.',
     },
   },
   {
@@ -47,8 +47,8 @@ const COIN_BUNDLES: Array<{
     coins: 100,
     priceLabel: '9,49 €',
     description: {
-      de: 'Ideal, wenn du häufig Bausteine einfügst und Templates testest.',
-      en: 'Ideal if you often add building blocks and try templates.',
+      de: 'Ideal, wenn du häufig KI-Inhalte oder Seitenvarianten generierst.',
+      en: 'Ideal if you frequently generate AI content or page variants.',
     },
   },
   {
@@ -58,8 +58,8 @@ const COIN_BUNDLES: Array<{
     coins: 150,
     priceLabel: '13,99 €',
     description: {
-      de: 'Mehr Volumen für größere App-Strukturen oder intensive KI-Nutzung.',
-      en: 'More volume for larger apps or intensive AI usage.',
+      de: 'Mehr Volumen für größere Projekte mit intensiver KI-Nutzung.',
+      en: 'More volume for larger projects with intensive AI usage.',
     },
   },
   {
@@ -69,8 +69,8 @@ const COIN_BUNDLES: Array<{
     coins: 300,
     priceLabel: '26,99 €',
     description: {
-      de: 'Für Teams, die dauerhaft mit Vorlagen, Export und KI arbeiten.',
-      en: 'For teams that work with templates, export and AI long-term.',
+      de: 'Für Teams, die dauerhaft mit KI-Workflows arbeiten.',
+      en: 'For teams that work with AI workflows long-term.',
     },
   },
 ];
@@ -80,6 +80,7 @@ export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   const checkout = async (packageKey: CoinPackageKey) => {
     if (!user?.uid) {
@@ -110,10 +111,10 @@ export default function BillingPage() {
   const billingTourSteps = [
     {
       id: 'billing-intro',
-      title: tr('Coins & Einmalprodukte', 'Coins & one-time purchases'),
+      title: tr('KI-Coins', 'AI coins'),
       description: tr(
-        'Hier siehst du, wofür Coins benötigt werden und wie du sie in wenigen Sekunden auflädst.',
-        'See what coins are used for and how to top up in seconds.'
+        'Hier siehst du, dass Coins aktuell nur für KI-Funktionen benötigt werden und wie du sie in wenigen Sekunden auflädst.',
+        'See that coins are currently only needed for AI features and how to top up in seconds.'
       ),
     },
     {
@@ -140,12 +141,12 @@ export default function BillingPage() {
       <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
           <header className="space-y-3" data-tour-id="billing-intro">
-            <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">Coins & Billing</p>
-            <h1 className="text-3xl font-semibold">{tr('Alle Bausteine laufen über Coins', 'Everything runs on coins')}</h1>
+            <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('KI-Coins', 'AI Coins')}</p>
+            <h1 className="text-3xl font-semibold">{tr('Nur KI-Funktionen brauchen aktuell Coins', 'Only AI features currently require coins')}</h1>
             <p className="text-base text-neutral-300">
               {tr(
-                'Coins brauchst du jetzt für Bausteine, Vorlagen, KI-Funktionen und neue Seiten. Lade das passende Paket auf und zahle sicher via Stripe – per Kreditkarte oder PayPal. Nach erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.',
-                'Coins are used for building blocks, templates, AI features, and new pages. Top up with the right package and pay securely via Stripe — card or PayPal. After payment, your balance updates automatically in the header.'
+                `Bis ${freePhaseLabel} sind Vorlagen, Projekte, Seiten und Bausteine für alle Nutzer kostenfrei. Coins brauchst du aktuell nur für KI-Funktionen. Nach erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.`,
+                `Until ${freePhaseLabel}, templates, projects, pages, and building blocks are free for every user. Right now, coins are only needed for AI features. After payment, your balance updates automatically in the header.`
               )}
             </p>
           </header>
@@ -174,7 +175,7 @@ export default function BillingPage() {
               <li>{tr('1. Paket auswählen und auf den Button klicken.', '1. Select a package and click the button.')}</li>
               <li>{tr('2. Stripe Checkout mit Karte oder PayPal abschließen.', '2. Complete Stripe Checkout with card or PayPal.')}</li>
               <li>{tr('3. Sobald Stripe den Erfolg meldet, schreibt der Webhook deine Coins gut.', '3. Once Stripe confirms success, the webhook credits your coins.')}</li>
-              <li>{tr('4. Das aktuelle Guthaben siehst du direkt oben rechts neben deinem Profil.', '4. Your current balance is shown in the header next to your profile.')}</li>
+              <li>{tr('4. Das aktuelle KI-Guthaben siehst du direkt oben rechts neben deinem Profil.', '4. Your current AI balance is shown in the header next to your profile.')}</li>
             </ol>
           </section>
 

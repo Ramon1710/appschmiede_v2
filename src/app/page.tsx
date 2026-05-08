@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
 
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { getHomeContent } from '@/lib/home-content';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
@@ -552,6 +553,7 @@ export default async function HomePage() {
   const raw = cookieStore.get('lang')?.value;
   const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const faq = faqEntries[lang];
   const trustList = trustFacts[lang];
   const stats = heroStats[lang];
@@ -630,15 +632,27 @@ export default async function HomePage() {
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">
               <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">{tr('No-Code Builder', 'No-code builder')}</p>
+              <div className="mt-4 inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-100">
+                {tr(
+                  `Kostenfreie Nutzung ${freePhaseLabel}`,
+                  `Free access ${freePhaseLabel}`
+                )}
+              </div>
               <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">
                 {tr('Von der Idee zur App in wenigen Minuten', 'From idea to app in minutes')}
               </h1>
               <p className="mt-5 max-w-2xl text-lg text-neutral-200 lg:text-xl">
                 {tr(
-                  'Vorlage wählen, KI anschieben, im Editor verfeinern und direkt auf dem Handy testen. Weniger Planung, mehr sichtbares Produkt.',
-                  'Pick a template, use AI, refine in the editor, and test on mobile right away. Less planning, more visible product.'
+                  `Vorlage wählen, im Editor verfeinern und direkt auf dem Handy testen. Bis ${freePhaseLabel} ist die Nutzung mit allen Funktionen außer KI kostenfrei.`,
+                  `Pick a template, refine it in the editor, and test on mobile right away. Until ${freePhaseLabel}, every feature except AI is available for free.`
                 )}
               </p>
+              <div className="mt-5 max-w-3xl rounded-3xl border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-neutral-200 shadow-lg backdrop-blur">
+                {tr(
+                  'Vorlagen, Projekte, Seiten und Bausteine sind für alle Nutzer freigeschaltet. Nur KI-Aktionen bleiben bis zur späteren Preisphase separat kostenpflichtig.',
+                  'Templates, projects, pages, and building blocks are unlocked for all users. Only AI actions remain separately billed until the later pricing phase.'
+                )}
+              </div>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
                 <Link
                   href="/register"
@@ -662,8 +676,8 @@ export default async function HomePage() {
               </div>
               <p className="mt-6 max-w-3xl text-sm leading-7 text-neutral-300 lg:text-base">
                 {tr(
-                  'Die Plattform richtet sich an Teams, die eine App-Idee zuerst sichtbar und testbar machen möchten. Statt nur über Features zu sprechen, entsteht ein konkreter Ablauf mit Seiten, Bausteinen, Vorschau und öffentlicher Abstimmung im Browser.',
-                  'The platform is aimed at teams that want to make an app idea visible and testable first. Instead of only discussing features, they get a concrete workflow with screens, blocks, previews, and browser-based review.'
+                  'Die Plattform richtet sich an Teams, die eine App-Idee zuerst sichtbar und testbar machen möchten. Statt nur über Features zu sprechen, entsteht ein konkreter Ablauf mit Seiten, Bausteinen, Vorlagen, Vorschau und öffentlicher Abstimmung im Browser.',
+                  'The platform is aimed at teams that want to make an app idea visible and testable first. Instead of only discussing features, they get a concrete workflow with screens, blocks, templates, previews, and browser-based review.'
                 )}
               </p>
             </div>
@@ -910,8 +924,8 @@ export default async function HomePage() {
               </h2>
               <p className="mt-4 text-base leading-7 text-neutral-300">
                 {tr(
-                  'Für eine hochwertige Website reicht es nicht, nur Buttons zur Registrierung zu zeigen. Deshalb verlinkt die Startseite jetzt deutlicher auf öffentlich erreichbare Informationen zu Produkt, Preisen, Datenschutz und Impressum.',
-                  'A higher-quality website needs more than registration buttons. That is why the homepage now links more clearly to publicly available information about the product, pricing, privacy, and legal details.'
+                  `Für eine hochwertige Website reicht es nicht, nur Buttons zur Registrierung zu zeigen. Deshalb verlinkt die Startseite jetzt deutlicher auf öffentlich erreichbare Informationen zu Produkt, kostenfreier Nutzung ${freePhaseLabel}, Datenschutz und Impressum.`,
+                  `A higher-quality website needs more than registration buttons. That is why the homepage now links more clearly to publicly available information about the product, free access ${freePhaseLabel}, privacy, and legal details.`
                 )}
               </p>
             </div>
@@ -920,7 +934,7 @@ export default async function HomePage() {
                 {tr('Produkt und Arbeitsweise', 'Product and workflow')}
               </Link>
               <Link href="/pricing" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Preise und Coins', 'Pricing and coins')}
+                {tr('Kostenfreie Phase & KI-Coins', 'Free access & AI coins')}
               </Link>
               <Link href="/datenschutz" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
                 {tr('Datenschutz', 'Privacy policy')}
@@ -936,8 +950,8 @@ export default async function HomePage() {
           <h2 className="text-3xl font-semibold">{tr('Bereit, deine erste App zu schmieden?', 'Ready to forge your first app?')}</h2>
           <p className="mx-auto mt-4 max-w-3xl text-base text-neutral-200">
             {tr(
-              'Lege heute dein erstes Projekt an und erlebe, wie sich deine Idee innerhalb weniger Minuten in eine klickbare App verwandelt. Du kannst jederzeit klein anfangen – und wachsen, wenn deine Anforderungen steigen.',
-              'Create your first project today and see your idea turn into a clickable app within minutes. Start small anytime — and grow as your requirements evolve.'
+              `Lege heute dein erstes Projekt an und nutze AppSchmiede ${freePhaseLabel} kostenlos mit allen Funktionen außer KI. So kannst du Vorlagen, Seiten und Workflows ohne Einstiegshürde testen.`,
+              `Create your first project today and use AppSchmiede for free ${freePhaseLabel} with every feature except AI. That lets you test templates, pages, and workflows without any entry barrier.`
             )}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -951,7 +965,7 @@ export default async function HomePage() {
               href="/pricing"
               className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
             >
-              {tr('Preise und Funktionsumfang ansehen', 'View pricing and feature scope')}
+              {tr('Kostenfreie Phase und KI-Coins ansehen', 'View free access and AI coins')}
             </Link>
           </div>
         </section>

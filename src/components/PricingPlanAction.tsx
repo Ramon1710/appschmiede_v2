@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
+import { TEMP_FREE_ACCESS_ENABLED, TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { buildAuthHeaders } from '@/lib/client-auth';
 import type { AppPlanId } from '@/types/user';
 
@@ -19,6 +20,7 @@ export default function PricingPlanAction({ planId, lang }: PricingPlanActionPro
 
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const currentPlan = profile?.plan ?? 'free';
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   if (planId === 'free') {
     return user ? (
@@ -32,6 +34,17 @@ export default function PricingPlanAction({ planId, lang }: PricingPlanActionPro
       >
         {tr('Kostenlos starten', 'Start for free')}
       </Link>
+    );
+  }
+
+  if (TEMP_FREE_ACCESS_ENABLED) {
+    return (
+      <div className="mt-6 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-center text-sm text-cyan-100">
+        {tr(
+          `Dieser Tarif ist als Vorschau sichtbar. Die Nutzung bleibt ${freePhaseLabel} kostenlos, nur KI-Aktionen werden separat berechnet.`,
+          `This plan is shown as a preview. Usage stays free ${freePhaseLabel}; only AI actions are billed separately.`
+        )}
+      </div>
     );
   }
 

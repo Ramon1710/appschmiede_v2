@@ -9,6 +9,7 @@ import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { createPageWithContent } from '@/lib/db-editor';
@@ -43,45 +44,48 @@ function TemplatesPageComponent() {
 
   const router = useRouter();
   const { lang } = useI18n();
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   const copy = useMemo(
     () =>
       lang === 'en'
         ? {
             badge: 'Templates',
-            unauthDesc: 'Sign in to copy templates and create projects directly from the catalog.',
+            unauthDesc: `Sign in to use all templates for free and create projects directly from the catalog ${freePhaseLabel}.`,
             headerTitle: 'Template Library',
             headerDesc:
-              'Templates are loaded from Firebase. Create your own project in the editor and save it as an app template (admin).',
+              `All templates can currently be used by every signed-in user for free. Templates are loaded from Firebase; admins can maintain central app templates ${freePhaseLabel}.`,
             tourTitle: 'Template Library',
             tourGrid: 'All templates come from Firebase (no hardcoded templates).',
-            tourCreate: 'Create a project in one click and open it in the editor.',
-            createProject: 'Create project',
+            tourCreate: 'Create a free project from any template in one click and open it in the editor.',
+            createProject: 'Create free project',
             creatingProject: 'Creating…',
             deleteTemplate: 'Delete template',
             deletingTemplate: 'Deleting…',
             empty: 'No templates available yet.',
             confirmDelete: 'Delete this template permanently?',
             deleteFailed: 'Template could not be deleted. Please try again.',
+            freeNotice: `All templates are unlocked for every user ${freePhaseLabel}. Only AI actions are billed separately.`,
           }
         : {
             badge: 'Vorlagen',
-            unauthDesc: 'Melde dich an, um Vorlagen zu kopieren und neue Projekte direkt aus dem Katalog zu erstellen.',
+            unauthDesc: `Melde dich an, um alle Vorlagen ${freePhaseLabel} kostenlos zu nutzen und Projekte direkt aus dem Katalog zu erstellen.`,
             headerTitle: 'Vorlagenbibliothek',
             headerDesc:
-              'Vorlagen werden aus Firebase geladen. Erstelle im Editor ein Projekt und speichere es als App-Vorlage (Admin).',
+              `Alle Vorlagen sind aktuell für jeden eingeloggten Nutzer kostenlos nutzbar. Vorlagen werden aus Firebase geladen; Admins können zentrale App-Vorlagen pflegen.`,
             tourTitle: 'Vorlagenbibliothek',
             tourGrid: 'Alle Vorlagen kommen aus Firebase (keine hardcodierten Vorlagen).',
-            tourCreate: 'Mit einem Klick Projekt anlegen und direkt im Editor öffnen.',
-            createProject: 'Projekt erstellen',
+            tourCreate: 'Mit einem Klick ein kostenloses Projekt aus jeder Vorlage anlegen und direkt im Editor öffnen.',
+            createProject: 'Kostenloses Projekt erstellen',
             creatingProject: 'Wird erstellt…',
             deleteTemplate: 'Vorlage löschen',
             deletingTemplate: 'Wird gelöscht…',
             empty: 'Noch keine Vorlagen verfügbar.',
             confirmDelete: 'Diese Vorlage wirklich dauerhaft löschen?',
             deleteFailed: 'Vorlage konnte nicht gelöscht werden. Bitte versuche es erneut.',
+            freeNotice: `Alle Vorlagen sind für alle Nutzer ${freePhaseLabel} freigeschaltet. Nur KI-Aktionen werden separat berechnet.`,
           },
-    [lang]
+    [freePhaseLabel, lang]
   );
 
   useEffect(
@@ -262,6 +266,9 @@ function TemplatesPageComponent() {
           <header className="space-y-1" data-tour-id="templates-intro">
             <h1 className="text-3xl font-semibold">{copy.headerTitle}</h1>
             <p className="text-sm text-neutral-400">{copy.headerDesc}</p>
+            <div className="inline-flex rounded-full border border-emerald-400/25 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-100">
+              {copy.freeNotice}
+            </div>
             <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Build: {BUILD_TAG}</p>
           </header>
 

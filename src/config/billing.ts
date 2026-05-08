@@ -2,6 +2,10 @@ import type { AppPlanId } from '@/types/user';
 
 const env = (key: string) => process.env[key] ?? null;
 
+export const TEMP_FREE_ACCESS_ENABLED = true;
+export const TEMP_FREE_ACCESS_CUTOFF_LABEL_DE = 'bis Anfang 2027';
+export const TEMP_FREE_ACCESS_CUTOFF_LABEL_EN = 'until early 2027';
+
 export type PlanConfig = {
   label: string;
   monthlyPriceEur: number;
@@ -16,7 +20,7 @@ export const PLAN_CONFIG: Record<AppPlanId, PlanConfig> = {
     monthlyPriceEur: 0,
     stripePriceId: null,
     includedCoinsPerMonth: 0,
-    maxProjects: 1,
+    maxProjects: 9999,
   },
   starter: {
     label: 'Spar Abo',

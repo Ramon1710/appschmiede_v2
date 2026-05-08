@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
 import { useI18n } from '@/lib/i18n';
@@ -13,6 +14,7 @@ export default function Header() {
   const { user, loading } = useAuth();
   const { profile } = useUserProfile(user?.uid);
   const { t, lang, setLang } = useI18n();
+  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const coinsValue = profile?.coinsBalance;
   const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
   const formattedCoins =
@@ -98,6 +100,11 @@ export default function Header() {
         )}
         <Link href="/pricing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
         <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
+        {TEMP_FREE_ACCESS_ENABLED && (
+          <span className="hidden xl:inline rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-100">
+            {lang === 'en' ? `Free ${freePhaseLabel}` : `Kostenfrei ${freePhaseLabel}`}
+          </span>
+        )}
       </nav>
 
       <div className="flex items-center gap-3 text-sm">

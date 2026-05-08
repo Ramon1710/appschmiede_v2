@@ -9,6 +9,7 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 
 import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE } from '@/config/billing';
 import type { AppPlanId, BillingMethodInfo, BillingMethodType, PlanStatus } from '@/types/user';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
@@ -243,6 +244,11 @@ export default function ProfilePage() {
                 <h2 className="text-2xl font-semibold">
                   {plan === 'free' ? 'Free' : plan === 'starter' ? 'Starter' : plan === 'pro' ? 'Pro' : 'Business'}-Plan
                 </h2>
+                {plan === 'free' && (
+                  <p className="text-sm text-emerald-300">
+                    Kostenfreie Nutzung mit allen Funktionen außer KI bis {TEMP_FREE_ACCESS_CUTOFF_LABEL_DE}.
+                  </p>
+                )}
                 <p className="text-sm text-neutral-400">Status: {planStatus === 'active' ? 'Aktiv' : planStatus === 'canceled' ? 'Gekündigt' : 'Testphase'}</p>
                 {subscriptionCancelAtPeriodEnd && subscriptionRenewsAt && (
                   <p className="text-xs text-amber-300">
@@ -260,7 +266,7 @@ export default function ProfilePage() {
                   href="/pricing"
                   className="rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 font-semibold text-cyan-100 transition hover:bg-cyan-500/20"
                 >
-                  Abo upgraden
+                  Tarife ab 2027 ansehen
                 </Link>
                 <button
                   type="button"

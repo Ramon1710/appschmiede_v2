@@ -8,7 +8,7 @@ export default function SiteFooter() {
         <div className="max-w-2xl space-y-3">
           <p className="text-base font-semibold text-white">AppSchmiede</p>
           <p className="leading-6 text-neutral-400">
-            Rechtstexte, Datenschutzeinstellungen und Kontaktinformationen sind zentral erreichbar. Analyse-Technologien werden nur nach Einwilligung verwendet.
+            Bis Anfang 2027 sind Vorlagen, Projekte, Seiten und Funktionen für alle Nutzer kostenfrei. Analyse-Technologien werden nur nach Einwilligung verwendet.
           </p>
         </div>
 
