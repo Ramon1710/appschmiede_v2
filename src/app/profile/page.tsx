@@ -9,7 +9,7 @@ import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, type Timestamp } from 
 import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updateProfile } from 'firebase/auth';
 import type { FirebaseError } from 'firebase/app';
 import { useRouter } from 'next/navigation';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE } from '@/config/billing';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import type { AppPlanId, BillingMethodInfo, BillingMethodType, PlanStatus } from '@/types/user';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
@@ -287,7 +287,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            {!TEMP_FREE_ACCESS_ENABLED && <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-neutral-400">Zahlungsart</p>
@@ -444,7 +444,7 @@ export default function ProfilePage() {
                   </div>
                 </form>
               )}
-            </div>
+            </div>}
           </section>
 
           <section className="rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-md p-6 shadow-xl">

@@ -50,11 +50,7 @@ export default async function PricingPage() {
             <Link href="/register" className="rounded-full bg-white px-5 py-3 text-center text-sm font-semibold text-[#050c1c] transition hover:bg-neutral-200">
               {tr('Kostenlos starten', 'Start for free')}
             </Link>
-            {TEMP_FREE_ACCESS_ENABLED ? (
-              <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('KI-Coins ansehen', 'View AI coins')}
-              </Link>
-            ) : (
+            {!TEMP_FREE_ACCESS_ENABLED && (
               <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
                 {tr('Zu den Coins', 'Go to coins')}
               </Link>
@@ -109,47 +105,42 @@ export default async function PricingPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-3xl font-semibold">
-                {TEMP_FREE_ACCESS_ENABLED ? tr('Coin-Pakete für KI', 'Coin packs for AI') : tr('Coin-Pakete für Extras', 'Coin packs for extras')}
-              </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300">
-                {TEMP_FREE_ACCESS_ENABLED
-                  ? tr(
-                      'Während der kostenfreien Phase benötigst du Coins nur für KI-Funktionen. Vorlagen, Seiten, Projekte und Bausteine bleiben bis Anfang 2027 frei nutzbar.',
-                      'During the free-access phase, coins are only required for AI features. Templates, pages, projects, and building blocks stay free until early 2027.'
-                    )
-                  : tr(
-                      'Coins nutzt du für zusätzliche Bausteine, KI-Funktionen, Vorlagen und neue Seiten. Die Pakete kaufst du einmalig und lädst sie im Billing-Bereich auf dein Konto.',
-                      'Use coins for extra building blocks, AI features, templates, and new pages. Coin packs are one-time purchases that you top up in the billing area.'
-                    )}
-              </p>
+        {!TEMP_FREE_ACCESS_ENABLED && (
+          <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-3xl font-semibold">{tr('Coin-Pakete für Extras', 'Coin packs for extras')}</h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300">
+                  {tr(
+                    'Coins nutzt du für zusätzliche Bausteine, KI-Funktionen, Vorlagen und neue Seiten. Die Pakete kaufst du einmalig und lädst sie im Billing-Bereich auf dein Konto.',
+                    'Use coins for extra building blocks, AI features, templates, and new pages. Coin packs are one-time purchases that you top up in the billing area.'
+                  )}
+                </p>
+              </div>
+              <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+                {tr('Coins kaufen', 'Buy coins')}
+              </Link>
             </div>
-            <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-              {tr('KI-Coins kaufen', 'Buy AI coins')}
-            </Link>
-          </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {coinPricingCards.map((card) => (
-              <article key={card.id} className="rounded-2xl border border-white/10 bg-black/20 p-5 shadow-lg">
-                <div className="text-xs uppercase tracking-[0.35em] text-emerald-300">{card.badge}</div>
-                <h3 className="mt-3 text-xl font-semibold">{card.title}</h3>
-                <p className="mt-2 text-sm text-neutral-300">{card.price}</p>
-                <p className="mt-4 text-sm leading-6 text-neutral-400">{card.description}</p>
-                <div className="mt-5 space-y-2">
-                  {card.highlights.map((highlight) => (
-                    <div key={highlight} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-200">
-                      {highlight}
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {coinPricingCards.map((card) => (
+                <article key={card.id} className="rounded-2xl border border-white/10 bg-black/20 p-5 shadow-lg">
+                  <div className="text-xs uppercase tracking-[0.35em] text-emerald-300">{card.badge}</div>
+                  <h3 className="mt-3 text-xl font-semibold">{card.title}</h3>
+                  <p className="mt-2 text-sm text-neutral-300">{card.price}</p>
+                  <p className="mt-4 text-sm leading-6 text-neutral-400">{card.description}</p>
+                  <div className="mt-5 space-y-2">
+                    {card.highlights.map((highlight) => (
+                      <div key={highlight} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-200">
+                        {highlight}
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

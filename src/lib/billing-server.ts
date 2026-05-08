@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getPlanConfig } from '@/config/billing';
+import { getPlanConfig, TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import { COIN_COSTS, type CoinActionKey } from '@/config/coins';
 import { getFirebaseAdminDb } from '@/lib/firebase-admin';
 import { isAdminEmail } from '@/lib/user-utils';
@@ -37,6 +37,9 @@ function normalizePlanId(plan: unknown): AppPlanId {
 }
 
 function buildInsufficientCoinsMessage(actionLabel: string, requiredCoins: number, currentCoins: number): string {
+  if (TEMP_FREE_ACCESS_ENABLED) {
+    return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Aufladungen sind ${TEMP_FREE_ACCESS_CUTOFF_LABEL_DE} ausgeblendet.`;
+  }
   return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Lade dein Guthaben unter /tools/billing auf.`;
 }
 

@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
 
   const forceStartToken = searchParams.get('tour') === 'welcome' ? 'welcome' : null;
+  const verifyEmailSent = searchParams.get('verifyEmail') === 'sent';
   const shouldAutoStartTour = !profileLoading && Boolean(profile?.onboarding?.welcomeTourPending);
 
   useEffect(() => onAuthStateChanged(auth, (u) => setUser(u ? { uid: u.uid, email: u.email } : null)), []);
@@ -113,6 +114,15 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold">Dashboard</h1>
               <span className="ml-auto text-sm opacity-70">{user.email}</span>
             </header>
+
+            {verifyEmailSent && (
+              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                {tr(
+                  'Dein Konto wurde erstellt. Wir haben dir eine Bestätigungsmail geschickt. Bitte prüfe dein Postfach und bestätige deine E-Mail-Adresse.',
+                  'Your account has been created. We sent you a confirmation email. Please check your inbox and verify your email address.'
+                )}
+              </div>
+            )}
 
             <section className="flex flex-col gap-6 rounded-3xl border border-white/10 bg-neutral-900/80 backdrop-blur-md p-6 shadow-2xl md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">

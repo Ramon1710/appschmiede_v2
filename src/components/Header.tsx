@@ -94,12 +94,13 @@ export default function Header() {
             >
               {t('nav_editor')}
             </Link>
-            <Link href="/wizard/name-it" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_trades')}</Link>
             <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
           </>
         )}
         <Link href="/pricing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
-        <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
+        {!TEMP_FREE_ACCESS_ENABLED && (
+          <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
+        )}
         {TEMP_FREE_ACCESS_ENABLED && (
           <span className="hidden xl:inline rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-100">
             {lang === 'en' ? `Free ${freePhaseLabel}` : `Kostenfrei ${freePhaseLabel}`}
@@ -132,7 +133,7 @@ export default function Header() {
             <span className="hidden sm:inline">EN</span>
           </button>
         </div>
-        {profile && formattedCoins && (
+        {!TEMP_FREE_ACCESS_ENABLED && profile && formattedCoins && (
           <Link
             href="/tools/billing"
             className="hidden sm:flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white transition hover:border-cyan-400/50 hover:bg-white/10"

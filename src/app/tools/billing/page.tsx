@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import GuidedTour from '@/components/GuidedTour';
 import useAuth from '@/hooks/useAuth';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, type CoinPackageKey } from '@/config/billing';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED, type CoinPackageKey } from '@/config/billing';
 import { useI18n } from '@/lib/i18n';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
@@ -81,6 +81,28 @@ export default function BillingPage() {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
   const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
+
+  if (TEMP_FREE_ACCESS_ENABLED) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            <section className="rounded-3xl border border-white/10 bg-neutral-900/80 p-8 shadow-xl">
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Käufe pausiert', 'Purchases paused')}</p>
+              <h1 className="mt-3 text-3xl font-semibold">{tr('Bis Anfang 2027 sind keine Käufe nötig', 'No purchases are needed until early 2027')}</h1>
+              <p className="mt-4 text-base leading-7 text-neutral-300">
+                {tr(
+                  `Bis ${freePhaseLabel} sind Vorlagen, Projekte, Seiten und Funktionen für alle Nutzer kostenfrei freigeschaltet. Deshalb ist der Kauf von Coins aktuell ausgeblendet.`,
+                  `Until ${freePhaseLabel}, templates, projects, pages, and features are unlocked for all users at no cost. That is why coin purchases are currently hidden.`
+                )}
+              </p>
+            </section>
+          </div>
+        </main>
+      </>
+    );
+  }
 
   const checkout = async (packageKey: CoinPackageKey) => {
     if (!user?.uid) {

@@ -6,7 +6,7 @@ export const isAdminEmail = (email?: string | null) =>
   (email ?? '').trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
 export const canManageMainTemplates = (email?: string | null) =>
-  (email ?? '').trim().toLowerCase() === 'ramon.meyer@hotmail.de';
+  isAdminEmail(email);
 
 export const defaultPlanForEmail = (email?: string | null): AppPlanId =>
   isAdminEmail(email) ? 'business' : 'free';

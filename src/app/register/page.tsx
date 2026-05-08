@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE } from '@/config/billing';
 import { registerWithEmail } from '@/lib/auth';
 
 function formatRegisterError(error: unknown) {
@@ -38,6 +39,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const router = useRouter();
 
   // Einfache Captcha-Frage (Random bei jedem Laden)
@@ -50,6 +52,7 @@ export default function RegisterPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     // Validierung
     if (!firstName.trim() || !lastName.trim()) {
@@ -77,7 +80,8 @@ export default function RegisterPage() {
     try {
       const displayName = `${firstName} ${lastName}`;
       await registerWithEmail(email, password, displayName, company || undefined, null);
-      router.push('/dashboard');
+      setSuccess('Dein Konto wurde erstellt. Wir haben dir eine Bestätigungsmail geschickt. Bitte prüfe dein Postfach und bestätige deine E-Mail-Adresse.');
+      router.push('/dashboard?verifyEmail=sent');
     } catch (err) {
       setError(formatRegisterError(err));
     } finally {
@@ -95,6 +99,7 @@ export default function RegisterPage() {
 
         <form onSubmit={submit} className="rounded-2xl border border-slate-800 bg-slate-900/40 p-6 shadow-xl backdrop-blur space-y-4">
           {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
+          {success && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{success}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -132,13 +137,10 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="rounded-2xl border border-indigo-500/30 bg-slate-900/40 p-4 space-y-2">
-            <p className="text-xs uppercase tracking-[0.3em] text-indigo-300">Zahlungsart (optional)</p>
+          <div className="rounded-2xl border border-emerald-500/30 bg-slate-900/40 p-4 space-y-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-emerald-300">Kostenfreie Phase</p>
             <p className="text-sm text-slate-200">
-              Du kannst die Zahlungsart später in deinem Profil hinterlegen – sie wird erst benötigt, wenn du Coins kaufst oder ein Abo startest.
-            </p>
-            <p className="text-xs text-slate-400">
-              Hinweis: Speichere nach der Registrierung deine Zahlungsdaten im Profil, sobald du einen Kauf auslösen möchtest.
+              Bis {TEMP_FREE_ACCESS_CUTOFF_LABEL_DE} brauchst du keine Zahlungsdaten zu hinterlegen. Alle Funktionen außer KI sind aktuell kostenlos freigeschaltet.
             </p>
           </div>
 

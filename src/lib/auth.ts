@@ -4,6 +4,7 @@ import type { BillingMethodInfo } from '@/types/user';
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
@@ -49,6 +50,8 @@ export async function registerWithEmail(
         throw error;
       }
     }
+
+    await sendEmailVerification(cred.user);
 
     return cred.user;
   } catch (error) {

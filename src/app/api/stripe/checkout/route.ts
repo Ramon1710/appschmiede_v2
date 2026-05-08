@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import type { Stripe } from 'stripe';
 import { getStripe } from '@/lib/stripe';
-import { COIN_PACKAGES, PLAN_CONFIG, type CoinPackageKey } from '@/config/billing';
+import { COIN_PACKAGES, PLAN_CONFIG, TEMP_FREE_ACCESS_ENABLED, type CoinPackageKey } from '@/config/billing';
 import type { AppPlanId, AppUserProfile } from '@/types/user';
 import { getFirebaseAdminDb } from '@/lib/firebase-admin';
 import { isAdminEmail } from '@/lib/user-utils';
@@ -21,10 +20,42 @@ type CheckoutPayload = {
   cancelUrl?: string;
 };
 
+type CheckoutMetadata = Record<string, string>;
+
+type CheckoutSessionParams = {
+  mode: 'subscription' | 'payment';
+  success_url: string;
+  cancel_url: string;
+  customer_email?: string;
+  metadata?: CheckoutMetadata;
+  payment_method_types?: string[];
+  line_items: Array<{
+    price: string;
+    quantity: number;
+  }>;
+  subscription_data?: {
+    metadata?: CheckoutMetadata;
+  };
+};
+
+type StripeCheckoutClient = {
+  checkout: {
+    sessions: {
+      create(params: CheckoutSessionParams): Promise<{
+        url: string | null;
+      }>;
+    };
+  };
+};
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
 export async function POST(request: Request) {
   try {
+    if (TEMP_FREE_ACCESS_ENABLED) {
+      return NextResponse.json({ error: 'Checkout ist bis Anfang 2027 deaktiviert.' }, { status: 403 });
+    }
+
     if (!process.env.STRIPE_SECRET_KEY) {
       return NextResponse.json({ error: 'STRIPE_SECRET_KEY missing' }, { status: 500 });
     }
@@ -46,13 +77,14 @@ export async function POST(request: Request) {
 
     const successUrl = body.successUrl ?? `${appUrl}/tools/billing?status=success`;
     const cancelUrl = body.cancelUrl ?? `${appUrl}/tools/billing?status=cancel`;
+    const stripeClient = getStripe() as StripeCheckoutClient;
 
-    const metadata: Stripe.MetadataParam = {
+    const metadata: CheckoutMetadata = {
       uid,
       kind: body.kind,
     };
 
-    let params: Stripe.Checkout.SessionCreateParams | null = null;
+    let params: CheckoutSessionParams | null = null;
 
     if (body.kind === 'plan') {
       if (!body.planId) {
@@ -81,7 +113,7 @@ export async function POST(request: Request) {
             planId: body.planId,
           },
         },
-      } satisfies Stripe.Checkout.SessionCreateParams;
+      } satisfies CheckoutSessionParams;
     } else {
       if (!body.coinPackage) {
         return NextResponse.json({ error: 'coinPackage required' }, { status: 400 });
@@ -104,10 +136,10 @@ export async function POST(request: Request) {
             quantity: 1,
           },
         ],
-      } satisfies Stripe.Checkout.SessionCreateParams;
+      } satisfies CheckoutSessionParams;
     }
 
-    const session = await getStripe().checkout.sessions.create(params);
+    const session = await stripeClient.checkout.sessions.create(params);
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error: any) {
     if (isRequestAuthError(error)) {

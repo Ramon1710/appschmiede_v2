@@ -106,10 +106,8 @@ const normalizeBackgroundColorInput = (value: string): string => {
   if (lower === 'black' || lower === 'schwarz') return '#000000';
   if (lower === 'transparent') return 'transparent';
 
-  // accept hex as-is
   if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(raw)) return raw;
 
-  // allow common CSS names; keep as-is (backgroundColor supports it)
   return raw;
 };
 
@@ -1011,10 +1009,6 @@ export default function EditorShell({ initialPageId }: Props) {
   const [currentPageId, setCurrentPageId] = useState<string | null>(initialPageId ?? paramsPageId ?? queryPageId ?? null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [pages, setPages] = useState<PageTree[]>([]);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiPrompt, setAiPrompt] = useState('');
-  const [aiBusy, setAiBusy] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
   const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
   const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
@@ -2292,7 +2286,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   const handleSavePageTemplate = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canEditMainTemplates) {
       setTemplateNotice(tr('Nur Admins dürfen Seitenvorlagen speichern.', 'Only admins can save page templates.'));
       return;
     }
@@ -2326,7 +2320,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } catch (error) {
       console.error('Seitenvorlage konnte nicht gespeichert werden', error);
       const code = getFirebaseErrorCode(error);
-      if (isAdmin && code) {
+      if (canEditMainTemplates && code) {
         setTemplateNotice(
           tr(
             `Seitenvorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`,
@@ -2344,10 +2338,10 @@ export default function EditorShell({ initialPageId }: Props) {
     } finally {
       setSavingPageTemplate(false);
     }
-  }, [isAdmin, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice, tr]);
+  }, [canEditMainTemplates, _projectId, currentPageId, currentPageMeta, tree.tree, setPageTemplates, user?.uid, setTemplateNotice, tr]);
 
   const handleOverwritePageTemplate = useCallback(async () => {
-    if (!isAdmin) {
+    if (!canEditMainTemplates) {
       setTemplateNotice(tr('Nur Admins dürfen Seitenvorlagen speichern.', 'Only admins can save page templates.'));
       return;
     }
@@ -2387,11 +2381,11 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice(tr('Vorlage gespeichert.', 'Template saved.'));
     } catch (error) {
       console.error('Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice(formatTemplateSaveError(error, isAdmin, tr));
+      setTemplateNotice(formatTemplateSaveError(error, canEditMainTemplates, tr));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'page' ? null : prev));
     }
-  }, [isAdmin, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice, tr]);
+  }, [canEditMainTemplates, editingPageTemplateId, _projectId, currentPageId, tree.tree, setPageTemplates, setTemplateNotice, tr]);
 
   const handleSaveAppTemplate = useCallback(async () => {
     if (!canEditMainTemplates) {
@@ -2429,7 +2423,7 @@ export default function EditorShell({ initialPageId }: Props) {
     } catch (error) {
       console.error('App-Vorlage konnte nicht gespeichert werden', error);
       const code = getFirebaseErrorCode(error);
-      if (isAdmin && code) {
+      if (canEditMainTemplates && code) {
         setTemplateNotice(
           tr(
             `App-Vorlage konnte nicht gespeichert werden (${code}). Bitte versuche es erneut.`,
@@ -2518,7 +2512,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setTemplateNotice(tr('Vorlage gespeichert.', 'Template saved.'));
     } catch (error) {
       console.error('App-Vorlage konnte nicht überschrieben werden', error);
-      setTemplateNotice(formatTemplateSaveError(error, isAdmin, tr));
+      setTemplateNotice(formatTemplateSaveError(error, canEditMainTemplates, tr));
     } finally {
       setSavingTemplateOverwrite((prev) => (prev === 'app' ? null : prev));
     }
@@ -2567,7 +2561,9 @@ export default function EditorShell({ initialPageId }: Props) {
         pendingSyncHash.current = null;
         isDirty.current = false;
 
-        await Promise.allSettled(pages.map((p) => deletePage(_projectId, p.id)));
+        await Promise.allSettled(
+          pages.filter((page) => Boolean(page.id)).map((page) => deletePage(_projectId, page.id as string))
+        );
 
         await Promise.all(
           template.pages.map(async (page) => {
@@ -2739,86 +2735,6 @@ export default function EditorShell({ initialPageId }: Props) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedId, onRemove, handleCopySelected, handlePasteNode]);
-
-  const runAiGenerator = useCallback(async () => {
-    if (!aiPrompt.trim()) {
-      setAiError('Bitte gib eine Beschreibung ein.');
-      return;
-    }
-    if (!_projectId) {
-      setAiError('Bitte öffne zuerst ein Projekt oder speichere dein aktuelles Projekt, bevor du die KI nutzt.');
-      return;
-    }
-    if (!currentPageId) {
-      setAiError('Bitte wähle eine Seite aus, damit die KI sie anpassen kann.');
-      return;
-    }
-    setAiBusy(true);
-    setAiError(null);
-    try {
-      const response = await fetch('/api/ai/generate-page', {
-        method: 'POST',
-        headers: await buildAuthHeaders(user, { 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ prompt: aiPrompt, pageName: tree.name ?? undefined }),
-      });
-      const data = (await response.json()) as {
-        error?: string;
-        page?: PageTree;
-        source?: 'openai' | 'fallback';
-        diagnostics?: { reason?: string; expectedEnv?: string; vercelEnv?: string | null; keySource?: string | null; runtime?: string };
-      };
-      if (!response.ok) {
-        throw new Error(data.error || 'Die KI konnte die Seite nicht aktualisieren.');
-      }
-      if (!data.page || !data.page.tree) {
-        throw new Error('Keine Seitenergebnisse erhalten.');
-      }
-
-      const missingApiKey = data.source === 'fallback' && data.diagnostics?.reason === 'missing_api_key';
-      if (missingApiKey) {
-        setAiError(
-          isAdmin
-            ? `OpenAI ist aktuell nicht konfiguriert. Setze OPENAI_API_KEY in der Server-Umgebung und deploye neu.${
-                data.diagnostics?.vercelEnv ? ` (vercelEnv=${data.diagnostics.vercelEnv})` : ''
-              }`
-            : 'Die KI ist aktuell nicht verfügbar. Die Seite wurde nicht verändert.'
-        );
-        return;
-      }
-
-      const updatedTree = applyTreeUpdate((prev) => {
-        const stableName = currentPageMeta?.name ?? prev.name ?? tree.name ?? 'Unbenannte Seite';
-        return {
-          ...prev,
-          name: stableName,
-          tree: data.page?.tree ?? prev.tree,
-        };
-      });
-      const preservedName = updatedTree.name ?? currentPageMeta?.name ?? tree.name ?? 'Unbenannte Seite';
-      setSelectedId(null);
-
-      await savePage(_projectId, currentPageId, { ...updatedTree, name: preservedName });
-      await touchProject(_projectId, 'edited');
-      pendingSyncHash.current = hashPage(updatedTree);
-      isDirty.current = false;
-
-      if (data.source === 'fallback') {
-        setAiError(
-          isAdmin
-            ? 'OpenAI konnte für diese Anfrage nicht verwendet werden. Stattdessen wurde ein Fallback-Layout erstellt.'
-            : 'Für diese Anfrage wurde ein Standardlayout erstellt, weil die KI-Antwort nicht verarbeitet werden konnte.'
-        );
-      } else {
-        setAiPrompt('');
-        setAiOpen(false);
-      }
-    } catch (error) {
-      console.error('AI generation failed', error);
-      setAiError(error instanceof Error ? error.message : 'Unbekannter Fehler bei der KI-Erstellung.');
-    } finally {
-      setAiBusy(false);
-    }
-  }, [_projectId, currentPageId, aiPrompt, applyTreeUpdate, tree.name, currentPageMeta, isAdmin, tr, user?.uid]);
 
   const promptRenamePage = useCallback(async () => {
     if (!(_projectId && currentPageId)) return;
@@ -3859,7 +3775,7 @@ export default function EditorShell({ initialPageId }: Props) {
       {templateNotice && (
         <p className="rounded border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-100">{templateNotice}</p>
       )}
-      {isAdmin && (
+      {canEditMainTemplates && (
         <div className="space-y-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-3 text-xs text-emerald-50">
           <div className="font-semibold text-emerald-100">{tr('Admin-Aktionen', 'Admin actions')}</div>
           <p className="text-[11px] text-emerald-100/80">
@@ -4002,7 +3918,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 <div className="mt-3 inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">
                   {formatCoinLabel(templateCoinCost)} {tr('pro Anwendung', 'per use')}
                 </div>
-                {isAdmin && !templateControlsDisabled && (
+                {canEditMainTemplates && !templateControlsDisabled && (
                   <div className="mt-3 flex gap-2">
                     <button
                       type="button"
@@ -4232,15 +4148,6 @@ export default function EditorShell({ initialPageId }: Props) {
                     onBeforeOpen={flushPendingSave}
                     className="flex-1 min-w-[9rem]"
                   />
-                  <button
-                    className="flex-1 min-w-[9rem] rounded border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
-                    onClick={() => {
-                      setAiError(null);
-                      setAiOpen(true);
-                    }}
-                  >
-                    {tr('KI', 'AI')} · {formatCoinLabel(aiCoinCost)}
-                  </button>
                   {settingsHref ? (
                     <Link
                       href={settingsHref}
@@ -4388,16 +4295,6 @@ export default function EditorShell({ initialPageId }: Props) {
                     onBeforeOpen={flushPendingSave}
                     className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 transition hover:bg-white/10"
                   />
-                  <button
-                    className="flex flex-col items-center rounded-xl border border-white/10 bg-white/5 px-3 py-2 font-semibold text-neutral-100 transition hover:bg-white/10"
-                    onClick={() => {
-                      setAiError(null);
-                      setAiOpen(true);
-                    }}
-                  >
-                    <span className="text-base">✨</span>
-                    <span>{tr('KI', 'AI')} · {formatCoinLabel(aiCoinCost)}</span>
-                  </button>
                 </div>
                 <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2 text-xs">
                   <select
@@ -4469,16 +4366,16 @@ export default function EditorShell({ initialPageId }: Props) {
                   <div className="rounded-2xl border border-white/10 bg-[#070a13]/90 p-4 shadow-2xl">
                     <div className="flex items-center justify-between gap-2">
                       <div>
-                          <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Elemente', 'Elements')}</p>
-                          <p className="text-sm font-semibold text-white">{tr('Bausteine & Vorlagen', 'Blocks & templates')}</p>
+                        <p className="text-[11px] uppercase tracking-[0.35em] text-neutral-500">{tr('Elemente', 'Elements')}</p>
+                        <p className="text-sm font-semibold text-white">{tr('Bausteine & Vorlagen', 'Blocks & templates')}</p>
                       </div>
-                        <span className="text-[11px] text-neutral-400">{tr('Tippen zum Einfügen', 'Tap to insert')}</span>
+                      <span className="text-[11px] text-neutral-400">{tr('Tippen zum Einfügen', 'Tap to insert')}</span>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
-                          { id: 'components', label: tr('Bausteine', 'Blocks') },
-                          { id: 'quick-buttons', label: tr('Fertige Buttons', 'Quick buttons') },
-                          { id: 'templates', label: tr('Vorlagen', 'Templates') },
+                        { id: 'components', label: tr('Bausteine', 'Blocks') },
+                        { id: 'quick-buttons', label: tr('Fertige Buttons', 'Quick buttons') },
+                        { id: 'templates', label: tr('Vorlagen', 'Templates') },
                       ].map((tab) => (
                         <button
                           key={tab.id}
@@ -4701,57 +4598,6 @@ export default function EditorShell({ initialPageId }: Props) {
                 onClick={() => setExportDialogOpen(false)}
               >
                 Abbrechen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {aiOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0d101b] p-6 shadow-2xl">
-            <div className="space-y-2 pb-4">
-              <h2 className="text-xl font-semibold text-neutral-100">KI-Seitengenerator</h2>
-              <p className="text-sm text-neutral-400">
-                Beschreibe, was wir für dich bauen sollen – egal ob komplette App oder nur die aktuelle Seite.
-              </p>
-              <div className="inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                {formatCoinLabel(aiCoinCost)} {tr('pro KI-Lauf', 'per AI run')}
-              </div>
-            </div>
-            <p className="text-sm text-neutral-300">
-              Die KI aktualisiert ausschließlich die aktuell geöffnete Seite. Beschreibe kurz, was angepasst oder ergänzt werden soll – je konkreter du bist, desto besser werden Layout, Texte, Abschnitte oder Call-to-Actions.
-            </p>
-            <textarea
-              value={aiPrompt}
-              onChange={(event) => {
-                setAiPrompt(event.target.value);
-                if (aiError) setAiError(null);
-              }}
-              placeholder="Beschreibe, was angepasst werden soll …"
-              className="h-32 w-full rounded-xl border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-neutral-100 focus:border-emerald-400 focus:outline-none"
-            />
-            {aiError && (
-              <div className="mt-3 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-                {aiError}
-              </div>
-            )}
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg px-3 py-2 text-sm text-neutral-300 hover:text-neutral-100"
-                onClick={() => (!aiBusy ? setAiOpen(false) : null)}
-                disabled={aiBusy}
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                className="rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:from-emerald-400 hover:to-cyan-400 disabled:opacity-60"
-                onClick={runAiGenerator}
-                disabled={aiBusy}
-              >
-                {aiBusy ? 'Erstelle…' : 'Seite aktualisieren'}
               </button>
             </div>
           </div>
