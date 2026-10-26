@@ -170,6 +170,18 @@ const clampPanelWidth = (panel: PanelSide, value: number) => {
 
 const DEFAULT_LEFT_PANEL_WIDTH = clampPanelWidth('left', 384);
 const DEFAULT_RIGHT_PANEL_WIDTH = clampPanelWidth('right', 352);
+const EDITOR_LAYOUT_STORAGE_KEY = 'appschmiede:editor-layout:v1';
+// Mindestbreite der mittleren Arbeitsfläche; verhindert, dass die Panels den Canvas verdrängen.
+const MIN_CANVAS_WIDTH = 320;
+const PANEL_HANDLE_WIDTH = 6;
+
+const clampPanelWidthForViewport = (panel: PanelSide, value: number, otherPanelWidth: number, viewportWidth: number) => {
+  const { min, max } = PANEL_LIMITS[panel];
+  const available = viewportWidth - otherPanelWidth - MIN_CANVAS_WIDTH - PANEL_HANDLE_WIDTH * 2;
+  const dynamicMax = Math.max(min, Math.min(max, available));
+  return Math.min(dynamicMax, Math.max(min, value));
+};
+
 const DEFAULT_LEFT_PANEL_SECTIONS: LeftPanelSectionsState = {
   editor: false,
   project: false,
@@ -1011,7 +1023,9 @@ export default function EditorShell({ initialPageId }: Props) {
   const [pages, setPages] = useState<PageTree[]>([]);
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => DEFAULT_LEFT_PANEL_WIDTH);
   const [rightPanelWidth, setRightPanelWidth] = useState(() => DEFAULT_RIGHT_PANEL_WIDTH);
-  const panelDragState = useRef<{ panel: PanelSide; startX: number; startWidth: number } | null>(null);
+  const panelDragState = useRef<{ panel: PanelSide; pointerId: number; startX: number; startWidth: number } | null>(null);
+  const leftPanelWidthRef = useRef(DEFAULT_LEFT_PANEL_WIDTH);
+  const rightPanelWidthRef = useRef(DEFAULT_RIGHT_PANEL_WIDTH);
   const [toolboxTab, setToolboxTab] = useState<'components' | 'quick-buttons' | 'templates'>('components');
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('canvas');
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
@@ -1029,6 +1043,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const [layoutInitialized, setLayoutInitialized] = useState(false);
   const layoutSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedLayoutRef = useRef<EditorLayoutPreferences | null>(null);
+  const layoutHydratedRef = useRef(false);
   const project = useMemo(() => projects.find((p) => p.id === _projectId) ?? null, [projects, _projectId]);
   useEffect(() => {
     latestTree.current = tree;
@@ -1071,6 +1086,37 @@ export default function EditorShell({ initialPageId }: Props) {
     return () => off();
   }, [user?.uid]);
 
+  // Zuletzt verwendete Panelbreiten sofort aus dem lokalen Speicher wiederherstellen,
+  // damit der Editor schon vor dem Laden des Firestore-Profils die richtige Breite hat.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(EDITOR_LAYOUT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<EditorLayoutPreferences> | null;
+      if (!parsed || typeof parsed !== 'object') return;
+      if (typeof parsed.leftPanelWidth === 'number') {
+        setLeftPanelWidth(clampPanelWidth('left', parsed.leftPanelWidth));
+      }
+      if (typeof parsed.rightPanelWidth === 'number') {
+        setRightPanelWidth(clampPanelWidth('right', parsed.rightPanelWidth));
+      }
+      if (typeof parsed.canvasZoom === 'number') {
+        setCanvasZoom(clampZoomValue(parsed.canvasZoom));
+      }
+      if (parsed.leftPanelSections && typeof parsed.leftPanelSections === 'object') {
+        setLeftPanelSections({
+          editor: Boolean(parsed.leftPanelSections.editorCollapsed),
+          project: Boolean(parsed.leftPanelSections.projectCollapsed),
+          elements: Boolean(parsed.leftPanelSections.elementsCollapsed),
+          costs: Boolean(parsed.leftPanelSections.costsCollapsed),
+        });
+      }
+      layoutHydratedRef.current = true;
+    } catch (error) {
+      console.warn('Editor-Layout konnte nicht aus dem lokalen Speicher gelesen werden', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user?.uid) {
       setLayoutInitialized(false);
@@ -1081,24 +1127,12 @@ export default function EditorShell({ initialPageId }: Props) {
     if (profileLoading) return;
     const prefs = profile?.editorLayout ?? null;
     if (prefs) {
-      if (typeof prefs.leftPanelWidth === 'number') {
-        setLeftPanelWidth(clampPanelWidth('left', prefs.leftPanelWidth));
-      }
-      if (typeof prefs.rightPanelWidth === 'number') {
-        setRightPanelWidth(clampPanelWidth('right', prefs.rightPanelWidth));
-      }
-      if (typeof prefs.canvasZoom === 'number') {
-        setCanvasZoom(clampZoomValue(prefs.canvasZoom));
-      }
       const nextLeftPanelSections: LeftPanelSectionsState = {
         editor: Boolean(prefs.leftPanelSections?.editorCollapsed),
         project: Boolean(prefs.leftPanelSections?.projectCollapsed),
         elements: Boolean(prefs.leftPanelSections?.elementsCollapsed),
         costs: Boolean(prefs.leftPanelSections?.costsCollapsed),
       };
-      if (!layoutInitialized) {
-        setLeftPanelSections(nextLeftPanelSections);
-      }
       lastSavedLayoutRef.current = {
         leftPanelWidth: typeof prefs.leftPanelWidth === 'number' ? clampPanelWidth('left', prefs.leftPanelWidth) : undefined,
         rightPanelWidth: typeof prefs.rightPanelWidth === 'number' ? clampPanelWidth('right', prefs.rightPanelWidth) : undefined,
@@ -1110,14 +1144,31 @@ export default function EditorShell({ initialPageId }: Props) {
           costsCollapsed: nextLeftPanelSections.costs,
         },
       };
-    } else {
-      if (!layoutInitialized) {
-        setLeftPanelSections(DEFAULT_LEFT_PANEL_SECTIONS);
+      // Wichtig: useUserProfile liefert Live-Snapshots (onSnapshot). Panelbreiten, Zoom und
+      // Sektionen werden nur bei der ersten Hydration aus dem Profil übernommen, damit
+      // spätere Snapshots – z. B. durch eigene persistLayout-Schreibvorgänge – lokal
+      // gezogene Breiten nicht wieder zurücksetzen.
+      if (!layoutHydratedRef.current) {
+        if (typeof prefs.leftPanelWidth === 'number') {
+          setLeftPanelWidth(clampPanelWidth('left', prefs.leftPanelWidth));
+        }
+        if (typeof prefs.rightPanelWidth === 'number') {
+          setRightPanelWidth(clampPanelWidth('right', prefs.rightPanelWidth));
+        }
+        if (typeof prefs.canvasZoom === 'number') {
+          setCanvasZoom(clampZoomValue(prefs.canvasZoom));
+        }
+        setLeftPanelSections(nextLeftPanelSections);
+        layoutHydratedRef.current = true;
       }
-      lastSavedLayoutRef.current = null;
+    } else {
+      if (!layoutHydratedRef.current) {
+        lastSavedLayoutRef.current = null;
+        layoutHydratedRef.current = true;
+      }
     }
     setLayoutInitialized(true);
-  }, [user?.uid, profileLoading, profile?.editorLayout, layoutInitialized]);
+  }, [user?.uid, profileLoading, profile?.editorLayout]);
 
   useEffect(() => {
     if (derivedProjectId || manualProjectId || !projects.length) return;
@@ -1207,7 +1258,7 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   useEffect(() => {
-    if (!user?.uid || !layoutInitialized) return;
+    if (!layoutInitialized) return;
     const normalizedLayout: EditorLayoutPreferences = {
       leftPanelWidth: clampPanelWidth('left', leftPanelWidth),
       rightPanelWidth: clampPanelWidth('right', rightPanelWidth),
@@ -1219,6 +1270,13 @@ export default function EditorShell({ initialPageId }: Props) {
         costsCollapsed: leftPanelSections.costs,
       },
     };
+    // Lokale Sicherung der zuletzt verwendeten Layout-Werte (sofort, ohne Netzwerk).
+    try {
+      window.localStorage.setItem(EDITOR_LAYOUT_STORAGE_KEY, JSON.stringify(normalizedLayout));
+    } catch {
+      // Lokale Persistenz ist optional (z. B. voller oder deaktivierter Speicher).
+    }
+    if (!user?.uid) return;
     const prev = lastSavedLayoutRef.current;
     const prevZoom = typeof prev?.canvasZoom === 'number' ? Number(prev.canvasZoom.toFixed(3)) : undefined;
     const prevSections = JSON.stringify(prev?.leftPanelSections ?? null);
@@ -1251,12 +1309,21 @@ export default function EditorShell({ initialPageId }: Props) {
     setLeftPanelSections((prev) => ({ ...prev, [section]: !prev[section] }));
   }, []);
 
+  useEffect(() => {
+    leftPanelWidthRef.current = leftPanelWidth;
+    rightPanelWidthRef.current = rightPanelWidth;
+  }, [leftPanelWidth, rightPanelWidth]);
+
   const startPanelDrag = useCallback(
-    (panel: PanelSide, event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.button !== 0) return;
+    (panel: PanelSide, event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      // Verhindert Textselektion und das versehentliche Auslösen von Drag & Drop
+      // darunterliegender Editor-Elemente.
       event.preventDefault();
+      event.stopPropagation();
       panelDragState.current = {
         panel,
+        pointerId: event.pointerId,
         startX: event.clientX,
         startWidth: panel === 'left' ? leftPanelWidth : rightPanelWidth,
       };
@@ -1267,35 +1334,65 @@ export default function EditorShell({ initialPageId }: Props) {
   );
 
   useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
+    const handlePointerMove = (event: PointerEvent) => {
       const drag = panelDragState.current;
-      if (!drag) return;
+      if (!drag || event.pointerId !== drag.pointerId) return;
       event.preventDefault();
       const delta = event.clientX - drag.startX;
+      const viewportWidth = window.innerWidth;
       if (drag.panel === 'left') {
-        setLeftPanelWidth(clampPanelWidth('left', drag.startWidth + delta));
+        setLeftPanelWidth(
+          clampPanelWidthForViewport('left', drag.startWidth + delta, rightPanelWidthRef.current, viewportWidth)
+        );
       } else {
-        setRightPanelWidth(clampPanelWidth('right', drag.startWidth - delta));
+        setRightPanelWidth(
+          clampPanelWidthForViewport('right', drag.startWidth - delta, leftPanelWidthRef.current, viewportWidth)
+        );
       }
     };
 
-    const endDrag = () => {
-      if (!panelDragState.current) return;
+    const endDrag = (event?: PointerEvent) => {
+      const drag = panelDragState.current;
+      if (!drag) return;
+      if (event && event.pointerId !== drag.pointerId) return;
       panelDragState.current = null;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', endDrag);
-    window.addEventListener('blur', endDrag);
+    const handleWindowBlur = () => endDrag();
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       endDrag();
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', endDrag);
-      window.removeEventListener('blur', endDrag);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+      window.removeEventListener('blur', handleWindowBlur);
     };
+  }, []);
+
+  // Bei kleiner werdendem Viewport werden die Panels sanft nach innen begrenzt,
+  // damit nichts überlappt und die Arbeitsfläche sichtbar bleibt.
+  useEffect(() => {
+    const handleViewportResize = () => {
+      const viewportWidth = window.innerWidth;
+      const nextLeft = clampPanelWidthForViewport('left', leftPanelWidthRef.current, rightPanelWidthRef.current, viewportWidth);
+      const nextRight = clampPanelWidthForViewport('right', rightPanelWidthRef.current, nextLeft, viewportWidth);
+      if (nextLeft !== leftPanelWidthRef.current) {
+        setLeftPanelWidth(nextLeft);
+      }
+      if (nextRight !== rightPanelWidthRef.current) {
+        setRightPanelWidth(nextRight);
+      }
+    };
+
+    window.addEventListener('resize', handleViewportResize);
+    return () => window.removeEventListener('resize', handleViewportResize);
   }, []);
 
   useEffect(() => {
@@ -4265,9 +4362,9 @@ export default function EditorShell({ initialPageId }: Props) {
             role="separator"
             aria-orientation="vertical"
             aria-hidden="true"
-            className="hidden lg:block w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors hover:bg-emerald-400/40"
+            className="relative hidden w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors before:absolute before:inset-y-0 before:-left-2 before:-right-2 before:content-[''] hover:bg-emerald-400/40 lg:block"
             style={{ flexShrink: 0, touchAction: 'none' }}
-            onMouseDown={(event) => startPanelDrag('left', event)}
+            onPointerDown={(event) => startPanelDrag('left', event)}
           />
 
           <main className="flex flex-1 min-h-0 flex-col overflow-hidden">
@@ -4499,9 +4596,9 @@ export default function EditorShell({ initialPageId }: Props) {
             role="separator"
             aria-orientation="vertical"
             aria-hidden="true"
-            className="hidden lg:block w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors hover:bg-emerald-400/40"
+            className="relative hidden w-1.5 cursor-col-resize self-stretch rounded-full bg-white/5 transition-colors before:absolute before:inset-y-0 before:-left-2 before:-right-2 before:content-[''] hover:bg-emerald-400/40 lg:block"
             style={{ flexShrink: 0, touchAction: 'none' }}
-            onMouseDown={(event) => startPanelDrag('right', event)}
+            onPointerDown={(event) => startPanelDrag('right', event)}
           />
 
           <aside
