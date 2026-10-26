@@ -10,6 +10,14 @@ export default function SiteFooter() {
           <p className="leading-6 text-neutral-400">
             Bis Anfang 2027 sind Vorlagen, Projekte, Seiten und Funktionen für alle Nutzer kostenfrei. Analyse-Technologien werden nur nach Einwilligung verwendet.
           </p>
+          <a
+            href="https://www.headbang-handwerk.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex rounded-md text-neutral-300 transition hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+          >
+            🤘 Headbang Handwerk e. V. – Handwerk. Laut. Sichtbar.
+          </a>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">

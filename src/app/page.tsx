@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
+import AppLogo from '@/components/AppLogo';
 
 import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { getHomeContent } from '@/lib/home-content';
@@ -967,6 +968,96 @@ export default async function HomePage() {
             >
               {tr('Kostenfreie Phase und KI-Coins ansehen', 'View free access and AI coins')}
             </Link>
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="headbang-handwerk-title"
+          className="relative isolate overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-6 shadow-2xl sm:p-8 lg:p-10"
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:items-center">
+            <div className="order-2 lg:order-1">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200 sm:text-sm">
+                <span aria-hidden="true">🤘 </span>HEADBANG HANDWERK e. V.
+              </p>
+              <h2 id="headbang-handwerk-title" className="mt-4 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                HANDWERK.
+                <br />
+                LAUT.
+                <br />
+                SICHTBAR.
+              </h2>
+              <p className="mt-4 text-xl font-semibold text-amber-100 sm:text-2xl">
+                Wir geben dem Handwerk eine Bühne!
+              </p>
+              <div className="mt-6 space-y-4 text-base leading-7 text-neutral-300">
+                <p>
+                  Handwerk ist mehr als ein Beruf. Es ist Leidenschaft, Kreativität, Innovation und Zukunft.
+                </p>
+                <p>
+                  Headbang Handwerk e. V. verbindet die Welt des Handwerks mit Musik, Festivals, moderner Technik und außergewöhnlichen Erlebnissen.
+                </p>
+                <p>
+                  Unser Ziel: Menschen für das Handwerk begeistern, berufliche Perspektiven sichtbar machen und zeigen, wie vielseitig und spannend handwerkliche Berufe wirklich sind.
+                </p>
+                <p>
+                  Ob traditionelle Handwerkstechniken, moderne Technologien oder kreative Mitmachaktionen – wir bringen das Handwerk dorthin, wo Menschen zusammenkommen.
+                </p>
+              </div>
+            </div>
+            <div className="order-1 flex justify-center lg:order-2">
+              <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-amber-400/10 via-transparent to-white/5" />
+                <AppLogo
+                  width={380}
+                  className="relative h-auto w-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                icon: '🤘',
+                title: 'HANDWERK ERLEBEN',
+                description: 'Wir machen handwerkliche Berufe durch Aktionen, Veranstaltungen und persönliche Begegnungen erlebbar.',
+              },
+              {
+                icon: '⚡',
+                title: 'NACHWUCHS BEGEISTERN',
+                description: 'Wir zeigen jungen Menschen die Möglichkeiten, Perspektiven und Chancen einer Zukunft im Handwerk.',
+              },
+              {
+                icon: '🚀',
+                title: 'ZUKUNFT GESTALTEN',
+                description: 'Wir verbinden traditionelles Handwerk mit Innovation, moderner Technik und neuen Ideen.',
+              },
+            ].map((item) => (
+              <article
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-200 hover:-translate-y-1 hover:border-amber-200/30 hover:bg-white/[0.07]"
+              >
+                <h3 className="flex items-center gap-2 text-base font-bold text-white sm:text-lg">
+                  <span aria-hidden="true">{item.icon}</span>
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-neutral-300">{item.description}</p>
+              </article>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-col items-start gap-5 border-t border-white/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-2xl text-lg font-semibold leading-7 text-white sm:text-xl">
+              Gib dem Handwerk eine Bühne. Mach mit bei Headbang Handwerk!
+            </p>
+            <a
+              href="https://www.headbang-handwerk.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-center text-sm font-black tracking-wide text-[#17120e] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-100 sm:w-auto"
+            >
+              JETZT HEADBANG HANDWERK ENTDECKEN →
+            </a>
           </div>
         </section>
         </div>

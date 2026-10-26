@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
@@ -9,6 +8,7 @@ import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEM
 import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
 import { useI18n } from '@/lib/i18n';
+import AppLogo from './AppLogo';
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -61,12 +61,12 @@ export default function Header() {
   const profileLabel = lang === 'en' ? 'Personal details' : 'Persönliche Daten';
 
   return (
-    <header className="relative z-40 w-full flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0b0b0f]/95 backdrop-blur-md shadow-lg">
-      <nav className="flex gap-6 items-center">
+    <header className="relative z-40 flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-neutral-800 bg-[#0b0b0f]/95 px-4 py-4 shadow-lg backdrop-blur-md sm:px-6">
+      <nav className="flex min-w-0 basis-full flex-wrap items-center gap-x-4 gap-y-3 md:basis-auto md:gap-x-6">
         <Link href="/" className="relative flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-fuchsia-500 blur-lg opacity-40 group-hover:opacity-70 transition" />
-            <Image src="/logo.png" alt="AppSchmiede" className="relative z-10 drop-shadow-lg" width={64} height={64} priority />
+            <AppLogo className="relative z-10 drop-shadow-lg" width={64} priority />
           </div>
           <div className="leading-tight">
             <span className="text-2xl font-bold tracking-tight text-white group-hover:text-cyan-200 transition">AppSchmiede</span>
@@ -108,7 +108,16 @@ export default function Header() {
         )}
       </nav>
 
-      <div className="flex items-center gap-3 text-sm">
+      <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-3 text-sm">
+        <a
+          href="https://www.headbang-handwerk.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-center text-xs font-bold tracking-wide text-amber-100 transition hover:border-amber-200/60 hover:bg-amber-300/20 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 sm:px-4 sm:text-sm"
+        >
+          <span aria-hidden="true">🤘</span>
+          <span>HEADBANG HANDWERK</span>
+        </a>
         <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-white shadow">
           <button
             type="button"
