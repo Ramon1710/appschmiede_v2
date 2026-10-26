@@ -627,7 +627,89 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Header />
-      <main className="w-full px-4 py-12 lg:px-10">
+      <main className="w-full px-4 pb-12 pt-4 lg:px-10 lg:pt-6">
+        <section
+          aria-labelledby="headbang-handwerk-title"
+          className="relative isolate mx-auto mb-8 w-full max-w-[1680px] overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-5 shadow-2xl sm:p-7 lg:p-8"
+        >
+          <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.6fr)] lg:items-center lg:gap-8">
+            <div className="order-2 lg:order-1">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200 sm:text-sm">
+                <span aria-hidden="true">🤘 </span>HEADBANG HANDWERK e. V.
+              </p>
+              <h2 id="headbang-handwerk-title" className="mt-2 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
+                HANDWERK. LAUT. SICHTBAR.
+              </h2>
+              <p className="mt-2 text-lg font-semibold text-amber-100 sm:text-xl">
+                Wir geben dem Handwerk eine Bühne!
+              </p>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-neutral-300 sm:text-base">
+                <p>
+                  Handwerk ist mehr als ein Beruf. Es ist Leidenschaft, Kreativität, Innovation und Zukunft.
+                </p>
+                <p>
+                  Headbang Handwerk e. V. verbindet die Welt des Handwerks mit Musik, Festivals, moderner Technik und außergewöhnlichen Erlebnissen.
+                </p>
+                <p>
+                  Unser Ziel: Menschen für das Handwerk begeistern, berufliche Perspektiven sichtbar machen und zeigen, wie vielseitig und spannend handwerkliche Berufe wirklich sind.
+                </p>
+                <p>
+                  Ob traditionelle Handwerkstechniken, moderne Technologien oder kreative Mitmachaktionen – wir bringen das Handwerk dorthin, wo Menschen zusammenkommen.
+                </p>
+              </div>
+            </div>
+            <div className="order-1 flex justify-center lg:order-2">
+              <div className="relative w-44 overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl sm:w-52 lg:w-full lg:max-w-[18rem]">
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-amber-400/10 via-transparent to-white/5" />
+                <AppLogo width={288} className="relative h-auto w-full object-contain" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {[
+              {
+                icon: '🤘',
+                title: 'HANDWERK ERLEBEN',
+                description: 'Wir machen handwerkliche Berufe durch Aktionen, Veranstaltungen und persönliche Begegnungen erlebbar.',
+              },
+              {
+                icon: '⚡',
+                title: 'NACHWUCHS BEGEISTERN',
+                description: 'Wir zeigen jungen Menschen die Möglichkeiten, Perspektiven und Chancen einer Zukunft im Handwerk.',
+              },
+              {
+                icon: '🚀',
+                title: 'ZUKUNFT GESTALTEN',
+                description: 'Wir verbinden traditionelles Handwerk mit Innovation, moderner Technik und neuen Ideen.',
+              },
+            ].map((item) => (
+              <article
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition duration-200 hover:-translate-y-1 hover:border-amber-200/30 hover:bg-white/[0.07]"
+              >
+                <h3 className="flex items-center gap-2 text-sm font-bold text-white sm:text-base">
+                  <span aria-hidden="true">{item.icon}</span>
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm leading-5 text-neutral-300">{item.description}</p>
+              </article>
+            ))}
+          </div>
+          <div className="mt-5 flex flex-col items-start gap-4 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-base font-semibold leading-6 text-white sm:text-lg">
+              Gib dem Handwerk eine Bühne. Mach mit bei Headbang Handwerk!
+            </p>
+            <a
+              href="https://www.headbang-handwerk.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-center text-sm font-black tracking-wide text-[#17120e] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-100 sm:w-auto"
+            >
+              JETZT HEADBANG HANDWERK ENTDECKEN →
+            </a>
+          </div>
+        </section>
         <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-12">
         <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl md:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
@@ -971,95 +1053,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section
-          aria-labelledby="headbang-handwerk-title"
-          className="relative isolate overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-6 shadow-2xl sm:p-8 lg:p-10"
-        >
-          <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:items-center">
-            <div className="order-2 lg:order-1">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200 sm:text-sm">
-                <span aria-hidden="true">🤘 </span>HEADBANG HANDWERK e. V.
-              </p>
-              <h2 id="headbang-handwerk-title" className="mt-4 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
-                HANDWERK.
-                <br />
-                LAUT.
-                <br />
-                SICHTBAR.
-              </h2>
-              <p className="mt-4 text-xl font-semibold text-amber-100 sm:text-2xl">
-                Wir geben dem Handwerk eine Bühne!
-              </p>
-              <div className="mt-6 space-y-4 text-base leading-7 text-neutral-300">
-                <p>
-                  Handwerk ist mehr als ein Beruf. Es ist Leidenschaft, Kreativität, Innovation und Zukunft.
-                </p>
-                <p>
-                  Headbang Handwerk e. V. verbindet die Welt des Handwerks mit Musik, Festivals, moderner Technik und außergewöhnlichen Erlebnissen.
-                </p>
-                <p>
-                  Unser Ziel: Menschen für das Handwerk begeistern, berufliche Perspektiven sichtbar machen und zeigen, wie vielseitig und spannend handwerkliche Berufe wirklich sind.
-                </p>
-                <p>
-                  Ob traditionelle Handwerkstechniken, moderne Technologien oder kreative Mitmachaktionen – wir bringen das Handwerk dorthin, wo Menschen zusammenkommen.
-                </p>
-              </div>
-            </div>
-            <div className="order-1 flex justify-center lg:order-2">
-              <div className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/10 bg-black shadow-2xl">
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-tr from-amber-400/10 via-transparent to-white/5" />
-                <AppLogo
-                  width={380}
-                  className="relative h-auto w-full object-contain"
-                />
-              </div>
-            </div>
-          </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {[
-              {
-                icon: '🤘',
-                title: 'HANDWERK ERLEBEN',
-                description: 'Wir machen handwerkliche Berufe durch Aktionen, Veranstaltungen und persönliche Begegnungen erlebbar.',
-              },
-              {
-                icon: '⚡',
-                title: 'NACHWUCHS BEGEISTERN',
-                description: 'Wir zeigen jungen Menschen die Möglichkeiten, Perspektiven und Chancen einer Zukunft im Handwerk.',
-              },
-              {
-                icon: '🚀',
-                title: 'ZUKUNFT GESTALTEN',
-                description: 'Wir verbinden traditionelles Handwerk mit Innovation, moderner Technik und neuen Ideen.',
-              },
-            ].map((item) => (
-              <article
-                key={item.title}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-200 hover:-translate-y-1 hover:border-amber-200/30 hover:bg-white/[0.07]"
-              >
-                <h3 className="flex items-center gap-2 text-base font-bold text-white sm:text-lg">
-                  <span aria-hidden="true">{item.icon}</span>
-                  {item.title}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-neutral-300">{item.description}</p>
-              </article>
-            ))}
-          </div>
-          <div className="mt-8 flex flex-col items-start gap-5 border-t border-white/10 pt-7 sm:flex-row sm:items-center sm:justify-between">
-            <p className="max-w-2xl text-lg font-semibold leading-7 text-white sm:text-xl">
-              Gib dem Handwerk eine Bühne. Mach mit bei Headbang Handwerk!
-            </p>
-            <a
-              href="https://www.headbang-handwerk.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 w-full shrink-0 items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-center text-sm font-black tracking-wide text-[#17120e] transition hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-100 sm:w-auto"
-            >
-              JETZT HEADBANG HANDWERK ENTDECKEN →
-            </a>
-          </div>
-        </section>
         </div>
       </main>
     </div>
