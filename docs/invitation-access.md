@@ -74,32 +74,31 @@ Widerrufene Grants bleiben als Auditdatensätze erhalten. Es gibt keinen automat
 
 ### Ersten Administrator einrichten
 
-Wenn noch kein Profil die Adminrolle besitzt, kann ein Operator mit Firebase-Admin-Zugang ein konkretes, bereits vorhandenes und E-Mail-verifiziertes Firebase-Auth-Konto festlegen. Das Skript erstellt bei Bedarf nur dessen minimales Profil; es erstellt oder löscht niemals Firebase-Auth-Konten oder Projekte. UID und E-Mail müssen separat bestätigt werden:
+Für das bestehende Konto kann ein Operator mit Firebase-Admin-Zugang die Auth-UID über die E-Mail-Adresse ermitteln. Das Skript verlangt ein bereits vorhandenes, passendes Profil sowie ein aktiviertes und E-Mail-verifiziertes Auth-Konto. Fehlt das Profil oder stimmt dessen E-Mail nicht überein, bricht es ohne Änderung ab. Es erstellt keine Firebase-Auth-Konten und ändert weder Passwort noch Projekte. Der erste Aufruf ist ausschließlich ein lesender Dry-Run und gibt die tatsächliche UID zur manuellen Gegenprüfung aus:
 
 ```sh
-BOOTSTRAP_ADMIN_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_EMAIL='verified-address@example.org' \
+BOOTSTRAP_ADMIN_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_EMAIL='ramon.meyer@hotmail.de' \
 npm run admin:bootstrap:dry-run
 
-BOOTSTRAP_ADMIN_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_EMAIL='verified-address@example.org' \
+BOOTSTRAP_ADMIN_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_UID='uid-from-reviewed-dry-run' \
 BOOTSTRAP_ADMIN_ACK='I_APPROVE_ADMIN_ROLE' \
 npm run admin:bootstrap:apply
 ```
 
-Rollback setzt ausschließlich `role` auf `user` zurück. Das Profil und Firebase-Auth-Konto werden nicht gelöscht; ohne aktives `accessGrants` erhält das Konto keinen App-Zugriff:
+Apply setzt ausschließlich `role: admin`, legt bei Bedarf ein aktives `accessGrants`-Dokument an und schreibt einen Auditdatensatz. Ein bereits aktives, passendes Grant wird nicht überschrieben. Rollback stellt die zuvor gespeicherte Rolle wieder her und widerruft nur das vom Skript selbst angelegte Grant. Profil, Firebase-Auth-Konto und Projekte werden nicht gelöscht oder geändert:
 
 ```sh
-BOOTSTRAP_ADMIN_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_EMAIL='verified-address@example.org' \
+BOOTSTRAP_ADMIN_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_UID='uid-from-reviewed-dry-run' \
 npm run admin:bootstrap:rollback-dry-run
 
-BOOTSTRAP_ADMIN_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_UID='firebase-auth-uid' \
-BOOTSTRAP_ADMIN_CONFIRM_EMAIL='verified-address@example.org' \
+BOOTSTRAP_ADMIN_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_EMAIL='ramon.meyer@hotmail.de' \
+BOOTSTRAP_ADMIN_CONFIRM_UID='uid-from-reviewed-dry-run' \
 BOOTSTRAP_ADMIN_ACK='I_APPROVE_ADMIN_ROLLBACK' \
 npm run admin:bootstrap:rollback
 ```

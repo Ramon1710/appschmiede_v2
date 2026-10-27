@@ -622,7 +622,7 @@ export default async function HomePage() {
       <main className="flex w-full flex-col px-4 pb-12 pt-4 lg:px-10 lg:pt-6">
         <section
           aria-labelledby="headbang-handwerk-title"
-          className="order-2 relative isolate mx-auto mb-8 w-full max-w-[1680px] overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-5 shadow-2xl sm:p-7 lg:p-8"
+          className="order-1 relative isolate mx-auto mb-8 w-full max-w-[1680px] overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-5 shadow-2xl sm:p-7 lg:p-8"
         >
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.6fr)] lg:items-center lg:gap-8">
@@ -702,7 +702,7 @@ export default async function HomePage() {
             </a>
           </div>
         </section>
-        <div className="order-1 mx-auto flex w-full max-w-[1680px] flex-col gap-12">
+        <div className="order-2 mx-auto flex w-full max-w-[1680px] flex-col gap-12">
         <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl md:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">

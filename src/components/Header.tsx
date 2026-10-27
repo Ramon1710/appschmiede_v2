@@ -59,7 +59,7 @@ export default function Header() {
 
   return (
     <header className="relative z-40 flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-neutral-800 bg-[#0b0b0f]/95 px-4 py-4 shadow-lg backdrop-blur-md sm:px-6">
-      <nav className="flex min-w-0 basis-full flex-wrap items-center gap-x-4 gap-y-3 md:basis-auto md:gap-x-6">
+      <nav className="flex min-w-0 basis-full flex-wrap items-center gap-x-3 gap-y-2 md:basis-auto md:gap-x-4">
         <Link href="/" className="relative flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-fuchsia-500 blur-lg opacity-40 group-hover:opacity-70 transition" />
@@ -71,10 +71,6 @@ export default function Header() {
           </div>
         </Link>
         <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_home')}</Link>
-        <span className="inline-flex max-w-full items-center rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-center text-[9px] font-bold leading-4 tracking-[0.12em] text-amber-100 sm:whitespace-nowrap sm:text-[10px] sm:tracking-[0.16em]">
-          <span className="sm:hidden">{lang === 'en' ? 'EXCLUSIVE TO MEMBERS & PARTNERS' : 'EXKLUSIV FÜR MITGLIEDER & PARTNER'}</span>
-          <span className="hidden sm:inline">{lang === 'en' ? 'EXCLUSIVE TO HEADBANG HANDWERK MEMBERS & PARTNERS' : 'EXKLUSIV FÜR HEADBANG HANDWERK MITGLIEDER & PARTNER'}</span>
-        </span>
         {showAuthenticatedNav && (
           <>
             <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_dashboard')}</Link>
