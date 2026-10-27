@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import RequireAppAccess from '@/components/RequireAppAccess';
 
 export const metadata: Metadata = {
   robots: {
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <RequireAppAccess>{children}</RequireAppAccess>;
 }

@@ -7,15 +7,16 @@ import type { Metadata } from 'next';
 import ConsentBanner from '@/components/ConsentBanner';
 import SiteFooter from '@/components/SiteFooter';
 import AdSenseLoader from '@/components/AdSenseLoader';
+import AppAccessGuard from '@/components/AppAccessGuard';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://myappschmiede.com'),
   title: {
-    default: 'AppSchmiede – No‑Code KI App Builder',
+    default: 'AppSchmiede – exklusiv für Headbang Handwerk',
     template: '%s | AppSchmiede',
   },
   description:
-    'AppSchmiede ist ein No‑Code App‑Builder mit KI-Unterstützung: Ideen in Minuten in klickbare Apps verwandeln – direkt im Browser.',
+    'AppSchmiede ist die digitale Plattform für autorisierte Mitglieder und Partner von Headbang Handwerk e. V. Der Zugang erfolgt ausschließlich über persönliche Einladung.',
   alternates: {
     canonical: '/',
   },
@@ -35,7 +36,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="bg-neutral-950 text-neutral-100 min-h-screen">
         <I18nRoot initialLang={initialLang}>
           <div className="flex min-h-screen flex-col">
-            <div className="flex-1">{children}</div>
+            <div className="flex-1">
+              <AppAccessGuard>{children}</AppAccessGuard>
+            </div>
             <SiteFooter />
           </div>
           <AdSenseLoader enabled={adsenseEnabled} />

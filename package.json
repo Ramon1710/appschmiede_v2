@@ -6,37 +6,49 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:invitations": "node --experimental-strip-types --test tests/invitation-core.test.mjs tests/smtp-client.test.mjs",
+    "test:rules": "firebase emulators:exec --project demo-appschmiede-v2 --only firestore,storage \"node --test tests/firebase-rules.test.mjs\"",
+    "admin:bootstrap:dry-run": "node --env-file=.env.local scripts/bootstrap-admin-role.mjs",
+    "admin:bootstrap:apply": "node --env-file=.env.local scripts/bootstrap-admin-role.mjs --apply",
+    "admin:bootstrap:rollback-dry-run": "node --env-file=.env.local scripts/bootstrap-admin-role.mjs --rollback",
+    "admin:bootstrap:rollback": "node --env-file=.env.local scripts/bootstrap-admin-role.mjs --rollback --apply",
+    "migration:grants:rollback-dry-run": "node --env-file=.env.local scripts/rollback-legacy-grants.mjs",
+    "migration:grants:rollback": "node --env-file=.env.local scripts/rollback-legacy-grants.mjs --apply"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "firebase": "^12.4.0",
+    "firebase": "^12.19.0",
     "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.24",
     "jszip": "^3.10.1",
     "lucide-react": "^0.546.0",
-    "next": "16.0.7",
+    "next": "^16.4.3",
+    "nodemailer": "^10.2.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "stripe": "^19.1.0",
-    "vercel": "^50.1.1"
+    "stripe": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/postcss": "^4.1.16",
     "@types/estree": "^1.0.8",
     "@types/json-schema": "^7.0.15",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "eslint-config-next": "^16.4.3",
+    "firebase-tools": "^15.34.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.14",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^50.44.0"
   }
 }

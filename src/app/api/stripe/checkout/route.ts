@@ -3,7 +3,6 @@ import { getStripe } from '@/lib/stripe';
 import { COIN_PACKAGES, PLAN_CONFIG, TEMP_FREE_ACCESS_ENABLED, type CoinPackageKey } from '@/config/billing';
 import type { AppPlanId, AppUserProfile } from '@/types/user';
 import { getFirebaseAdminDb } from '@/lib/firebase-admin';
-import { isAdminEmail } from '@/lib/user-utils';
 import { requireAuthenticatedUid } from '@/lib/server-auth';
 import { isRequestAuthError } from '@/lib/server-auth';
 
@@ -53,7 +52,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 export async function POST(request: Request) {
   try {
     if (TEMP_FREE_ACCESS_ENABLED) {
-      return NextResponse.json({ error: 'Checkout ist bis Anfang 2027 deaktiviert.' }, { status: 403 });
+      return NextResponse.json({ error: 'Checkout ist derzeit nicht verfügbar.' }, { status: 403 });
     }
 
     if (!process.env.STRIPE_SECRET_KEY) {
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'user not found' }, { status: 404 });
     }
     const userData = snap.data() as AppUserProfile;
-    if (isAdminEmail(userData.email ?? null)) {
+    if (userData.role === 'admin') {
       return NextResponse.json({ error: 'Admins benötigen keinen Checkout.' }, { status: 403 });
     }
 

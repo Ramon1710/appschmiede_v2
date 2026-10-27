@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isRequestAuthError, requireAuthenticatedUid } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 
@@ -24,6 +25,7 @@ const buildProviderUrl = (prompt: string) => {
 
 export async function POST(request: Request) {
   try {
+    await requireAuthenticatedUid(request);
     const OPENAI_API_KEY = getOpenAiApiKey();
     const body = await request.json().catch(() => ({}));
     const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
           throw new Error('OpenAI image generation failed');
         }
 
-        const json = (await response.json()) as any;
+        const json = (await response.json()) as { data?: Array<{ b64_json?: unknown }> };
         const base64 = json?.data?.[0]?.b64_json;
         if (typeof base64 === 'string' && base64.length > 0) {
           return NextResponse.json({ dataUrl: `data:image/png;base64,${base64}` });
@@ -83,6 +85,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ dataUrl });
   } catch (error) {
+    if (isRequestAuthError(error)) {
+      return NextResponse.json({ error: 'Anmeldung mit freigeschaltetem Zugang erforderlich.' }, { status: 401 });
+    }
     console.error('AI image generation failed', error);
     return NextResponse.json({ error: 'KI Bild konnte nicht erzeugt werden.' }, { status: 500 });
   }

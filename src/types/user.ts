@@ -1,7 +1,5 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export const ADMIN_EMAIL = 'Ramon.meyer@hotmail.de' as const;
-
 export type AppPlanId = 'free' | 'starter' | 'pro' | 'business';
 export type AppUserRole = 'admin' | 'user';
 export type PlanStatus = 'trialing' | 'active' | 'canceled';

@@ -9,12 +9,24 @@ service cloud.firestore {
       return signedIn() && request.auth.token.email != null ? request.auth.token.email : '';
     }
 
-    function isAdminEmail() {
-      return signedIn() && authEmail().matches('(?i)^ramon\\.meyer@hotmail\\.de$');
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function hasActiveGrant(uid) {
+      return exists(/databases/$(database)/documents/accessGrants/$(uid)) &&
+        get(/databases/$(database)/documents/accessGrants/$(uid)).data.status == 'active' &&
+        get(/databases/$(database)/documents/accessGrants/$(uid)).data.email == authEmail();
+    }
+
+    function canUseApp() {
+      return signedIn() && (isAdmin() || hasActiveGrant(request.auth.uid));
     }
 
     function isSelf(uid) {
-      return signedIn() && request.auth.uid == uid;
+      return canUseApp() && request.auth.uid == uid;
     }
 
     function projectDoc(projectId) {
@@ -22,49 +34,17 @@ service cloud.firestore {
     }
 
     function isProjectOwner(projectId) {
-      return signedIn() && (
+      return canUseApp() && (
         projectDoc(projectId).data.ownerId == request.auth.uid ||
         projectDoc(projectId).data.ownerUid == request.auth.uid
       );
     }
 
     function canReadProject(projectId) {
-      return signedIn() && (
+      return canUseApp() && (
         isProjectOwner(projectId) ||
         request.auth.uid in projectDoc(projectId).data.members
       );
-    }
-
-    function validUserCreate(uid) {
-      return request.resource.data.keys().hasOnly([
-        'email',
-        'displayName',
-        'firstName',
-        'lastName',
-        'company',
-        'phone',
-        'plan',
-        'planSince',
-        'planExpiresAt',
-        'planStatus',
-        'subscriptionRenewsAt',
-        'subscriptionCancelAtPeriodEnd',
-        'coinsBalance',
-        'role',
-        'billingMethod',
-        'createdAt',
-        'updatedAt',
-        'editorLayout',
-        'onboarding'
-      ]) &&
-      request.resource.data.email is string &&
-      (authEmail() == '' || request.resource.data.email == authEmail()) &&
-      request.resource.data.role == (isAdminEmail() ? 'admin' : 'user') &&
-      request.resource.data.plan == (isAdminEmail() ? 'business' : 'free') &&
-      request.resource.data.planStatus == 'trialing' &&
-      request.resource.data.coinsBalance == (isAdminEmail() ? 9007199254740991 : 30) &&
-      (!('subscriptionRenewsAt' in request.resource.data) || request.resource.data.subscriptionRenewsAt == null) &&
-      (!('subscriptionCancelAtPeriodEnd' in request.resource.data) || request.resource.data.subscriptionCancelAtPeriodEnd == false);
     }
 
     function validUserUpdate() {
@@ -83,62 +63,78 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow create: if isSelf(uid) && validUserCreate(uid);
-      allow read: if isSelf(uid) || isAdminEmail();
-      allow update: if isSelf(uid) && validUserUpdate();
-      allow delete: if isSelf(uid) || isAdminEmail();
+      allow create: if false;
+      allow read: if canUseApp() && (isSelf(uid) || isAdmin());
+      allow update: if canUseApp() && isSelf(uid) && validUserUpdate();
+      allow delete: if canUseApp() && (isSelf(uid) || isAdmin());
+    }
+
+    match /accessGrants/{uid} {
+      allow read, write: if false;
+    }
+
+    match /invitations/{invitationId} {
+      allow read, write: if false;
+    }
+
+    match /invitationRateLimits/{rateLimitId} {
+      allow read, write: if false;
+    }
+
+    match /invitationEmailLocks/{lockId} {
+      allow read, write: if false;
     }
 
     match /projects/{projectId} {
-      allow create: if signedIn() &&
+      allow create: if canUseApp() &&
         request.resource.data.ownerId == request.auth.uid &&
         request.resource.data.ownerUid == request.auth.uid &&
         request.resource.data.members is list &&
         request.auth.uid in request.resource.data.members;
-      allow read: if canReadProject(projectId) || isAdminEmail();
-      allow update, delete: if isProjectOwner(projectId) || isAdminEmail();
+      allow read: if canReadProject(projectId) || (canUseApp() && isAdmin());
+      allow update, delete: if isProjectOwner(projectId) || (canUseApp() && isAdmin());
 
       match /pages/{pageId} {
-        allow read: if canReadProject(projectId) || isAdminEmail();
-        allow create, update, delete: if isProjectOwner(projectId) || isAdminEmail();
+        allow read: if canReadProject(projectId) || (canUseApp() && isAdmin());
+        allow create, update, delete: if isProjectOwner(projectId) || (canUseApp() && isAdmin());
       }
     }
 
     match /templates/{templateId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdminEmail();
+      allow read: if canUseApp();
+      allow create, update, delete: if canUseApp() && isAdmin();
     }
 
     match /pageTemplates/{templateId} {
-      allow read: if signedIn();
-      allow create, update, delete: if isAdminEmail();
+      allow read: if canUseApp();
+      allow create, update, delete: if canUseApp() && isAdmin();
     }
 
     match /tickets/{ticketId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
-      allow update, delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow create: if canUseApp() && request.resource.data.userId == request.auth.uid;
+      allow read: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /times/{timeId} {
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow create: if canUseApp() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /tasks/{taskId} {
-      allow create, delete: if isAdminEmail();
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
-      allow update: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow create, delete: if canUseApp() && isAdmin();
+      allow read: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /projectChats/{projectId}/messages/{messageId} {
-      allow read: if canReadProject(projectId) || isAdminEmail();
+      allow read: if canReadProject(projectId) || (canUseApp() && isAdmin());
       allow create: if canReadProject(projectId) && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 
     match /projectChats_flat/{messageId} {
-      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdminEmail());
+      allow read: if canUseApp() && (resource.data.userId == request.auth.uid || isAdmin());
       allow write: if false;
     }
 

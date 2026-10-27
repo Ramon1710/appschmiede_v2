@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import AppLogo from '@/components/AppLogo';
 
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { getHomeContent } from '@/lib/home-content';
 import { cookies } from 'next/headers';
 import { Lang } from '@/lib/i18n-dict';
@@ -12,7 +11,7 @@ const faqEntries = {
     {
       question: 'Für wen ist AppSchmiede gedacht?',
       answer:
-        'AppSchmiede richtet sich an Selbstständige, kleine Teams, Agenturen und Unternehmen, die interne Tools, MVPs oder klickbare Demos schneller umsetzen möchten. Statt ein Pflichtenheft zu schreiben, entsteht direkt ein testbarer Prototyp im Browser.',
+        'AppSchmiede ist ausschließlich für autorisierte Mitglieder und Partner von Headbang Handwerk e. V. gedacht. Sie können interne Tools, MVPs oder klickbare Demos im Browser entwickeln und testen.',
     },
     {
       question: 'Was unterscheidet AppSchmiede von einem Baukasten?',
@@ -34,7 +33,7 @@ const faqEntries = {
     {
       question: 'Who is AppSchmiede built for?',
       answer:
-        'AppSchmiede is designed for solo founders, small teams, agencies, and companies that want to ship internal tools, MVPs, or clickable demos faster. Instead of writing long specifications, you build a testable prototype directly in the browser.',
+        'AppSchmiede is exclusively for authorized members and partners of Headbang Handwerk e. V. They can build and test internal tools, MVPs, or clickable demos in the browser.',
     },
     {
       question: 'What makes it different from a generic site builder?',
@@ -121,14 +120,14 @@ const featureSpotlights = {
 
 const personaCards = {
   de: [
-    { icon: '🚀', title: 'Gründer:innen', text: 'Ideen schnell als MVP und Demo sichtbar machen.' },
-    { icon: '🧩', title: 'Agenturen', text: 'Prototypen, Workshops und Kundenpräsentationen beschleunigen.' },
-    { icon: '🏢', title: 'Teams', text: 'Interne Prozesse digitalisieren, bevor Entwicklung teuer wird.' },
+    { icon: '🤘', title: 'Mitglieder', text: 'Digitale Ideen und Vereinsprojekte als Prototyp sichtbar machen.' },
+    { icon: '🧩', title: 'Partner', text: 'Gemeinsame Vorhaben planen, gestalten und im Browser testen.' },
+    { icon: '🏢', title: 'Vereinsprojekte', text: 'Interne Abläufe und neue digitale Angebote erproben.' },
   ],
   en: [
-    { icon: '🚀', title: 'Founders', text: 'Turn ideas into visible MVPs and demos quickly.' },
-    { icon: '🧩', title: 'Agencies', text: 'Speed up prototypes, workshops, and client presentations.' },
-    { icon: '🏢', title: 'Teams', text: 'Digitize internal workflows before development gets expensive.' },
+    { icon: '🤘', title: 'Members', text: 'Turn digital ideas and club projects into visible prototypes.' },
+    { icon: '🧩', title: 'Partners', text: 'Plan, design, and test shared projects in the browser.' },
+    { icon: '🏢', title: 'Club projects', text: 'Explore internal workflows and new digital services.' },
   ],
 } as const;
 
@@ -554,7 +553,6 @@ export default async function HomePage() {
   const raw = cookieStore.get('lang')?.value;
   const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const faq = faqEntries[lang];
   const trustList = trustFacts[lang];
   const stats = heroStats[lang];
@@ -609,15 +607,9 @@ export default async function HomePage() {
     inLanguage: lang,
     description:
       lang === 'en'
-        ? 'AppSchmiede is a browser-based no-code workspace for building, testing, and refining clickable app prototypes with templates, AI assistance, visual editing, and mobile previews.'
-        : 'AppSchmiede ist eine browserbasierte No-Code-Arbeitsumgebung, mit der klickbare App-Prototypen über Vorlagen, KI-Unterstützung, visuellen Editor und mobile Vorschau gebaut, getestet und verfeinert werden können.',
+        ? 'AppSchmiede is an invitation-only browser-based workspace for authorized Headbang Handwerk members and partners to build, test, and refine digital projects.'
+        : 'AppSchmiede ist eine browserbasierte Plattform für autorisierte Mitglieder und Partner von Headbang Handwerk e. V., um digitale Projekte zu entwickeln, zu gestalten und zu testen.',
     url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://myappschmiede.com',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'EUR',
-      availability: 'https://schema.org/InStock',
-    },
   };
 
   return (
@@ -627,10 +619,10 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <Header />
-      <main className="w-full px-4 pb-12 pt-4 lg:px-10 lg:pt-6">
+      <main className="flex w-full flex-col px-4 pb-12 pt-4 lg:px-10 lg:pt-6">
         <section
           aria-labelledby="headbang-handwerk-title"
-          className="relative isolate mx-auto mb-8 w-full max-w-[1680px] overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-5 shadow-2xl sm:p-7 lg:p-8"
+          className="order-2 relative isolate mx-auto mb-8 w-full max-w-[1680px] overflow-hidden rounded-3xl border border-amber-200/20 bg-gradient-to-br from-[#17120e] via-[#090d18] to-[#050914] p-5 shadow-2xl sm:p-7 lg:p-8"
         >
           <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-3xl" />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(14rem,0.6fr)] lg:items-center lg:gap-8">
@@ -710,38 +702,29 @@ export default async function HomePage() {
             </a>
           </div>
         </section>
-        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-12">
+        <div className="order-1 mx-auto flex w-full max-w-[1680px] flex-col gap-12">
         <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl md:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
             <div className="text-center lg:text-left">
-              <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">{tr('No-Code Builder', 'No-code builder')}</p>
-              <div className="mt-4 inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-100">
-                {tr(
-                  `Kostenfreie Nutzung ${freePhaseLabel}`,
-                  `Free access ${freePhaseLabel}`
-                )}
-              </div>
+              <p className="text-sm uppercase tracking-[0.45em] text-cyan-300">{tr('Exklusiv für Headbang Handwerk', 'Exclusive to Headbang Handwerk')}</p>
               <h1 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">
-                {tr('Von der Idee zur App in wenigen Minuten', 'From idea to app in minutes')}
+                {tr('AppSchmiede – exklusiv für Headbang Handwerk', 'AppSchmiede – exclusive to Headbang Handwerk')}
               </h1>
-              <p className="mt-5 max-w-2xl text-lg text-neutral-200 lg:text-xl">
+              <p className="mt-3 text-lg font-semibold text-cyan-100 lg:text-xl">
+                {tr('Die digitale Plattform für Mitglieder und Partner von Headbang Handwerk e. V.', 'The digital platform for members and partners of Headbang Handwerk e. V.')}
+              </p>
+              <p className="mt-5 max-w-3xl text-base leading-7 text-neutral-200 lg:text-lg">
                 {tr(
-                  `Vorlage wählen, im Editor verfeinern und direkt auf dem Handy testen. Bis ${freePhaseLabel} ist die Nutzung mit allen Funktionen außer KI kostenfrei.`,
-                  `Pick a template, refine it in the editor, and test on mobile right away. Until ${freePhaseLabel}, every feature except AI is available for free.`
+                  'Von der ersten Idee bis zur eigenen Anwendung: Mit der AppSchmiede können autorisierte Mitglieder und Partner digitale Projekte entwickeln, gestalten und testen. Der Zugang erfolgt ausschließlich über eine persönliche Einladung.',
+                  'From the first idea to a working application: AppSchmiede helps authorized members and partners develop, design, and test digital projects. Access is available by personal invitation only.'
                 )}
               </p>
-              <div className="mt-5 max-w-3xl rounded-3xl border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-neutral-200 shadow-lg backdrop-blur">
-                {tr(
-                  'Vorlagen, Projekte, Seiten und Bausteine sind für alle Nutzer freigeschaltet. Nur KI-Aktionen bleiben bis zur späteren Preisphase separat kostenpflichtig.',
-                  'Templates, projects, pages, and building blocks are unlocked for all users. Only AI actions remain separately billed until the later pricing phase.'
-                )}
-              </div>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
                 <Link
-                  href="/register"
+                  href="/login"
                   className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
                 >
-                  {tr('Jetzt kostenlos starten', 'Start for free')}
+                  {tr('Bereits eingeladen? Jetzt anmelden', 'Already invited? Sign in')}
                 </Link>
                 <Link
                   href="#workflow"
@@ -750,6 +733,9 @@ export default async function HomePage() {
                   {tr('So funktioniert es', 'See how it works')}
                 </Link>
               </div>
+              <p className="mt-4 text-sm text-neutral-400">
+                {tr('Noch keinen Zugang? Die Registrierung ist ausschließlich mit einer persönlichen Einladung möglich.', 'No access yet? Registration is available by personal invitation only.')}
+              </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                 {stats.map((item) => (
                   <div key={item} className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-neutral-100 shadow-lg backdrop-blur">
@@ -759,8 +745,8 @@ export default async function HomePage() {
               </div>
               <p className="mt-6 max-w-3xl text-sm leading-7 text-neutral-300 lg:text-base">
                 {tr(
-                  'Die Plattform richtet sich an Teams, die eine App-Idee zuerst sichtbar und testbar machen möchten. Statt nur über Features zu sprechen, entsteht ein konkreter Ablauf mit Seiten, Bausteinen, Vorlagen, Vorschau und öffentlicher Abstimmung im Browser.',
-                  'The platform is aimed at teams that want to make an app idea visible and testable first. Instead of only discussing features, they get a concrete workflow with screens, blocks, templates, previews, and browser-based review.'
+                  'Autorisierte Mitglieder und Partner machen App-Ideen sichtbar und testbar. Seiten, Bausteine, Vorlagen und mobile Vorschau greifen dabei in einem durchgängigen Browser-Workflow ineinander.',
+                  'Authorized members and partners can make app ideas visible and testable. Pages, building blocks, templates, and mobile previews come together in one browser-based workflow.'
                 )}
               </p>
             </div>
@@ -1007,8 +993,8 @@ export default async function HomePage() {
               </h2>
               <p className="mt-4 text-base leading-7 text-neutral-300">
                 {tr(
-                  `Für eine hochwertige Website reicht es nicht, nur Buttons zur Registrierung zu zeigen. Deshalb verlinkt die Startseite jetzt deutlicher auf öffentlich erreichbare Informationen zu Produkt, kostenfreier Nutzung ${freePhaseLabel}, Datenschutz und Impressum.`,
-                  `A higher-quality website needs more than registration buttons. That is why the homepage now links more clearly to publicly available information about the product, free access ${freePhaseLabel}, privacy, and legal details.`
+                  'Hier findest du Informationen zu Plattform, Funktionen, Datenschutz, Impressum und Abrechnung.',
+                  'Find information about the platform, its features, privacy, legal details, and billing here.'
                 )}
               </p>
             </div>
@@ -1017,7 +1003,7 @@ export default async function HomePage() {
                 {tr('Produkt und Arbeitsweise', 'Product and workflow')}
               </Link>
               <Link href="/pricing" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Kostenfreie Phase & KI-Coins', 'Free access & AI coins')}
+                {tr('Leistungen & Abrechnung', 'Features & billing')}
               </Link>
               <Link href="/datenschutz" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
                 {tr('Datenschutz', 'Privacy policy')}
@@ -1030,25 +1016,25 @@ export default async function HomePage() {
         </section>
 
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1731] via-[#050c1c] to-[#03050a] p-8 text-center shadow-2xl">
-          <h2 className="text-3xl font-semibold">{tr('Bereit, deine erste App zu schmieden?', 'Ready to forge your first app?')}</h2>
+          <h2 className="text-3xl font-semibold">{tr('Bereit für dein digitales Projekt?', 'Ready for your digital project?')}</h2>
           <p className="mx-auto mt-4 max-w-3xl text-base text-neutral-200">
             {tr(
-              `Lege heute dein erstes Projekt an und nutze AppSchmiede ${freePhaseLabel} kostenlos mit allen Funktionen außer KI. So kannst du Vorlagen, Seiten und Workflows ohne Einstiegshürde testen.`,
-              `Create your first project today and use AppSchmiede for free ${freePhaseLabel} with every feature except AI. That lets you test templates, pages, and workflows without any entry barrier.`
+              'Mitglieder und Partner entwickeln digitale Projekte mit Vorlagen, visueller Bearbeitung, KI-Unterstützung und mobiler Vorschau. Der Zugang erfolgt ausschließlich über eine persönliche Einladung.',
+              'Members and partners can build digital projects with templates, visual editing, AI assistance, and mobile previews. Access is available by personal invitation only.'
             )}
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/register"
+              href="/login"
               className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
             >
-              {tr('Jetzt kostenlos registrieren', 'Register for free')}
+              {tr('Bereits eingeladen? Jetzt anmelden', 'Already invited? Sign in')}
             </Link>
             <Link
               href="/pricing"
               className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
             >
-              {tr('Kostenfreie Phase und KI-Coins ansehen', 'View free access and AI coins')}
+              {tr('Leistungen & Abrechnung ansehen', 'View features & billing')}
             </Link>
           </div>
         </section>

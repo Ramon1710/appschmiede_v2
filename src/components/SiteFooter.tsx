@@ -8,7 +8,7 @@ export default function SiteFooter() {
         <div className="max-w-2xl space-y-3">
           <p className="text-base font-semibold text-white">AppSchmiede</p>
           <p className="leading-6 text-neutral-400">
-            Bis Anfang 2027 sind Vorlagen, Projekte, Seiten und Funktionen für alle Nutzer kostenfrei. Analyse-Technologien werden nur nach Einwilligung verwendet.
+            Exklusiv für autorisierte Mitglieder und Partner von Headbang Handwerk e. V. Analyse-Technologien werden nur nach Einwilligung verwendet.
           </p>
           <a
             href="https://www.headbang-handwerk.com/"

@@ -10,7 +10,7 @@ type UnauthenticatedScreenProps = {
 };
 
 const defaultDescription =
-  'Der Zugriff erfordert ein Konto. Melde dich an, um deine Projekte zu laden, neue Apps zu erstellen oder Vorlagen zu nutzen.';
+  'Der Zugang ist autorisierten Mitgliedern und Partnern von Headbang Handwerk e. V. vorbehalten. Die Registrierung ist nur mit persönlicher Einladung möglich.';
 
 export default function UnauthenticatedScreen({
   badge,
@@ -37,7 +37,7 @@ export default function UnauthenticatedScreen({
             href="/register"
             className="rounded-full border border-white/20 px-6 py-3 font-semibold text-white/90 hover:bg-white/10"
           >
-            Noch kein Konto? Registrieren
+            Registrierung nur mit Einladung
           </Link>
         </div>
       </div>

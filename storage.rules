@@ -5,13 +5,34 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function isAdminEmail() {
-      return signedIn() && request.auth.token.email != null && request.auth.token.email.matches('(?i)^ramon\\.meyer@hotmail\\.de$');
+    function isAdmin() {
+      return signedIn() &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function hasActiveGrant() {
+      return firestore.exists(/databases/(default)/documents/accessGrants/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/accessGrants/$(request.auth.uid)).data.status == 'active' &&
+        firestore.get(/databases/(default)/documents/accessGrants/$(request.auth.uid)).data.email == request.auth.token.email;
+    }
+
+    function canUseApp() {
+      return signedIn() && (isAdmin() || hasActiveGrant());
+    }
+
+    function canReadProject(projectId) {
+      let project = firestore.get(/databases/(default)/documents/projects/$(projectId)).data;
+      return canUseApp() && (
+        project.ownerId == request.auth.uid ||
+        project.ownerUid == request.auth.uid ||
+        (project.members is list && request.auth.uid in project.members)
+      );
     }
 
     match /chat/{projectId}/{userId}/{fileName} {
-      allow read: if signedIn();
-      allow write: if signedIn() && (request.auth.uid == userId || isAdminEmail());
+      allow read: if canReadProject(projectId) || (canUseApp() && isAdmin());
+      allow write: if canUseApp() && ((canReadProject(projectId) && request.auth.uid == userId) || isAdmin());
     }
 
     match /{allPaths=**} {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 import {
   PRIVACY_CONSENT_CHANGED_EVENT,
   readPrivacyConsent,
@@ -16,13 +17,11 @@ function hasAdvertisingConsent(consent: PrivacyConsent | null) {
 }
 
 export default function AdSenseLoader({ enabled }: { enabled: boolean }) {
+  const pathname = usePathname();
   const [canLoad, setCanLoad] = useState(false);
 
   useEffect(() => {
-    if (!enabled) {
-      setCanLoad(false);
-      return;
-    }
+    if (!enabled) return;
 
     const syncConsent = (consent: PrivacyConsent | null) => {
       setCanLoad(hasAdvertisingConsent(consent));
@@ -39,7 +38,7 @@ export default function AdSenseLoader({ enabled }: { enabled: boolean }) {
     return () => window.removeEventListener(PRIVACY_CONSENT_CHANGED_EVENT, handleConsentChanged);
   }, [enabled]);
 
-  if (!enabled || !canLoad) {
+  if (!enabled || !canLoad || pathname === '/invite') {
     return null;
   }
 

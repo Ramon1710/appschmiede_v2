@@ -9,14 +9,14 @@ import { collection, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import Header from '@/components/Header';
 import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
+import useUserProfile from '@/hooks/useUserProfile';
 import { auth, db } from '@/lib/firebase';
 import type { PageTree } from '@/lib/editorTypes';
 import { createPageWithContent } from '@/lib/db-editor';
 import { useI18n } from '@/lib/i18n';
-import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
+import { canManageMainTemplates } from '@/lib/user-utils';
 import { createProject } from '@/lib/db-projects';
-import { assertCanCreateProjectClient, chargeCoinsForClientAction } from '@/lib/billing-client';
+import { assertAuthorizedAction } from '@/lib/access-client';
 
 const BUILD_TAG = process.env.NEXT_PUBLIC_BUILD_ID ?? process.env.VERCEL_GIT_COMMIT_SHA ?? 'local-dev';
 const LAST_PROJECT_STORAGE_KEY = 'appschmiede:last-project';
@@ -43,49 +43,49 @@ function TemplatesPageComponent() {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { profile } = useUserProfile(user?.uid);
   const { lang } = useI18n();
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   const copy = useMemo(
     () =>
       lang === 'en'
         ? {
             badge: 'Templates',
-            unauthDesc: `Sign in to use all templates for free and create projects directly from the catalog ${freePhaseLabel}.`,
+            unauthDesc: 'Sign in to access the available templates and create projects directly from the catalog.',
             headerTitle: 'Template Library',
             headerDesc:
-              `All templates can currently be used by every signed-in user for free. Templates are loaded from Firebase; admins can maintain central app templates ${freePhaseLabel}.`,
+              'Available templates are loaded from Firebase; admins can maintain central app templates.',
             tourTitle: 'Template Library',
             tourGrid: 'All templates come from Firebase (no hardcoded templates).',
-            tourCreate: 'Create a free project from any template in one click and open it in the editor.',
-            createProject: 'Create free project',
+            tourCreate: 'Create a project from a template in one click and open it in the editor.',
+            createProject: 'Create project',
             creatingProject: 'Creating…',
             deleteTemplate: 'Delete template',
             deletingTemplate: 'Deleting…',
             empty: 'No templates available yet.',
             confirmDelete: 'Delete this template permanently?',
             deleteFailed: 'Template could not be deleted. Please try again.',
-            freeNotice: `All templates are unlocked for every user ${freePhaseLabel}. Only AI actions are billed separately.`,
+            freeNotice: 'Templates are available to authorized members and partners. AI actions are billed through coins.',
           }
         : {
             badge: 'Vorlagen',
-            unauthDesc: `Melde dich an, um alle Vorlagen ${freePhaseLabel} kostenlos zu nutzen und Projekte direkt aus dem Katalog zu erstellen.`,
+            unauthDesc: 'Melde dich an, um auf verfügbare Vorlagen zuzugreifen und Projekte direkt aus dem Katalog zu erstellen.',
             headerTitle: 'Vorlagenbibliothek',
             headerDesc:
-              `Alle Vorlagen sind aktuell für jeden eingeloggten Nutzer kostenlos nutzbar. Vorlagen werden aus Firebase geladen; Admins können zentrale App-Vorlagen pflegen.`,
+              'Verfügbare Vorlagen werden aus Firebase geladen; Admins können zentrale App-Vorlagen pflegen.',
             tourTitle: 'Vorlagenbibliothek',
             tourGrid: 'Alle Vorlagen kommen aus Firebase (keine hardcodierten Vorlagen).',
-            tourCreate: 'Mit einem Klick ein kostenloses Projekt aus jeder Vorlage anlegen und direkt im Editor öffnen.',
-            createProject: 'Kostenloses Projekt erstellen',
+            tourCreate: 'Mit einem Klick ein Projekt aus einer Vorlage anlegen und direkt im Editor öffnen.',
+            createProject: 'Projekt erstellen',
             creatingProject: 'Wird erstellt…',
             deleteTemplate: 'Vorlage löschen',
             deletingTemplate: 'Wird gelöscht…',
             empty: 'Noch keine Vorlagen verfügbar.',
             confirmDelete: 'Diese Vorlage wirklich dauerhaft löschen?',
             deleteFailed: 'Vorlage konnte nicht gelöscht werden. Bitte versuche es erneut.',
-            freeNotice: `Alle Vorlagen sind für alle Nutzer ${freePhaseLabel} freigeschaltet. Nur KI-Aktionen werden separat berechnet.`,
+            freeNotice: 'Vorlagen stehen autorisierten Mitgliedern und Partnern zur Verfügung. KI-Aktionen werden über Coins abgerechnet.',
           },
-    [freePhaseLabel, lang]
+    [lang]
   );
 
   useEffect(
@@ -189,8 +189,8 @@ function TemplatesPageComponent() {
     setCreatingTemplateId(tpl.id);
 
     try {
-      await assertCanCreateProjectClient(auth.currentUser);
-      await chargeCoinsForClientAction(auth.currentUser, 'template');
+      await assertAuthorizedAction(auth.currentUser);
+      await assertAuthorizedAction(auth.currentUser);
       const projectId = await createProject(tpl.projectName, user.uid);
 
       await Promise.all(
@@ -209,7 +209,7 @@ function TemplatesPageComponent() {
         // ignore
       }
 
-      const adminMode = canManageMainTemplates(user.email);
+      const adminMode = canManageMainTemplates(profile?.role);
       const suffix = adminMode ? `&appTemplateId=${encodeURIComponent(tpl.id)}` : '';
       router.push(`/editor?projectId=${projectId}${suffix}`);
     } catch (e) {
@@ -226,8 +226,7 @@ function TemplatesPageComponent() {
     }
   };
 
-  const isAdmin = isAdminEmail(user?.email);
-  const canEditMainTemplates = canManageMainTemplates(user?.email);
+  const canEditMainTemplates = canManageMainTemplates(profile?.role);
 
   const deleteTemplate = async (tpl: Template) => {
     if (!user) return;
@@ -2135,7 +2134,7 @@ function TemplatesPageComponent() {
         return;
       }
 
-      const adminMode = isAdminEmail(user.email);
+      const adminMode = isAdminRole(profile?.role);
       if (adminMode) {
         try {
           const templateRef = doc(db, 'templates', tpl.id);

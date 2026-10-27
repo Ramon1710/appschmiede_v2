@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
 
           <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
             <Link href="/login" className="hover:underline">Zurück zum Login</Link>
-            <Link href="/register" className="hover:underline">Konto erstellen</Link>
+            <Link href="/register" className="hover:underline">Registrierung nur mit Einladung</Link>
           </div>
         </form>
       </div>

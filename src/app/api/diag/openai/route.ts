@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isRequestAuthError, requireAdminUid } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 
@@ -20,7 +21,16 @@ function getOpenAiApiKey() {
   return { hasKey: false, source: null as string | null };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  try {
+    await requireAdminUid(request);
+  } catch (error) {
+    if (isRequestAuthError(error)) {
+      return NextResponse.json({ error: 'Administratoranmeldung erforderlich.' }, { status: 403 });
+    }
+    return NextResponse.json({ error: 'Diagnose nicht verfügbar.' }, { status: 500 });
+  }
+
   const openAi = getOpenAiApiKey();
 
   return NextResponse.json(

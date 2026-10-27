@@ -1,9 +1,8 @@
 import 'server-only';
 
-import { getPlanConfig, TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
+import { getPlanConfig, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import { COIN_COSTS, type CoinActionKey } from '@/config/coins';
 import { getFirebaseAdminDb } from '@/lib/firebase-admin';
-import { isAdminEmail } from '@/lib/user-utils';
 import type { AppPlanId, AppUserProfile, PlanStatus } from '@/types/user';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -38,7 +37,7 @@ function normalizePlanId(plan: unknown): AppPlanId {
 
 function buildInsufficientCoinsMessage(actionLabel: string, requiredCoins: number, currentCoins: number): string {
   if (TEMP_FREE_ACCESS_ENABLED) {
-    return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Aufladungen sind ${TEMP_FREE_ACCESS_CUTOFF_LABEL_DE} ausgeblendet.`;
+    return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Aufladungen sind derzeit ausgeblendet.`;
   }
   return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Lade dein Guthaben unter /tools/billing auf.`;
 }
@@ -71,7 +70,7 @@ export async function creditCoins(uid: string, coins: number): Promise<void> {
       throw new Error(`User ${uid} nicht gefunden.`);
     }
     const data = snap.data() as UserDocData;
-    if (isAdminEmail((data.email as string | null) ?? null)) {
+    if (data.role === 'admin') {
       return; // Admin braucht keine Coins.
     }
     const current = Number(data.coinsBalance ?? 0);
@@ -108,7 +107,7 @@ export async function activatePlan(
       throw new Error(`User ${uid} nicht gefunden.`);
     }
     const data = snap.data() as UserDocData;
-    if (isAdminEmail((data.email as string | null) ?? null)) {
+    if (data.role === 'admin') {
       return; // Admin hat bereits Business-Features.
     }
     const currentCoins = Number(data.coinsBalance ?? 0);
@@ -188,8 +187,7 @@ export async function assertCanCreateProject(uid: string): Promise<void> {
     throw new Error(`User ${uid} nicht gefunden.`);
   }
 
-  const email = (userDoc.data.email as string | null) ?? null;
-  if (isAdminEmail(email)) {
+  if (userDoc.data.role === 'admin') {
     return;
   }
 
@@ -219,7 +217,7 @@ export async function chargeCoins(uid: string, coins: number, actionLabel: strin
     }
 
     const data = snap.data() as UserDocData;
-    if (isAdminEmail((data.email as string | null) ?? null)) {
+    if (data.role === 'admin') {
       return;
     }
 

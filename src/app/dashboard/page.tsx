@@ -14,7 +14,6 @@ import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import GuidedTour from '@/components/GuidedTour';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN } from '@/config/billing';
 import { getStoredProjectId } from '@/lib/editor-storage';
 import { useI18n } from '@/lib/i18n';
 import useUserProfile from '@/hooks/useUserProfile';
@@ -22,7 +21,6 @@ import useUserProfile from '@/hooks/useUserProfile';
 export default function DashboardPage() {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const locale = lang === 'en' ? 'en-US' : 'de-DE';
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -130,8 +128,8 @@ export default function DashboardPage() {
                 <h2 className="text-4xl font-semibold leading-tight">{tr('Baue deine nächste App in Minuten.', 'Build your next app in minutes.')}</h2>
                 <p className="text-sm text-neutral-400">
                   {tr(
-                    `Verwalte deine Projekte, teste neue Ideen im Editor und nutze alle Vorlagen ${freePhaseLabel} kostenlos. Nur KI-Aktionen brauchen aktuell Coins.`,
-                    `Manage projects, test ideas in the editor, and use every template for free ${freePhaseLabel}. Only AI actions currently require coins.`
+                    'Verwalte deine Projekte, teste Ideen im Editor und arbeite mit den verfügbaren Vorlagen.',
+                    'Manage your projects, test ideas in the editor, and work with the available templates.'
                   )}
                 </p>
                 <div className="flex gap-3 pt-2 text-sm">
@@ -180,7 +178,7 @@ export default function DashboardPage() {
               >
                 <div className="text-4xl">🧩</div>
                 <span className="font-semibold">{tr('Vorlagen', 'Templates')}</span>
-                <span className="text-xs text-neutral-400">{tr('Fertige Apps kostenlos kopieren', 'Copy ready-made apps for free')}</span>
+                <span className="text-xs text-neutral-400">{tr('Vorlagen als Projekt übernehmen', 'Create a project from a template')}</span>
               </Link>
             </section>
 

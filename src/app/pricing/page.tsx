@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import PricingPlanAction from '@/components/PricingPlanAction';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
+import { TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import { getHomeContent } from '@/lib/home-content';
 import type { Lang } from '@/lib/i18n-dict';
 
@@ -18,7 +18,6 @@ export default async function PricingPage() {
   const raw = cookieStore.get('lang')?.value;
   const lang: Lang = raw === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const { subscriptionPlans, subscriptionPlanOrder, planFeatureRows, coinPricingCards } = getHomeContent(lang);
   const orderedPlans = subscriptionPlanOrder
     .map((planId) => subscriptionPlans.find((plan) => plan.id === planId))
@@ -31,24 +30,17 @@ export default async function PricingPage() {
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl">
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Preise', 'Pricing')}</p>
           <h1 className="mt-3 text-4xl font-semibold">
-            {TEMP_FREE_ACCESS_ENABLED
-              ? tr('Kostenfreie Nutzung bis Anfang 2027', 'Free access until early 2027')
-              : tr('Abos und Coins auf einen Blick', 'Subscriptions and coins at a glance')}
+            {tr('Leistungen, Abos und Coins', 'Features, subscriptions, and coins')}
           </h1>
           <p className="mt-5 max-w-4xl text-base leading-7 text-neutral-200">
-            {TEMP_FREE_ACCESS_ENABLED
-              ? tr(
-                  `Bis ${freePhaseLabel} kannst du AppSchmiede mit allen Funktionen außer KI kostenfrei nutzen. Vorlagen, Seiten, Bausteine und Projekte sind freigeschaltet. Coins werden aktuell nur für KI-Aktionen benötigt.`,
-                  `Until ${freePhaseLabel}, you can use AppSchmiede for free with all features except AI. Templates, pages, building blocks, and projects are unlocked. Coins are currently only needed for AI actions.`
-                )
-              : tr(
-                  'Wähle zwischen laufenden Abos für regelmäßige Nutzung und Coin-Paketen für zusätzliche Bausteine, KI-Läufe oder neue Seiten. Coins sind zusätzlich jederzeit im Billing-Bereich aufladbar.',
-                  'Choose between recurring subscriptions for regular usage and coin packs for extra building blocks, AI actions, or new pages. Coins can also be topped up any time in the billing area.'
-                )}
+            {tr(
+              'Die Übersicht zeigt verfügbare Funktionen, Abos und Coin-Pakete. Buchbare Optionen und Preise werden im Bestellprozess angezeigt.',
+              'This overview lists available features, subscriptions, and coin packs. Purchasable options and prices are shown during checkout.'
+            )}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link href="/register" className="rounded-full bg-white px-5 py-3 text-center text-sm font-semibold text-[#050c1c] transition hover:bg-neutral-200">
-              {tr('Kostenlos starten', 'Start for free')}
+            <Link href="/login" className="rounded-full bg-white px-5 py-3 text-center text-sm font-semibold text-[#050c1c] transition hover:bg-neutral-200">
+              {tr('Bereits eingeladen? Jetzt anmelden', 'Already invited? Sign in')}
             </Link>
             {!TEMP_FREE_ACCESS_ENABLED && (
               <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
@@ -79,7 +71,7 @@ export default async function PricingPage() {
 
         <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
           <h2 className="text-3xl font-semibold">
-            {TEMP_FREE_ACCESS_ENABLED ? tr('Geplante Tarife ab 2027', 'Planned pricing from 2027') : tr('Leistungsübersicht', 'Feature overview')}
+            {tr('Leistungsübersicht', 'Feature overview')}
           </h2>
           <div className="mt-6 overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20 text-left text-sm">

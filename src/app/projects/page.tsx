@@ -18,7 +18,7 @@ import {
 } from '@/lib/db-projects';
 import { getStoredProjectId } from '@/lib/editor-storage';
 import { useI18n } from '@/lib/i18n';
-import { assertCanCreateProjectClient } from '@/lib/billing-client';
+import { assertAuthorizedAction } from '@/lib/access-client';
 
 export default function ProjectsIndexPage() {
   const { lang } = useI18n();
@@ -63,7 +63,7 @@ export default function ProjectsIndexPage() {
     setLoading(true);
     setError(null);
     try {
-      await assertCanCreateProjectClient(auth.currentUser);
+      await assertAuthorizedAction(auth.currentUser);
       await createProject(name.trim(), user.uid);
       setName('');
     } catch (e: any) {

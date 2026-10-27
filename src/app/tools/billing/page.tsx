@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import GuidedTour from '@/components/GuidedTour';
 import useAuth from '@/hooks/useAuth';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED, type CoinPackageKey } from '@/config/billing';
+import { TEMP_FREE_ACCESS_ENABLED, type CoinPackageKey } from '@/config/billing';
 import { useI18n } from '@/lib/i18n';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
@@ -80,7 +80,6 @@ export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
 
   if (TEMP_FREE_ACCESS_ENABLED) {
     return (
@@ -90,11 +89,11 @@ export default function BillingPage() {
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <section className="rounded-3xl border border-white/10 bg-neutral-900/80 p-8 shadow-xl">
               <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Käufe pausiert', 'Purchases paused')}</p>
-              <h1 className="mt-3 text-3xl font-semibold">{tr('Bis Anfang 2027 sind keine Käufe nötig', 'No purchases are needed until early 2027')}</h1>
+              <h1 className="mt-3 text-3xl font-semibold">{tr('Coin-Käufe sind derzeit pausiert', 'Coin purchases are currently paused')}</h1>
               <p className="mt-4 text-base leading-7 text-neutral-300">
                 {tr(
-                  `Bis ${freePhaseLabel} sind Vorlagen, Projekte, Seiten und Funktionen für alle Nutzer kostenfrei freigeschaltet. Deshalb ist der Kauf von Coins aktuell ausgeblendet.`,
-                  `Until ${freePhaseLabel}, templates, projects, pages, and features are unlocked for all users at no cost. That is why coin purchases are currently hidden.`
+                  'Verfügbare Zahlungsoptionen werden hier angezeigt, sobald Coin-Käufe wieder freigeschaltet sind.',
+                  'Available payment options will be shown here when coin purchases are enabled again.'
                 )}
               </p>
             </section>
@@ -167,8 +166,8 @@ export default function BillingPage() {
             <h1 className="text-3xl font-semibold">{tr('Nur KI-Funktionen brauchen aktuell Coins', 'Only AI features currently require coins')}</h1>
             <p className="text-base text-neutral-300">
               {tr(
-                `Bis ${freePhaseLabel} sind Vorlagen, Projekte, Seiten und Bausteine für alle Nutzer kostenfrei. Coins brauchst du aktuell nur für KI-Funktionen. Nach erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.`,
-                `Until ${freePhaseLabel}, templates, projects, pages, and building blocks are free for every user. Right now, coins are only needed for AI features. After payment, your balance updates automatically in the header.`
+                'Coins werden für KI-Funktionen und zusätzliche Leistungen verwendet. Nach erfolgreicher Zahlung aktualisiert sich dein Guthaben automatisch in der Kopfzeile.',
+                'Coins are used for AI features and additional services. After payment, your balance updates automatically in the header.'
               )}
             </p>
           </header>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import useAuth from '@/hooks/useAuth';
 import useUserProfile from '@/hooks/useUserProfile';
-import { TEMP_FREE_ACCESS_CUTOFF_LABEL_DE, TEMP_FREE_ACCESS_CUTOFF_LABEL_EN, TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
+import { TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
 import { subscribeProjects } from '@/lib/db-projects';
 import LogoutButton from './LogoutButton';
 import { useI18n } from '@/lib/i18n';
@@ -14,7 +14,6 @@ export default function Header() {
   const { user, loading } = useAuth();
   const { profile } = useUserProfile(user?.uid);
   const { t, lang, setLang } = useI18n();
-  const freePhaseLabel = lang === 'en' ? TEMP_FREE_ACCESS_CUTOFF_LABEL_EN : TEMP_FREE_ACCESS_CUTOFF_LABEL_DE;
   const coinsValue = profile?.coinsBalance;
   const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
   const formattedCoins =
@@ -24,7 +23,7 @@ export default function Header() {
         : coinsValue.toLocaleString(numberLocale)
       : null;
   const [open, setOpen] = useState(false);
-  const [hasProjects, setHasProjects] = useState(true);
+  const [projectState, setProjectState] = useState<{ uid: string; hasProjects: boolean } | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -40,16 +39,14 @@ export default function Header() {
   }, [open]);
 
   useEffect(() => {
-    if (!user?.uid) {
-      setHasProjects(true);
-      return undefined;
-    }
+    if (!user?.uid) return undefined;
     const unsubscribe = subscribeProjects(user.uid, (projects) => {
-      setHasProjects(projects.length > 0);
+      setProjectState({ uid: user.uid, hasProjects: projects.length > 0 });
     });
     return () => unsubscribe();
   }, [user?.uid]);
 
+  const hasProjects = !user?.uid || projectState?.uid !== user.uid || projectState.hasProjects;
   const editorDisabled = Boolean(user) && !hasProjects;
   const showAuthenticatedNav = !loading && Boolean(user);
   const editorDisabledTitle =
@@ -74,6 +71,10 @@ export default function Header() {
           </div>
         </Link>
         <Link href="/" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_home')}</Link>
+        <span className="inline-flex max-w-full items-center rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-center text-[9px] font-bold leading-4 tracking-[0.12em] text-amber-100 sm:whitespace-nowrap sm:text-[10px] sm:tracking-[0.16em]">
+          <span className="sm:hidden">{lang === 'en' ? 'EXCLUSIVE TO MEMBERS & PARTNERS' : 'EXKLUSIV FÜR MITGLIEDER & PARTNER'}</span>
+          <span className="hidden sm:inline">{lang === 'en' ? 'EXCLUSIVE TO HEADBANG HANDWERK MEMBERS & PARTNERS' : 'EXKLUSIV FÜR HEADBANG HANDWERK MITGLIEDER & PARTNER'}</span>
+        </span>
         {showAuthenticatedNav && (
           <>
             <Link href="/dashboard" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_dashboard')}</Link>
@@ -95,16 +96,14 @@ export default function Header() {
               {t('nav_editor')}
             </Link>
             <Link href="/tools/templates" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_templates')}</Link>
+            {profile?.role === 'admin' ? (
+              <Link href="/tools/invitations" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">Einladungen verwalten</Link>
+            ) : null}
           </>
         )}
         <Link href="/pricing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
         {!TEMP_FREE_ACCESS_ENABLED && (
           <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
-        )}
-        {TEMP_FREE_ACCESS_ENABLED && (
-          <span className="hidden xl:inline rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-100">
-            {lang === 'en' ? `Free ${freePhaseLabel}` : `Kostenfrei ${freePhaseLabel}`}
-          </span>
         )}
       </nav>
 

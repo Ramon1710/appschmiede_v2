@@ -29,8 +29,8 @@ import {
   setStoredProjectId as persistStoredProjectId,
 } from '@/lib/editor-storage';
 import { touchProject } from '@/lib/db-projects';
-import { canManageMainTemplates, isAdminEmail } from '@/lib/user-utils';
-import { chargeCoinsForClientAction } from '@/lib/billing-client';
+import { canManageMainTemplates } from '@/lib/user-utils';
+import { assertAuthorizedAction } from '@/lib/access-client';
 import { buildAuthHeaders } from '@/lib/client-auth';
 
 type MutableNode = Omit<EditorNode, 'props' | 'style' | 'children'> & {
@@ -934,8 +934,7 @@ export default function EditorShell({ initialPageId }: Props) {
   const pendingSyncHash = useRef<string | null>(null);
   const { user, loading } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile(user?.uid);
-  const isAdmin = isAdminEmail(user?.email);
-  const canEditMainTemplates = canManageMainTemplates(user?.email);
+  const canEditMainTemplates = canManageMainTemplates(profile?.role);
   const { lang } = useI18n();
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
   const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
@@ -969,7 +968,7 @@ export default function EditorShell({ initialPageId }: Props) {
       if (!user) {
         throw new Error(tr('Bitte melde dich an, um diese Funktion zu nutzen.', 'Please sign in to use this feature.'));
       }
-      await chargeCoinsForClientAction(user, action);
+      await assertAuthorizedAction(user, action);
     },
     [user, tr]
   );

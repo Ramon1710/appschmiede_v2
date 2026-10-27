@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 
 export default function LoginPage() {
@@ -15,10 +15,30 @@ export default function LoginPage() {
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) router.replace("/dashboard");
+    let active = true;
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user || !active) return;
+      try {
+        const token = await user.getIdToken();
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!response.ok) {
+          await signOut(auth);
+          if (active) setErr('Für dieses Konto ist kein AppSchmiede-Zugang freigeschaltet.');
+          return;
+        }
+        if (active) router.replace('/dashboard');
+      } catch {
+        if (active) setErr('Sitzung konnte nicht eingerichtet werden. Bitte versuche es erneut.');
+      }
     });
-    return () => unsub();
+    return () => {
+      active = false;
+      unsub();
+    };
   }, [router]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -27,7 +47,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.replace("/dashboard");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setErr(msg || "Login fehlgeschlagen");
@@ -82,7 +101,7 @@ export default function LoginPage() {
           </button>
 
           <div className="mt-4 flex items-center justify-between text-sm text-slate-300">
-            <Link href="/register" className="hover:underline">Konto erstellen</Link>
+            <Link href="/register" className="hover:underline">Registrierung nur mit Einladung</Link>
             <Link href="/reset" className="hover:underline">Passwort vergessen?</Link>
           </div>
         </form>
