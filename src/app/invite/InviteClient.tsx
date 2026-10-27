@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, signInWithEmailAndPassword, signOut, updateProfile, type User } from 'firebase/auth';
+import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, type User } from 'firebase/auth';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { auth } from '@/lib/firebase';
 
@@ -33,11 +33,7 @@ export default function InviteClient({ token }: { token: string }) {
 
   useEffect(() => {
     let active = true;
-    if (!token) {
-      setValidationError('Der Einladungslink enthält keinen Token.');
-      setLoading(false);
-      return undefined;
-    }
+    if (!token) return undefined;
 
     fetch('/api/invitations/validate', {
       method: 'POST',
@@ -77,13 +73,9 @@ export default function InviteClient({ token }: { token: string }) {
           setValidationError('Bitte melde dich mit der eingeladenen E-Mail-Adresse an.');
           return;
         }
-        if (!currentUser.emailVerified) {
-          setNotice('Bestätige deine E-Mail-Adresse über den Link in deinem Postfach und kehre anschließend hierher zurück.');
-          return;
-        }
-
         redeeming.current = true;
         setBusy(true);
+        setNotice('Einladung wird eingelöst …');
         const idToken = await currentUser.getIdToken(true);
         const response = await fetch('/api/invitations/redeem', {
           method: 'POST',
@@ -111,8 +103,6 @@ export default function InviteClient({ token }: { token: string }) {
     };
   }, [authUser, displayName, invitation, refreshKey, router, token]);
 
-  const continueUrl = () => `${window.location.origin}/invite?token=${encodeURIComponent(token)}`;
-
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!invitation) return;
@@ -131,8 +121,8 @@ export default function InviteClient({ token }: { token: string }) {
     try {
       const credential = await createUserWithEmailAndPassword(auth, invitation.email, password);
       if (displayName.trim()) await updateProfile(credential.user, { displayName: displayName.trim() });
-      await sendEmailVerification(credential.user, { url: continueUrl() });
-      setNotice('Wir haben dir eine Verifizierungsmail geschickt. Bestätige deine E-Mail-Adresse und öffne danach den Einladungslink erneut.');
+      setAuthUser(credential.user);
+      setNotice('Konto erstellt. Dein Einladungszugang wird eingerichtet.');
       setRefreshKey((value) => value + 1);
     } catch (error) {
       if (errorCode(error) === 'auth/email-already-in-use') {
@@ -154,12 +144,7 @@ export default function InviteClient({ token }: { token: string }) {
     setBusy(true);
     try {
       const credential = await signInWithEmailAndPassword(auth, invitation.email, password);
-      await credential.user.reload();
-      if (!credential.user.emailVerified) {
-        await sendEmailVerification(credential.user, { url: continueUrl() });
-        setNotice('Deine E-Mail-Adresse ist noch nicht bestätigt. Wir haben dir einen neuen Verifizierungslink geschickt.');
-      }
-      setAuthUser(auth.currentUser);
+      setAuthUser(credential.user);
       setRefreshKey((value) => value + 1);
     } catch {
       setValidationError('Anmeldung fehlgeschlagen. Prüfe dein Passwort und versuche es erneut.');
@@ -168,31 +153,19 @@ export default function InviteClient({ token }: { token: string }) {
     }
   };
 
-  const resendVerification = async () => {
-    if (!authUser) return;
-    setBusy(true);
-    setValidationError(null);
-    try {
-      await sendEmailVerification(authUser, { url: continueUrl() });
-      setNotice('Der Verifizierungslink wurde erneut gesendet.');
-    } catch {
-      setValidationError('Die Verifizierungsmail konnte nicht gesendet werden. Bitte versuche es später erneut.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const expiresAt = invitation?.expiresAt ? new Date(invitation.expiresAt).toLocaleString('de-DE') : null;
+  const isLoading = loading && Boolean(token);
+  const currentValidationError = validationError ?? (!token ? 'Der Einladungslink enthält keinen Token.' : null);
 
   return (
     <main className="grid min-h-screen place-items-center bg-[#03050a] px-4 py-12 text-white">
       <section className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b0b12] p-6 shadow-2xl sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-200">Headbang Handwerk e. V.</p>
         <h1 className="mt-3 text-3xl font-semibold">AppSchmiede-Zugang</h1>
-        {loading ? <p className="mt-5 text-sm text-neutral-300">Einladung wird geprüft …</p> : null}
-        {!loading && validationError && !invitation ? (
+        {isLoading ? <p className="mt-5 text-sm text-neutral-300">Einladung wird geprüft …</p> : null}
+        {!isLoading && currentValidationError && !invitation ? (
           <div className="mt-5 space-y-4">
-            <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{validationError}</p>
+            <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{currentValidationError}</p>
             <Link href="/login" className="inline-flex rounded-full border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Zum Login</Link>
           </div>
         ) : null}
@@ -203,15 +176,17 @@ export default function InviteClient({ token }: { token: string }) {
             <input id="invited-email" type="email" readOnly value={invitation.email} className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-white" />
             {expiresAt ? <p className="mt-2 text-xs text-neutral-500">Gültig bis {expiresAt}</p> : null}
             {notice ? <p className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-100">{notice}</p> : null}
-            {validationError && invitation ? <p className="mt-4 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{validationError}</p> : null}
+            {currentValidationError && invitation ? <p className="mt-4 rounded-lg border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-200">{currentValidationError}</p> : null}
             {authUser && authUser.email?.trim().toLowerCase() !== invitation.email.trim().toLowerCase() ? (
               <button type="button" onClick={() => void signOut(auth)} className="mt-5 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Anderes Konto abmelden</button>
-            ) : authUser && !authUser.emailVerified ? (
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button type="button" disabled={busy} onClick={() => void resendVerification()} className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-neutral-950 disabled:opacity-50">Verifizierungsmail erneut senden</button>
-                <button type="button" disabled={busy} onClick={() => setRefreshKey((value) => value + 1)} className="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10 disabled:opacity-50">E-Mail bestätigt</button>
+            ) : authUser ? (
+              <div className="mt-5 space-y-3">
+                <p className="text-sm text-neutral-300">{busy ? 'Einladungszugang wird eingerichtet …' : 'Einladung eingelöst.'}</p>
+                {!busy && validationError ? (
+                  <button type="button" onClick={() => { redeeming.current = false; setRefreshKey((value) => value + 1); }} className="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Einlösung erneut versuchen</button>
+                ) : null}
               </div>
-            ) : !authUser ? (
+            ) : (
               <form onSubmit={existingAccount ? submitLogin : submitRegistration} className="mt-5 space-y-4">
                 {!existingAccount ? (
                   <>
@@ -239,7 +214,7 @@ export default function InviteClient({ token }: { token: string }) {
                 </button>
                 {existingAccount ? <button type="button" onClick={() => { setExistingAccount(false); setPassword(''); }} className="w-full text-sm text-neutral-400 hover:text-white">Zur Kontoerstellung wechseln</button> : null}
               </form>
-            ) : null}
+            )}
           </>
         ) : null}
         <div className="mt-6 border-t border-white/10 pt-5 text-sm text-neutral-400">

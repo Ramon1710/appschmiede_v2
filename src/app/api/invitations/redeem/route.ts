@@ -3,7 +3,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { checkInvitation, hashInvitationToken, normalizeInvitationEmail, type InvitationStatus } from '@/lib/invitation-core';
 import { enforceInvitationRateLimit, InvitationRateLimitError } from '@/lib/invitation-server';
 import { getFirebaseAdminAuth, getFirebaseAdminDb } from '@/lib/firebase-admin';
-import { attachAppSessionCookie, createAppSessionCookie, isRequestAuthError, requireVerifiedIdentity } from '@/lib/server-auth';
+import { attachAppSessionCookie, createAppSessionCookie, isRequestAuthError, requireAuthenticatedIdentity } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,16 +23,15 @@ function failureStatus(reason: keyof typeof messages): number {
 export async function POST(request: Request) {
   try {
     await enforceInvitationRateLimit(request, 'redeem', 10);
-    const identity = await requireVerifiedIdentity(request);
+    const identity = await requireAuthenticatedIdentity(request);
     const authUser = await getFirebaseAdminAuth().getUser(identity.uid);
     const email = normalizeInvitationEmail(identity.email!);
     if (
       authUser.disabled ||
-      !authUser.emailVerified ||
       !authUser.email ||
       normalizeInvitationEmail(authUser.email) !== email
     ) {
-      return NextResponse.json({ error: 'Bitte bestätige zuerst die eingeladene E-Mail-Adresse.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ error: 'Das Firebase-Konto stimmt nicht mit der eingeladenen E-Mail-Adresse überein.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
     }
     const storedEmail = authUser.email.trim();
 
@@ -136,13 +135,23 @@ export async function POST(request: Request) {
       );
     }
 
+    let emailVerified = authUser.emailVerified;
+    if (!emailVerified) {
+      try {
+        await getFirebaseAdminAuth().updateUser(identity.uid, { emailVerified: true });
+        emailVerified = true;
+      } catch {
+        console.error('Firebase emailVerified could not be updated after successful invitation redemption.');
+      }
+    }
+
     const authorization = request.headers.get('authorization') ?? '';
     const idToken = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
     if (!idToken) {
       return NextResponse.json({ error: 'Sitzung konnte nicht eingerichtet werden.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
     }
     const sessionCookie = await createAppSessionCookie(idToken);
-    const response = NextResponse.json({ ok: true }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+    const response = NextResponse.json({ ok: true, emailVerified }, { status: 200, headers: { 'Cache-Control': 'no-store' } });
     attachAppSessionCookie(response, sessionCookie);
     return response;
   } catch (error) {

@@ -61,14 +61,18 @@ async function verifyIdentity(request: Request) {
   }
 }
 
+export async function requireAuthenticatedIdentity(request: Request) {
+  return verifyIdentity(request);
+}
+
 export async function requireVerifiedIdentity(request: Request) {
-  const decoded = await verifyIdentity(request);
+  const decoded = await requireAuthenticatedIdentity(request);
   if (decoded.email_verified !== true) throw new RequestAuthError('verified email required');
   return decoded;
 }
 
 export async function requireAuthenticatedUid(request: Request): Promise<string> {
-  const decoded = await verifyIdentity(request);
+  const decoded = await requireAuthenticatedIdentity(request);
   const email = decoded.email!.trim().toLowerCase();
   if (await hasAdminRole(decoded.uid)) return decoded.uid;
 
