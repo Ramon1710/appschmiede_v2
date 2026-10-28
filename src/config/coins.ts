@@ -3,7 +3,7 @@ export const COIN_COSTS = {
   component: 0,
   quickButton: 0,
   template: 0,
-  ai: 15,
+  ai: 0,
   page: 0,
 } as const;
 

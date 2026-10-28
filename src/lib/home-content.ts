@@ -225,11 +225,11 @@ const de: HomeContent = {
       title: 'Ohne Abo',
       price: '0 € pro Monat',
       description: TEMP_FREE_ACCESS_ENABLED
-        ? 'Zugang für eingeladene Mitglieder und Partner; KI-Aktionen werden über Coins abgerechnet.'
+        ? 'Kostenloser Zugang für eingeladene Mitglieder und Partner einschließlich KI-Funktionen.'
         : 'Starte mit 30 Start-Coins und zahle nur, wenn du mehr benötigst.',
       highlights: TEMP_FREE_ACCESS_ENABLED
-        ? ['Unbegrenzte Projekte', 'Alle Vorlagen & Bausteine', 'KI separat per Coins']
-        : ['1 Projekt verwalten', 'Basis-Bausteine & Vorlagen', 'Community-Support'],
+        ? ['Unbegrenzte Projekte', 'Alle Vorlagen & Bausteine', 'KI ohne Coin-Abrechnung']
+        : ['Unbegrenzte Projekte', 'Basis-Bausteine & Vorlagen', 'Community-Support'],
     },
     {
       id: 'starter',
@@ -240,8 +240,8 @@ const de: HomeContent = {
         ? 'Tarifdetails werden ergänzt, sobald das Angebot verfügbar ist.'
         : 'Regelmäßige Coin-Aufladung für Solo-Maker:innen und kleine Teams.',
       highlights: TEMP_FREE_ACCESS_ENABLED
-        ? ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools']
-        : ['80 Coins pro Monat inklusive', 'Bis zu 3 aktive Projekte', 'Alle Vorlagen & KI-Tools'],
+        ? ['80 Coins pro Monat inklusive', 'Unbegrenzte Projekte', 'Alle Vorlagen & KI-Tools']
+        : ['80 Coins pro Monat inklusive', 'Unbegrenzte Projekte', 'Alle Vorlagen & KI-Tools'],
     },
     {
       id: 'pro',
@@ -251,7 +251,7 @@ const de: HomeContent = {
       description: TEMP_FREE_ACCESS_ENABLED
         ? 'Tarifdetails werden ergänzt, sobald das Angebot verfügbar ist.'
         : 'Für Teams, die parallel mehrere Konzepte testen und launchen.',
-      highlights: ['150 Coins pro Monat inklusive', 'Bis zu 6 parallele Projekte', 'Priorisierte QR- & Export-Links'],
+      highlights: ['150 Coins pro Monat inklusive', 'Unbegrenzte Projekte', 'Priorisierte QR- & Export-Links'],
     },
     {
       id: 'business',
@@ -269,7 +269,7 @@ const de: HomeContent = {
     {
       feature: 'Coins pro Monat',
       values: {
-        free: TEMP_FREE_ACCESS_ENABLED ? 'Nur für KI nötig' : '0 (nur Startguthaben)',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'Keine Coin-Abrechnung' : '0 (nur Startguthaben)',
         starter: '80 Coins',
         pro: '150 Coins',
         business: 'Unbegrenzt',
@@ -278,9 +278,9 @@ const de: HomeContent = {
     {
       feature: 'Aktive Projekte',
       values: {
-        free: TEMP_FREE_ACCESS_ENABLED ? 'Unbegrenzt' : '1 Projekt',
-        starter: '3 Projekte',
-        pro: '6 Projekte',
+        free: 'Unbegrenzt',
+        starter: 'Unbegrenzt',
+        pro: 'Unbegrenzt',
         business: 'Unbegrenzt',
       },
     },
@@ -477,11 +477,11 @@ const en: HomeContent = {
       title: 'No subscription',
       price: '€0 / month',
       description: TEMP_FREE_ACCESS_ENABLED
-        ? 'Access for invited members and partners; AI actions are billed through coins.'
+        ? 'Free access for invited members and partners, including AI features.'
         : 'Start with 30 starter coins and pay only when you need more.',
       highlights: TEMP_FREE_ACCESS_ENABLED
-        ? ['Unlimited projects', 'All templates & building blocks', 'AI billed separately via coins']
-        : ['Manage 1 project', 'Basic building blocks & templates', 'Community support'],
+        ? ['Unlimited projects', 'All templates & building blocks', 'AI without coin billing']
+        : ['Unlimited projects', 'Basic building blocks & templates', 'Community support'],
     },
     {
       id: 'starter',
@@ -491,7 +491,7 @@ const en: HomeContent = {
       description: TEMP_FREE_ACCESS_ENABLED
         ? 'Plan details will be added when the offer becomes available.'
         : 'Regular coin top-ups for solo makers and small teams.',
-      highlights: ['80 coins per month included', 'Up to 3 active projects', 'All templates & AI tools'],
+      highlights: ['80 coins per month included', 'Unlimited projects', 'All templates & AI tools'],
     },
     {
       id: 'pro',
@@ -501,7 +501,7 @@ const en: HomeContent = {
       description: TEMP_FREE_ACCESS_ENABLED
         ? 'Plan details will be added when the offer becomes available.'
         : 'For teams testing and launching multiple concepts in parallel.',
-      highlights: ['150 coins per month included', 'Up to 6 parallel projects', 'Priority QR & export links'],
+      highlights: ['150 coins per month included', 'Unlimited projects', 'Priority QR & export links'],
     },
     {
       id: 'business',
@@ -519,7 +519,7 @@ const en: HomeContent = {
     {
       feature: 'Coins per month',
       values: {
-        free: TEMP_FREE_ACCESS_ENABLED ? 'Only needed for AI' : '0 (starter coins only)',
+        free: TEMP_FREE_ACCESS_ENABLED ? 'No coin billing' : '0 (starter coins only)',
         starter: '80 coins',
         pro: '150 coins',
         business: 'Custom',
@@ -528,9 +528,9 @@ const en: HomeContent = {
     {
       feature: 'Active projects',
       values: {
-        free: TEMP_FREE_ACCESS_ENABLED ? 'Unlimited' : '1 project',
-        starter: '3 projects',
-        pro: '6 projects',
+        free: 'Unlimited',
+        starter: 'Unlimited',
+        pro: 'Unlimited',
         business: 'Unlimited',
       },
     },

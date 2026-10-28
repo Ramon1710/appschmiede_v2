@@ -13,7 +13,7 @@ function adminDb() {
 }
 
 type StripeEventStatus = 'processing' | 'completed' | 'failed';
-export type BillingErrorCode = 'insufficient_coins' | 'project_limit' | 'subscription_missing';
+export type BillingErrorCode = 'insufficient_coins' | 'subscription_missing';
 
 type UserDocData = AppUserProfile & Record<string, unknown>;
 
@@ -31,22 +31,11 @@ export function isBillingError(error: unknown): error is BillingError {
   return error instanceof BillingError;
 }
 
-function normalizePlanId(plan: unknown): AppPlanId {
-  return plan === 'starter' || plan === 'pro' || plan === 'business' ? plan : 'free';
-}
-
 function buildInsufficientCoinsMessage(actionLabel: string, requiredCoins: number, currentCoins: number): string {
   if (TEMP_FREE_ACCESS_ENABLED) {
     return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Aufladungen sind derzeit ausgeblendet.`;
   }
   return `${actionLabel} benötigt ${requiredCoins} Coin${requiredCoins === 1 ? '' : 's'}. Verfügbar: ${currentCoins}. Lade dein Guthaben unter /tools/billing auf.`;
-}
-
-function buildProjectLimitMessage(maxProjects: number): string {
-  if (maxProjects <= 1) {
-    return 'Dein aktueller Plan erlaubt nur 1 Projekt. Upgrade unter /pricing, um weitere Projekte anzulegen.';
-  }
-  return `Dein aktueller Plan erlaubt maximal ${maxProjects} Projekte. Upgrade unter /pricing, um weitere Projekte anzulegen.`;
 }
 
 async function loadUserDoc(uid: string): Promise<{ ref: FirebaseFirestore.DocumentReference; data: UserDocData } | null> {
@@ -179,28 +168,6 @@ export async function downgradeToFreePlan(uid: string): Promise<void> {
     },
     { merge: true }
   );
-}
-
-export async function assertCanCreateProject(uid: string): Promise<void> {
-  const userDoc = await loadUserDoc(uid);
-  if (!userDoc) {
-    throw new Error(`User ${uid} nicht gefunden.`);
-  }
-
-  if (userDoc.data.role === 'admin') {
-    return;
-  }
-
-  const planId = normalizePlanId(userDoc.data.plan);
-  const maxProjects = getPlanConfig(planId).maxProjects;
-  if (!Number.isFinite(maxProjects) || maxProjects >= 9999) {
-    return;
-  }
-
-  const projectsSnap = await adminDb().collection('projects').where('ownerId', '==', uid).get();
-  if (projectsSnap.size >= maxProjects) {
-    throw new BillingError('project_limit', buildProjectLimitMessage(maxProjects));
-  }
 }
 
 export async function chargeCoins(uid: string, coins: number, actionLabel: string): Promise<void> {

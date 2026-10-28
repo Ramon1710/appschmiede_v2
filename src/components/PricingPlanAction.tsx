@@ -40,8 +40,8 @@ export default function PricingPlanAction({ planId, lang }: PricingPlanActionPro
     return (
       <div className="mt-6 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-center text-sm text-cyan-100">
         {tr(
-          'Dieser Tarif ist derzeit nur als Vorschau sichtbar. KI-Aktionen werden über Coins abgerechnet.',
-          'This plan is currently shown as a preview only. AI actions are billed through coins.'
+          'AppSchmiede einschließlich KI ist für freigeschaltete Mitglieder und Partner kostenlos. Es ist kein Tarifabschluss erforderlich.',
+          'AppSchmiede, including AI, is free of charge for authorized members and partners. No paid plan is required.'
         )}
       </div>
     );

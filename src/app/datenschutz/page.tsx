@@ -1,292 +1,150 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import LegalPageShell from '@/components/LegalPageShell';
+import PrivacySettingsButton from '@/components/PrivacySettingsButton';
 
 export const metadata: Metadata = {
-	title: 'Datenschutzerklärung',
-	description: 'Datenschutzerklärung für myappschmiede.com mit Vercel, Firebase, Stripe, Google AdSense und Consent-Einstellungen.',
+  title: 'Datenschutzerklärung',
+  description: 'Datenschutzhinweise zur kostenlosen, einladungsbasierten AppSchmiede von Headbang Handwerk e. V.',
 };
 
 export default function Datenschutz() {
-	return (
-		<LegalPageShell
-			title="Datenschutzerklärung"
-			subtitle="für myappschmiede.com"
-			updatedAt="15.04.2026"
-		>
-			<section>
-				<h2>1. Verantwortlicher</h2>
-				<p>
-					Verantwortlicher für die Datenverarbeitung auf dieser Website und in der Web-App ist:
-				</p>
-				<p>
-					Ramon Meyer<br />
-					Einzelunternehmer<br />
-					Beethovenstraße 3<br />
-					26810 Westoverledingen<br />
-					Deutschland<br />
-					E-Mail: <a className="underline decoration-dotted" href="mailto:ramon.meyer@hotmail.de">ramon.meyer@hotmail.de</a>
-				</p>
-			</section>
+  return (
+    <LegalPageShell title="Datenschutzerklärung" subtitle="AppSchmiede für autorisierte Mitglieder und Partner von Headbang Handwerk e. V." updatedAt="28.10.2026">
+      <section>
+        <h2>1. Verantwortlicher und Kontakt</h2>
+        <p>
+          Headbang Handwerk e. V.<br />
+          Wiesengrund 5<br />
+          26203 Wardenburg<br />
+          Deutschland
+        </p>
+        <p>Vertreten durch den Vorstand: Daniel Bigl, Ramon Meyer und Melanie Stephan.</p>
+        <p>
+          Datenschutzanfragen: <a href="mailto:info@headbang-handwerk.de" className="underline decoration-dotted">info@headbang-handwerk.de</a><br />
+          Vereinswebsite: <a href="https://www.headbang-handwerk.com/" target="_blank" rel="noopener noreferrer" className="break-words underline decoration-dotted">https://www.headbang-handwerk.com/</a>
+        </p>
+        <p>Weitere Vereinsangaben stehen im <Link href="/impressum" className="underline decoration-dotted">Impressum</Link>.</p>
+      </section>
 
-			<section>
-				<h2>2. Allgemeine Hinweise zur Datenverarbeitung</h2>
-				<p>Wir verarbeiten personenbezogene Daten nur, soweit dies zur Bereitstellung unserer Website und Web-App, zur Einrichtung und Durchführung von Nutzerkonten, zur Zahlungsabwicklung, zur Sicherstellung der technischen Sicherheit und soweit Sie eingewilligt haben zur Analyse, Optimierung und werblichen Finanzierung unseres Angebots erforderlich ist.</p>
-				<p>Personenbezogene Daten sind alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen.</p>
-			</section>
+      <section>
+        <h2>2. Angebot, Zwecke und Rechtsgrundlagen</h2>
+        <p>AppSchmiede ist eine vollständig kostenlose Plattform für freigeschaltete Mitglieder und Partner des Vereins. Es gibt keine öffentliche Registrierung; neue Zugänge werden durch persönliche Einladungen eingerichtet. Es werden keine nutzerseitigen Coins abgerechnet, keine kostenpflichtigen Mitgliedertarife oder App-Abonnements angeboten und keine automatischen kostenpflichtigen Verlängerungen neu vereinbart.</p>
+        <p>Wir verarbeiten Daten zur Einladung, Anmeldung, Verwaltung von Profilen und Zugangsrechten, Bearbeitung von Projekten, Kommunikation sowie für die technische Sicherheit. Für die Bereitstellung des angefragten Zugangs und der vereinbarten Funktionen dient Art. 6 Abs. 1 lit. b DSGVO als Grundlage. Für notwendige Sicherheits- und Missbrauchsschutzmaßnahmen sowie die Bearbeitung sonstiger Anfragen kommt Art. 6 Abs. 1 lit. f DSGVO in Betracht; berechtigte Interessen sind ein sicherer Vereinsbetrieb und der Schutz der Beteiligten. Gesetzliche Pflichten werden auf Art. 6 Abs. 1 lit. c DSGVO gestützt. Optionale, einwilligungsbedürftige Verarbeitungen erfordern Art. 6 Abs. 1 lit. a DSGVO.</p>
+        <p>Welche Grundlage für eine konkrete Verarbeitung gilt, hängt von deren Zweck ab. Eine Mitgliedschaft oder Einladung ist keine pauschale Einwilligung in Werbung, Tracking oder die Weitergabe beliebiger personenbezogener Inhalte an KI-Dienste.</p>
+      </section>
 
-			<section>
-				<h2>3. Aufruf der Website und Hosting</h2>
-				<p>Für das Hosting und die technische Bereitstellung unserer Website und Web-App nutzen wir Vercel.</p>
-				<p>Beim Aufruf unserer Website werden technisch erforderliche Verbindungs- und Protokolldaten verarbeitet, insbesondere:</p>
-				<ul>
-					<li>IP-Adresse</li>
-					<li>Datum und Uhrzeit des Abrufs</li>
-					<li>Browsertyp und Browserversion</li>
-					<li>Betriebssystem</li>
-					<li>angeforderte Inhalte</li>
-					<li>Referrer-URL</li>
-					<li>Statuscodes und technische Ereignisse</li>
-				</ul>
-				<p>Die Verarbeitung erfolgt zur Bereitstellung der Website, zur Gewährleistung von Stabilität und Sicherheit sowie zur Fehleranalyse.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. f DSGVO</p>
-				<p>Soweit auf Ihrem Endgerät technisch notwendige Informationen gespeichert oder ausgelesen werden, erfolgt dies auf Grundlage von § 25 Abs. 2 TDDDG.</p>
-			</section>
+      <section>
+        <h2>3. Verarbeitete Daten und erforderliche Angaben</h2>
+        <ul>
+          <li>Kontaktdaten und Profilangaben: E-Mail-Adresse, angezeigter Name sowie freiwillig ergänzte Vor- und Nachnamen, Unternehmen und Telefonnummer.</li>
+          <li>Kontodaten: Firebase-UID, Anmeldemethode, Authentifizierungs- und Sitzungsdaten, Zeitstempel sowie Administratorrolle und Zugangsfreigabe.</li>
+          <li>Einladungsdaten: Ziel-E-Mail-Adresse, Token-Hash, Ablauf-, Versand- und Einlösestatus, einladende Administration und Zuordnung zum eingelösten Konto.</li>
+          <li>Projekt- und Anwendungsdaten: Projekte, Seiten, Layouts, Vorlagen, Inhalte, Einstellungen, Bearbeitungsinformationen und gegebenenfalls hochgeladene Dateien.</li>
+          <li>Kommunikationsdaten: Supportanfragen, Projekt-Chatnachrichten, Anhänge, Absenderkennungen und Bearbeitungsstatus, soweit die entsprechenden Funktionen genutzt werden.</li>
+          <li>Technische Daten: IP- und Verbindungsdaten, Browserinformationen, Sicherheitszähler, Fehlermeldungen sowie bei Nutzung von KI die eingegebenen Beschreibungen und erzeugten Ergebnisse.</li>
+        </ul>
+        <p>Eine eingeladene E-Mail-Adresse und Authentifizierungsdaten sind für den persönlichen Zugang erforderlich. Ohne sie können wir kein freigeschaltetes Konto bereitstellen. Zusätzliche Profilfelder sind für die Registrierung nicht verpflichtend. Bitte geben Sie nur die für Ihren Zweck erforderlichen Daten ein und keine fremden oder besonders sensiblen personenbezogenen Daten ohne geeignete Berechtigung und Rechtsgrundlage.</p>
+      </section>
 
-			<section>
-				<h2>4. Registrierung und Nutzerkonto</h2>
-				<p>Sie können auf myappschmiede.com ein Nutzerkonto anlegen. Dabei verarbeiten wir folgende Daten:</p>
-				<h3>Pflichtangaben</h3>
-				<ul>
-					<li>Vorname</li>
-					<li>Nachname</li>
-					<li>E-Mail-Adresse</li>
-					<li>Passwort</li>
-				</ul>
-				<h3>Optionale Angaben</h3>
-				<ul>
-					<li>Unternehmen beziehungsweise Firmenname</li>
-					<li>Profilbild</li>
-				</ul>
-				<p>Diese Daten verwenden wir, um:</p>
-				<ul>
-					<li>Ihr Nutzerkonto anzulegen und zu verwalten</li>
-					<li>Ihnen den Login zu ermöglichen</li>
-					<li>vertragliche Leistungen bereitzustellen</li>
-					<li>Support- und Sicherheitsfunktionen umzusetzen</li>
-					<li>Missbrauch zu verhindern</li>
-				</ul>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. b DSGVO<br />Art. 6 Abs. 1 lit. f DSGVO, soweit die Verarbeitung der IT-Sicherheit und Missbrauchsprävention dient</p>
-			</section>
+      <section>
+        <h2>4. Persönliche Einladungen und E-Mail-Versand</h2>
+        <p>Die Administration hinterlegt die eingeladene E-Mail-Adresse und versendet einen persönlichen Link über den konfigurierten SMTP-Mailserver. Die Nachricht enthält den Zugangslink und gegebenenfalls eine persönliche Nachricht. Empfänger sind der Mailserverbetreiber und die beteiligten Empfangs-Maildienste. Die Verbindung zum Versandserver ist verschlüsselt; daraus folgt keine Ende-zu-Ende-Verschlüsselung der E-Mail.</p>
+        <p>Einladungen sind sieben Tage gültig und nur einmal einlösbar. Die Datenbank speichert den SHA-256-Hash des zufälligen Tokens, nicht dessen Klartext. Der persönliche Link selbst wird für den Versand verarbeitet. Bei Prüfung und Einlösung werden Gültigkeit, Status, Frist und die Übereinstimmung der Konto-E-Mail mit der Einladung geprüft. Nach Einlösung werden die Firebase-UID, Einlösezeit und aktive Zugangsfreigabe zugeordnet. Erneuter Versand erzeugt einen neuen Link und macht den bisherigen offenen Link ungültig.</p>
+        <p>Der Besitz des an die eingeladene Adresse versandten Links dient als E-Mail-Nachweis. Nach erfolgreicher Einlösung wird die E-Mail-Adresse in Firebase administrativ als bestätigt markiert; eine zusätzliche Firebase-Verifizierungsmail ist in diesem Ablauf nicht vorgesehen. Bei einem Fehler dieses nachgelagerten Bestätigungsschritts kann die bereits eingerichtete Freigabe bestehen bleiben.</p>
+        <p>Versandstatus, Zeitstempel, bereinigte Fehlercodes und die vom Mailserver bestätigte Message-ID unterstützen Verwaltung und Fehlerbehandlung. Eine SMTP-Annahme bestätigt keine tatsächliche Zustellung. Missbrauchsschutz verwendet begrenzte Versuche, transaktionale Einmal-Einlösung und gehashte, aktionsbezogene IP- beziehungsweise Administratorkennungen mit Zählern. Die Ablaufmarkierung dieser Zähler ist kein Nachweis einer aktivierten automatischen Datenlöschung.</p>
+        <p>Rechtsgrundlagen sind Art. 6 Abs. 1 lit. b DSGVO für den angefragten Zugang beziehungsweise Art. 6 Abs. 1 lit. f DSGVO für die berechtigte Einladungsverwaltung und den Missbrauchsschutz. Die Herkunft der Zieladresse und die Information eingeladener Personen nach Art. 14 DSGVO sind bei nicht direkt erhobenen Adressen zu berücksichtigen. Einladungsablauf und Datenlöschung sind verschieden: Eine automatische Bereinigung von Einladungen, Versandnachweisen und E-Mail-Sperrzuordnungen ist im Anwendungscode nicht eingerichtet. Der konkrete SMTP-Anbieter und verbindliche Aufbewahrungsfristen müssen vor rechtlicher Freigabe bestätigt werden.</p>
+      </section>
 
-			<section>
-				<h2>5. Nutzung von Google Firebase</h2>
-				<p>Für zentrale Funktionen unserer Web-App verwenden wir Google Firebase. Dabei können personenbezogene Daten über Dienste von Google verarbeitet werden.</p>
-				<p>Wir verwenden insbesondere:</p>
-				<ul>
-					<li>Firebase Authentication</li>
-					<li>Cloud Firestore</li>
-					<li>Firebase Cloud Messaging</li>
-					<li>Firebase Analytics beziehungsweise Google Analytics for Firebase</li>
-				</ul>
+      <section>
+        <h2>5. Hosting und technische Protokolle</h2>
+        <p>Das Projekt ist für den Betrieb bei Vercel eingerichtet. Beim Abruf und bei API-Anfragen können Vercel als Hosting-Dienstleister und seine Infrastrukturpartner IP-Adressen, Zeitpunkte, angefragte URLs, Browser- und Verbindungsinformationen, Statuscodes und technische Fehlerdaten verarbeiten. Dies dient der Auslieferung, Stabilität, Fehleranalyse und Abwehr von Missbrauch auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO; bei der angefragten App-Nutzung auch Art. 6 Abs. 1 lit. b DSGVO.</p>
+        <p>Die Anwendung protokolliert technische Fehler; einzelne externe Fehlerrückmeldungen können in Serverprotokolle gelangen. Es gibt keine durchgängig belegte Bereinigung sämtlicher fremder Fehlertexte. Hosting-Logfristen, tatsächliche Region, Vertragspartner, Unterauftragnehmer und die Zuordnung des Betriebskontos zum Verein sind nicht aus der Projektkonfiguration nachweisbar und noch zu bestätigen. Eine feste Hosting-Speicherfrist oder ausschließliche Verarbeitung in Deutschland wird nicht zugesichert.</p>
+      </section>
 
-				<h3>5.1 Firebase Authentication</h3>
-				<p>Zur Anmeldung und Verwaltung von Nutzerkonten nutzen wir Firebase Authentication.</p>
-				<p>Dabei werden insbesondere verarbeitet:</p>
-				<ul>
-					<li>E-Mail-Adresse</li>
-					<li>Authentifizierungsdaten</li>
-					<li>interne Nutzerkennungen</li>
-					<li>Zeitpunkte von Registrierungen und Anmeldungen</li>
-					<li>sicherheitsrelevante technische Informationen</li>
-				</ul>
-				<p>Die Verarbeitung erfolgt zur Bereitstellung eines sicheren Login- und Kontosystems.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. b DSGVO<br />Art. 6 Abs. 1 lit. f DSGVO</p>
+      <section>
+        <h2>6. Firebase: Anmeldung, Datenbank und Dateien</h2>
+        <p>Wir verwenden Google Firebase Authentication für Anmeldung und Kontoverwaltung, Cloud Firestore für Profil-, Projekt-, Berechtigungs-, Einladungs- und Kommunikationsdaten sowie Firebase Storage für Datei-Uploads, insbesondere im Projekt-Chat. Dabei verarbeitet Google die jeweils übermittelten Daten und technische Verbindungsinformationen.</p>
+        <p>Firebase Authentication verarbeitet E-Mail-Adresse, Passwortauthentifizierung, UID und technische Anmeldeinformationen. Passwörter werden nicht in unseren Firestore-Profilen, Anwendungsprotokollen oder eigenen Browser-Einstellungen gespeichert. Das Firebase-SDK kann Anmeldezustände lokal vorhalten. Ein HttpOnly-Sitzungscookie ergänzt den Zugang zu geschützten Seiten. Serverseitige Token- und Freigabeprüfungen sowie Firestore- und Storage-Regeln begrenzen den Zugriff; Administratorrechte werden nicht allein aus einer E-Mail-Adresse abgeleitet.</p>
+        <p>Die Verarbeitung dient der vereinbarten Nutzung nach Art. 6 Abs. 1 lit. b DSGVO und dem Schutz vor unberechtigtem Zugriff nach Art. 6 Abs. 1 lit. f DSGVO. Projektinhalte werden entsprechend den eingerichteten Zugriffsrechten für berechtigte Beteiligte bereitgestellt. Bei geteilten Vorlagen oder externen Download-URLs ist deren jeweilige Reichweite zu beachten.</p>
+        <p>Firebase Cloud Messaging ist derzeit nicht initialisiert: Es sind weder eine Push-Tokenverwaltung noch ein Firebase-Messaging-Service-Worker eingebunden. Auch Firebase Analytics beziehungsweise Google Analytics for Firebase und ein gesondertes Google-Analytics-Tracking sind im untersuchten Anwendungscode nicht initialisiert. Konfigurationsfelder oder als „Analytics“ bezeichnete Editor-Bausteine allein belegen keinen solchen Dienst.</p>
+        <p>Details, Grenzen der Löschung und offene Konfigurationsfragen stehen in den <Link href="/datenschutz/firebase" className="underline decoration-dotted">Firebase-Datenschutzhinweisen</Link>. Anbieterinformationen: <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted">Firebase Datenschutz und Sicherheit</a>.</p>
+      </section>
 
-				<h3>5.2 Cloud Firestore</h3>
-				<p>Zur Speicherung nutzerbezogener Daten und App-Daten nutzen wir Cloud Firestore.</p>
-				<p>Dabei können insbesondere folgende Daten verarbeitet werden:</p>
-				<ul>
-					<li>Vorname</li>
-					<li>Nachname</li>
-					<li>optionaler Firmenname</li>
-					<li>E-Mail-Adresse</li>
-					<li>Profilbild, sofern hochgeladen</li>
-					<li>Kontoeinstellungen</li>
-					<li>Nutzungs- und Anwendungsdaten</li>
-					<li>abrechnungsbezogene Daten, soweit für die Vertragsdurchführung erforderlich</li>
-				</ul>
-				<p>Die Verarbeitung erfolgt zur Erfüllung unserer vertraglichen Leistungen und zur Bereitstellung der Web-App.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. b DSGVO</p>
+      <section>
+        <h2>7. Cookies, lokale Speicherung und Einwilligung</h2>
+        <p>Für Login und angefragte Bedienfunktionen werden Cookies und vergleichbare Speicherungen verwendet. Soweit diese für den ausdrücklich gewünschten Dienst unbedingt erforderlich sind, gilt § 25 Abs. 2 Nr. 2 TDDDG; darüber hinaus ist eine Einwilligung nach § 25 Abs. 1 TDDDG erforderlich. Die anschließende Verarbeitung personenbezogener Daten richtet sich zusätzlich nach der DSGVO. Nicht jede Komforteinstellung ist automatisch technisch erforderlich.</p>
+        <ul>
+          <li><strong>__session:</strong> HttpOnly-Cookie für die geschützte App-Sitzung, maximal fünf Tage; Löschung beim vorgesehenen Logout und bei bestätigter Kontolöschung.</li>
+          <li><strong>Firebase-Anmeldezustand:</strong> Das Auth-SDK kann Token und den Anmeldezustand im Browser speichern. Die tatsächliche Persistenz ist von SDK und Browser abhängig.</li>
+          <li><strong>lang:</strong> Sprachwahl als Cookie mit einer gesetzten Laufzeit von einem Jahr und zusätzlich im Local Storage. Erneutes Schreiben kann die Cookie-Frist verlängern.</li>
+          <li><strong>appschmiede_privacy_consent:</strong> Auswahl, Versionskennung und Zeitstempel im Local Storage sowie in einem Cookie mit 180 Tagen Laufzeit. Der lokale Eintrag hat keine automatische Ablaufzeit.</li>
+          <li><strong>Editor- und Tutorialeinstellungen:</strong> zuletzt verwendetes Projekt, Layout und bereits gesehene Touren werden lokal gespeichert; im Code gibt es dafür keine automatische Ablaufzeit. Sie können über die Website-Daten des Browsers entfernt werden.</li>
+        </ul>
+        <p>Die Datenschutzeinstellungen bieten Zustimmung, Ablehnung und eine spätere Änderung für die Kategorie „Analyse“. Firebase Analytics ist derzeit weder initialisiert noch aktiviert. Der Schalter speichert nur die Auswahl; auch „Alle akzeptieren“ startet derzeit keine Analyse oder Werbedienste. Eine spätere Einführung von Analytics erfordert vorher aktualisierte Informationen und eine neue ausdrückliche Einwilligung. Eine Ablehnung verhindert weder Anmeldung noch Editorfunktionen.</p>
+        <p>Ihre Auswahl können Sie jederzeit ändern oder widerrufen. Gespeicherte Auswahlen gelten nur für den aktuellen Versionsstand und höchstens 180 Tage; ältere kombinierte Auswahlen werden nicht übernommen. Ein abgelaufener lokaler Eintrag kann bis zum erneuten Speichern oder Entfernen der Website-Daten technisch bestehen bleiben, wird aber nicht als gültige Auswahl verwendet. Externe Medien sind nicht generell an diese Auswahl gekoppelt; bereits gesetzte Fremdcookies werden nicht zuverlässig entfernt. Die Einordnung von Komfortspeicherungen und externen Medien bleibt vor Freigabe zu prüfen.</p>
+        <PrivacySettingsButton className="rounded-lg border border-white/20 px-4 py-2 text-sm transition hover:bg-white/10">
+          Datenschutzeinstellungen öffnen
+        </PrivacySettingsButton>
+      </section>
 
-				<h3>5.3 Firebase Cloud Messaging</h3>
-				<p>Wenn Sie Push-Benachrichtigungen aktivieren, nutzen wir Firebase Cloud Messaging, um Ihnen technische oder nutzungsbezogene Benachrichtigungen zu senden.</p>
-				<p>Dabei können insbesondere verarbeitet werden:</p>
-				<ul>
-					<li>Push-Token beziehungsweise Messaging-Token</li>
-					<li>technische Geräte- oder Browserinformationen</li>
-					<li>Benachrichtigungseinstellungen</li>
-					<li>Zeitpunkte von Zustellungen oder Interaktionen mit Benachrichtigungen</li>
-				</ul>
-				<p>Push-Benachrichtigungen versenden wir nur, wenn Sie diese Funktion aktivieren beziehungsweise die erforderliche Browserberechtigung erteilen.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. a DSGVO</p>
-				<p>Sie können Ihre Einwilligung jederzeit für die Zukunft widerrufen, indem Sie Push-Benachrichtigungen in Ihren Browser- oder Geräteeinstellungen deaktivieren und sofern vorhanden auch in Ihrem Nutzerkonto anpassen.</p>
+      <section>
+        <h2>8. KI-Funktionen und externe Verarbeitung</h2>
+        <p>Die Einzel-Seitengenerierung kann bei gesetztem API-Schlüssel Beschreibungen und gegebenenfalls den Seitentitel serverseitig an die OpenAI-API senden. Übermittelt werden die für die Generierung zusammengestellten Texte und technische API-Metadaten. Eine pauschale Übertragung des gesamten gespeicherten Projekts ist in diesem Anfragepfad nicht vorgesehen; personenbezogene Angaben in einem Prompt werden jedoch Teil der Übermittlung. Die Mehrseiten-Generierung verwendet derzeit lokale Vorlagenlogik und keinen externen KI-Aufruf. Fehlt bei der Einzel-Seitengenerierung der API-Schlüssel, wird ebenfalls lokal ein Ergebnis aufgebaut.</p>
+        <p>Die Bildgenerierung sendet eine auf 180 Zeichen begrenzte Bildbeschreibung an OpenAI, sofern ein API-Schlüssel vorhanden ist. Bei fehlendem Schlüssel oder einem Fehler wird Pollinations über image.pollinations.ai verwendet. Pollinations erhält die Beschreibung als Bestandteil der angefragten URL; sie kann dadurch in Anbieterprotokollen erscheinen. Der Abruf erfolgt serverseitig, nicht unmittelbar mit der Browser-IP. Eine Vertraulichkeit oder ausschließliche vereinsinterne Verarbeitung dieser Eingaben wird nicht zugesichert.</p>
+        <p>Ergebnisse werden an den Browser zurückgegeben und können als Projektinhalt in Firestore gespeichert werden. Die hier untersuchten KI-Routen legen kein gesondertes Promptarchiv an; eingegebene Texte können aber bereits in Projektinhalten enthalten sein. Anbieter- und Hostingprotokolle sind davon zu unterscheiden.</p>
+        <p>Die angeforderte Generierung kann auf Art. 6 Abs. 1 lit. b DSGVO beruhen. Für fremde oder sensible Daten in Prompts ist gesondert zu prüfen, ob eine geeignete Grundlage besteht; eine KI-Schaltfläche ersetzt diese Prüfung nicht. Empfänger sind der jeweilige KI-Anbieter und seine Dienstleister. Die konkreten Rollen, Auftragsverarbeitung, Unterauftragnehmer, internationalen Übermittlungen und Fristen müssen für das tatsächlich eingesetzte Produkt bestätigt werden.</p>
+        <p>OpenAI beschreibt für seine API standardmäßig keine Verwendung von Eingaben und Ausgaben zum Modelltraining ohne ausdrückliches Opt-in. Dies ist eine Anbieterangabe, kein Nachweis der Einstellungen unseres Kontos. Eine besondere Zero-Data-Retention-Vereinbarung ist nicht nachgewiesen. Die für Pollinations geltenden Trainings-, Veröffentlichungs- und Speicherbedingungen sind ebenfalls offen. Bis zur Klärung sollten dort keine personenbezogenen oder vertraulichen Inhalte eingegeben werden.</p>
+        <p><a href="https://developers.openai.com/api/docs/guides/your-data" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted">OpenAI: API-Datenkontrollen und Aufbewahrung</a></p>
+      </section>
 
-				<h3>5.4 Firebase Analytics beziehungsweise Google Analytics for Firebase</h3>
-				<p>Soweit Sie im Consent-Tool eingewilligt haben, nutzen wir Firebase Analytics, um das Nutzungsverhalten innerhalb unserer Website und Web-App statistisch auszuwerten und unser Angebot zu verbessern.</p>
-				<p>Dabei können insbesondere verarbeitet werden:</p>
-				<ul>
-					<li>Nutzungsereignisse</li>
-					<li>Interaktionen mit Funktionen</li>
-					<li>technische Informationen zu Browser, Gerät und App-Nutzung</li>
-					<li>pseudonyme Kennungen</li>
-					<li>Informationen über Zugriffe und Nutzungsmuster</li>
-				</ul>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. a DSGVO</p>
-				<p>Soweit hierfür Informationen auf Ihrem Endgerät gespeichert oder ausgelesen werden, erfolgt dies zusätzlich auf Grundlage von § 25 Abs. 1 TDDDG.</p>
-				<p>Sie können Ihre Einwilligung jederzeit über den Link Datenschutzeinstellungen mit Wirkung für die Zukunft widerrufen.</p>
+      <section>
+        <h2>9. QR-Codes, Karten, Videos und externe Medien</h2>
+        <p>QR-Funktionen in Editor, Vorschau und QR-Werkzeugen rufen api.qrserver.com auf. Der dortige Dienst erhält den zu codierenden Text beziehungsweise die URL einschließlich möglicher Projekt- und Seitenkennungen sowie bei direktem Browserabruf IP-Adresse und Browserdaten. Bitte codieren Sie keine Zugangstokens oder vertraulichen personenbezogenen Inhalte. Zweck ist die angeforderte QR-Erstellung; Art. 6 Abs. 1 lit. b DSGVO kommt dafür in Betracht. Betreiber, Auftragsverarbeitungsrolle, Protokollierung, Aufbewahrung und Verarbeitungsorte sind noch zu verifizieren.</p>
+        <p>Bei passenden Bausteinen werden Google Maps als eingebettete Karte, YouTube als Vorschaubild beziehungsweise Video sowie Bilder von images.unsplash.com und placehold.co abgerufen. Auch selbst hinterlegte Bild- und Medien-URLs können externe Empfänger einbinden. Diese erhalten technische Verbindungsdaten und je nach Funktion Suchort, Video-ID, Bildpfad, Referrer und weitere Inhalte der Abruf-URL. Die Verarbeitung hängt vom verwendeten Baustein und dem Anbieter ab; deren Speicherfristen sind nicht im Projekt hinterlegt.</p>
+        <p>Diese Einbindungen sind im aktuellen Code nicht generell an den Consent-Banner gekoppelt. Insbesondere bei Tracking oder nicht unbedingt erforderlichem Endgerätezugriff ist vor dem Laden eine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO beziehungsweise § 25 Abs. 1 TDDDG zu prüfen und technisch sicherzustellen. Eine Nutzeranforderung kann nur die dafür tatsächlich erforderliche Verarbeitung nach Art. 6 Abs. 1 lit. b DSGVO tragen, nicht automatisch zusätzliche Anbieterzwecke. Browserberechtigungen, etwa für Mikrofonfunktionen, ersetzen keine Prüfung externer Übermittlungen.</p>
+        <p>Normale externe Links, etwa zur Vereinswebsite, führen erst beim Aufrufen zur jeweiligen Zielseite. Deren Betreiber verantworten ihre eigene Datenverarbeitung. Für eingebettete Medien gilt diese bloße Linkbeschreibung nicht.</p>
+      </section>
 
-				<h3>5.5 Google AdSense</h3>
-				<p>Soweit Sie im Consent-Tool eingewilligt haben und Google AdSense auf unserer Website aktiviert ist, nutzen wir Google AdSense zur Einbindung und Ausspielung von Werbung.</p>
-				<p>Dabei können insbesondere verarbeitet werden:</p>
-				<ul>
-					<li>IP-Adresse</li>
-					<li>Informationen zu Browser, Gerät und Bildschirmgröße</li>
-					<li>aufgerufene Seiten und Zeitpunkte von Seitenaufrufen</li>
-					<li>pseudonyme Kennungen, Cookies oder ähnliche Technologien</li>
-					<li>Informationen zur Auslieferung, Messung und Begrenzung von Anzeigen</li>
-				</ul>
-				<p>Die Verarbeitung erfolgt zur werblichen Finanzierung unseres öffentlichen Angebots sowie zur Anzeige und Messung von Werbeanzeigen.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. a DSGVO</p>
-				<p>Soweit hierfür Informationen auf Ihrem Endgerät gespeichert oder ausgelesen werden, erfolgt dies zusätzlich auf Grundlage von § 25 Abs. 1 TDDDG.</p>
-				<p>Sie können Ihre Einwilligung jederzeit über den Link Datenschutzeinstellungen mit Wirkung für die Zukunft widerrufen.</p>
-			</section>
+      <section>
+        <h2>10. Kommunikation und gegebenenfalls historische Zahlungsdaten</h2>
+        <p>Bei E-Mail-Anfragen sowie der Nutzung von Support und Projekt-Chat verarbeiten wir Kontaktinformationen, Nachrichtentexte, Anhänge, Zeitstempel und Bearbeitungsstatus. Zwecke sind die Beantwortung und Zusammenarbeit, gestützt auf Art. 6 Abs. 1 lit. b DSGVO bei nutzungsbezogenen Anliegen, ansonsten Art. 6 Abs. 1 lit. f DSGVO. Zugriff erhalten die jeweils berechtigten Bearbeitenden und technischen Dienstleister. Nicht mehr benötigte Vorgänge sind zu löschen; feste operative Löschfristen sind noch festzulegen.</p>
+        <p>Die aktuelle App-Nutzung ist kostenlos; neue Stripe-Checkouts sind in der gegenwärtigen Konfiguration gesperrt. Technisch vorhanden bleiben historische Plan-, Guthaben-, Kunden-, Abonnement- und Ereignisfelder sowie Stripe-Webhook- und Kündigungsrouten. Das belegt weder tatsächliche frühere Zahlungen noch eine Beendigung eventuell extern noch bestehender Abonnements.</p>
+        <p>Falls historische Zahlungsvorgänge bestehen, können Stripe, beteiligte Finanzdienstleister und zuständige Stellen Daten zur früheren Vertragsabwicklung, zu Belegen, gesetzlichen Aufbewahrungspflichten oder Rechtsansprüchen weiter verarbeiten. Je nach Zweck kommen Art. 6 Abs. 1 lit. b, c oder f DSGVO in Betracht. Die einschlägige Pflicht, Datenkategorie und Frist sind im Einzelfall festzustellen; es wird keine pauschale Aufbewahrungsdauer behauptet. Bestand, Vertragspartner und Zahlungsstatus wurden nicht in produktiven Systemen abgefragt. Die Umstellung löscht solche Daten nicht und kündigt keine externen Verträge.</p>
+      </section>
 
-			<section>
-				<h2>6. Zahlungen und Abonnements über Stripe</h2>
-				<p>Für die Zahlungsabwicklung und das Management von Abonnements nutzen wir Stripe.</p>
-				<p>Wenn Sie kostenpflichtige Leistungen buchen, werden die für die Zahlungsabwicklung erforderlichen Daten verarbeitet. Dazu können je nach Zahlungsmethode insbesondere gehören:</p>
-				<ul>
-					<li>Name</li>
-					<li>E-Mail-Adresse</li>
-					<li>Rechnungs- und Zahlungsdaten</li>
-					<li>Transaktionsbetrag</li>
-					<li>Währung</li>
-					<li>Rechnungs- und Transaktionskennungen</li>
-					<li>Abonnementstatus</li>
-					<li>gegebenenfalls Rechnungsadresse oder weitere zahlungsbezogene Angaben</li>
-				</ul>
-				<p>Die eigentliche Verarbeitung sensibler Zahlungsdaten erfolgt in der Regel durch Stripe. Wir verarbeiten die abrechnungs- und vertragsbezogenen Informationen, die wir für Vertragsdurchführung, Buchhaltung, Support und Missbrauchsprävention benötigen.</p>
-				<p>Rechtsgrundlage:</p>
-				<p>Art. 6 Abs. 1 lit. b DSGVO<br />Art. 6 Abs. 1 lit. c DSGVO<br />Art. 6 Abs. 1 lit. f DSGVO</p>
-			</section>
+      <section>
+        <h2>11. Empfänger, Auftragsverarbeitung und internationale Übermittlungen</h2>
+        <p>Zugriff erhalten im erforderlichen Umfang berechtigte Vereinsadministratoren, die für ein Projekt zugelassenen Beteiligten, Hosting-, Cloud-, Mail- und gegebenenfalls KI-, Medien- oder historische Zahlungsdienstleister. Gesetzlich verpflichtende Offenlegungen an Behörden bleiben möglich. Nicht jeder Dienstleister ist automatisch Auftragsverarbeiter; insbesondere zusätzliche eigene Anbieterzwecke sind gesondert zu bewerten.</p>
+        <p>Soweit ein Dienst Daten in unserem Auftrag verarbeitet, ist ein Vertrag nach Art. 28 DSGVO erforderlich. Öffentlich verfügbare Anbieter-Datenschutzbedingungen belegen keinen für den Verein abgeschlossenen Vertrag. Nachweise für Vercel, Google/Firebase, SMTP und gegebenenfalls KI-Anbieter einschließlich Unterauftragnehmern sind noch zu bestätigen.</p>
+        <p>Bei Vercel, Google, OpenAI, Pollinations und weiteren externen Diensten können Verarbeitungen außerhalb von EU und EWR auftreten. Regionen oder ausschließlich europäische Speicherung sind hier nicht nachgewiesen. Übermittlungen bedürfen der Voraussetzungen der Art. 44 ff. DSGVO, etwa eines einschlägigen Angemessenheitsbeschlusses oder geeigneter Garantien wie Standardvertragsklauseln einschließlich der nötigen Zusatzprüfung. Eine Zertifizierung oder Vertragsklausel muss für den konkreten Empfänger und Dienst geprüft werden; sie wird hier nicht als vorhanden zugesichert.</p>
+      </section>
 
-			<section>
-				<h2>7. Cookies und ähnliche Technologien</h2>
-				<p>Wir verwenden auf unserer Website technisch notwendige Cookies und vergleichbare Technologien, insbesondere für:</p>
-				<ul>
-					<li>Login- und Sitzungsverwaltung</li>
-					<li>Sicherheitsfunktionen</li>
-					<li>Speicherung von Einstellungen</li>
-					<li>technisch notwendige Abläufe der Web-App</li>
-				</ul>
-				<p>Analyse- und Werbe-Technologien setzen wir nur ein, wenn Sie zuvor eingewilligt haben.</p>
-				<p>Weitere Informationen zu eingesetzten Kategorien und Ihren Auswahlmöglichkeiten finden Sie in unserem Consent-Tool unter Datenschutzeinstellungen.</p>
-			</section>
+      <section>
+        <h2>12. Speicherdauer und Kontolöschung</h2>
+        <p>Daten sollen nur so lange verarbeitet werden, wie dies für den jeweiligen Zweck erforderlich ist oder eine konkrete gesetzliche Pflicht besteht. Das ist von der tatsächlich eingerichteten Löschtechnik zu unterscheiden: Im untersuchten Anwendungscode besteht kein umfassender automatischer Löschplan für Projekte, Einladungen, Support, Dateien, Sicherheitszähler oder Hostingprotokolle. Externe Dienste können eigene Fristen haben; diese sind anhand der Verträge und Einstellungen zu ergänzen.</p>
+        <p>Die bestätigte Kontolöschung entfernt das Firebase-Auth-Konto und danach das eigene Firestore-Profildokument und beendet die App-Sitzung. Projekte und Unterseiten, Chat- und Supportdaten, Storage-Dateien, Einladungs- und Freigabedokumente werden nicht automatisch kaskadierend gelöscht. Schlägt die Profilbereinigung nach erfolgreicher Auth-Löschung fehl, wird dies ausdrücklich gemeldet. Bitte richten Sie weitergehende Löschanfragen an den Verein; ein verbleibender Datensatz ist nicht allein durch sein technisches Vorhandensein rechtmäßig aufbewahrt.</p>
+        <p>Ein verbindliches Löschkonzept muss Zweckfortfall, Rechte anderer Beteiligter, gesetzliche Pflichten, Sicherungen und begrenzte Nachweisinteressen berücksichtigen. Für den tatsächlichen Bestand sind Verantwortliche und konkrete Fristen noch zu bestätigen.</p>
+      </section>
 
-			<section>
-				<h2>8. Zwecke der Datenverarbeitung</h2>
-				<p>Wir verarbeiten personenbezogene Daten insbesondere zu folgenden Zwecken:</p>
-				<ul>
-					<li>Bereitstellung der Website und Web-App</li>
-					<li>Durchführung von Registrierungen und Logins</li>
-					<li>Verwaltung von Nutzerkonten</li>
-					<li>Bereitstellung vertraglicher Leistungen</li>
-					<li>Zahlungsabwicklung und Abonnementverwaltung</li>
-					<li>technische Sicherheit und Missbrauchsprävention</li>
-					<li>Kommunikation mit Nutzern</li>
-					<li>Versand von Push-Benachrichtigungen, soweit aktiviert</li>
-					<li>Analyse und Optimierung unseres Angebots, soweit eingewilligt</li>
-					<li>Einbindung und Messung von Werbung, soweit eingewilligt</li>
-				</ul>
-			</section>
+      <section>
+        <h2>13. Ihre Datenschutzrechte und Beschwerdemöglichkeiten</h2>
+        <ul>
+          <li>Auskunft über Ihre personenbezogenen Daten nach Art. 15 DSGVO und Berichtigung nach Art. 16 DSGVO.</li>
+          <li>Löschung nach Art. 17 DSGVO und Einschränkung der Verarbeitung nach Art. 18 DSGVO, jeweils unter den gesetzlichen Voraussetzungen.</li>
+          <li>Datenübertragbarkeit nach Art. 20 DSGVO bei entsprechend erfassten automatisierten Verarbeitungen auf Grundlage von Einwilligung oder Vertrag.</li>
+          <li>Widerspruch nach Art. 21 DSGVO gegen Verarbeitungen nach Art. 6 Abs. 1 lit. f DSGVO aus Ihrer besonderen Situation; gegen Direktwerbung jederzeit.</li>
+          <li>Widerruf einer Einwilligung jederzeit mit Wirkung für die Zukunft nach Art. 7 Abs. 3 DSGVO. Die Rechtmäßigkeit der vorherigen Verarbeitung bleibt unberührt.</li>
+          <li>Beschwerde bei einer Aufsichtsbehörde nach Art. 77 DSGVO, insbesondere am Aufenthaltsort, Arbeitsplatz oder Ort des vermuteten Verstoßes.</li>
+        </ul>
+        <p>Kontakt: <a href="mailto:info@headbang-handwerk.de" className="underline decoration-dotted">info@headbang-handwerk.de</a>. Für den Vereinssitz in Wardenburg ist der Landesbeauftragte für den Datenschutz Niedersachsen zuständig: Prinzenstraße 5, 30159 Hannover; <a href="mailto:poststelle@lfd.niedersachsen.de" className="break-words underline decoration-dotted">poststelle@lfd.niedersachsen.de</a>; <a href="https://www.lfd.niedersachsen.de/" target="_blank" rel="noopener noreferrer" className="underline decoration-dotted">Website der Aufsichtsbehörde</a>.</p>
+        <p>Im Anwendungscode ist keine ausschließlich automatisierte Entscheidung mit rechtlicher oder vergleichbar erheblicher Wirkung nach Art. 22 DSGVO vorgesehen. KI-Layoutvorschläge ersetzen keine solche Entscheidung.</p>
+      </section>
 
-			<section>
-				<h2>9. Empfänger und Kategorien von Empfängern</h2>
-				<p>Personenbezogene Daten können an folgende Kategorien von Empfängern übermittelt werden:</p>
-				<ul>
-					<li>Hosting- und Infrastruktur-Dienstleister</li>
-					<li>Cloud- und Datenbank-Dienstleister</li>
-					<li>Zahlungsdienstleister</li>
-					<li>IT- und Support-Dienstleister</li>
-					<li>Werbe- und Messdienstleister</li>
-					<li>Behörden oder sonstige Stellen, soweit wir hierzu gesetzlich verpflichtet sind</li>
-				</ul>
-			</section>
-
-			<section>
-				<h2>10. Drittlandübermittlungen</h2>
-				<p>Im Rahmen der Nutzung von Vercel, Google Firebase und Stripe kann nicht ausgeschlossen werden, dass personenbezogene Daten auch in Staaten außerhalb der Europäischen Union beziehungsweise des Europäischen Wirtschaftsraums verarbeitet werden.</p>
-				<p>Sofern dabei kein Angemessenheitsbeschluss besteht, achten wir auf geeignete Garantien im Sinne der Art. 44 ff. DSGVO, insbesondere auf Standardvertragsklauseln oder andere zulässige Transfermechanismen.</p>
-			</section>
-
-			<section>
-				<h2>11. Speicherdauer</h2>
-				<p>Wir speichern personenbezogene Daten nur so lange, wie dies für die jeweiligen Zwecke erforderlich ist.</p>
-				<p>Im Einzelnen gilt:</p>
-				<ul>
-					<li>Kontodaten speichern wir grundsätzlich bis zur Löschung des Nutzerkontos oder bis zur Beendigung des Vertragsverhältnisses.</li>
-					<li>Vertrags- und Abrechnungsdaten speichern wir darüber hinaus, soweit gesetzliche handels- oder steuerrechtliche Aufbewahrungspflichten bestehen.</li>
-					<li>Einwilligungsdaten speichern wir, soweit erforderlich, für Nachweis- und Dokumentationszwecke.</li>
-					<li>Push-Token speichern wir bis zum Widerruf, zur Deaktivierung der Funktion oder bis zur Löschung des Kontos.</li>
-					<li>Analysebezogene Daten speichern wir nach Maßgabe Ihrer Einwilligung und der jeweils eingerichteten Tool- beziehungsweise Systemeinstellungen.</li>
-				</ul>
-			</section>
-
-			<section>
-				<h2>12. Ihre Rechte</h2>
-				<p>Sie haben nach der DSGVO insbesondere folgende Rechte:</p>
-				<ul>
-					<li>Recht auf Auskunft</li>
-					<li>Recht auf Berichtigung</li>
-					<li>Recht auf Löschung</li>
-					<li>Recht auf Einschränkung der Verarbeitung</li>
-					<li>Recht auf Datenübertragbarkeit</li>
-					<li>Recht auf Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO</li>
-					<li>Recht auf Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft</li>
-					<li>Recht auf Beschwerde bei einer Datenschutzaufsichtsbehörde</li>
-				</ul>
-				<p>
-					Zur Ausübung Ihrer Rechte genügt eine Nachricht an:<br />
-					<a className="underline decoration-dotted" href="mailto:ramon.meyer@hotmail.de">ramon.meyer@hotmail.de</a>
-				</p>
-			</section>
-
-			<section>
-				<h2>13. Beschwerderecht bei der Aufsichtsbehörde</h2>
-				<p>Sie haben das Recht, sich bei einer Datenschutzaufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten zu beschweren.</p>
-			</section>
-
-			<section>
-				<h2>14. Keine Pflicht zur Bereitstellung bestimmter Daten</h2>
-				<p>Soweit personenbezogene Daten für die Registrierung, Vertragserfüllung oder Zahlungsabwicklung erforderlich sind, ist die Bereitstellung dieser Daten notwendig. Ohne diese Daten können wir bestimmte Leistungen nicht erbringen.</p>
-			</section>
-
-			<section>
-				<h2>15. Automatisierte Entscheidungen</h2>
-				<p>Eine ausschließlich automatisierte Entscheidungsfindung einschließlich Profiling im Sinne von Art. 22 DSGVO findet nicht statt.</p>
-			</section>
-
-			<section>
-				<h2>16. Änderung dieser Datenschutzerklärung</h2>
-				<p>Wir behalten uns vor, diese Datenschutzerklärung anzupassen, wenn dies aufgrund rechtlicher, technischer oder organisatorischer Änderungen erforderlich wird.</p>
-			</section>
-		</LegalPageShell>
-	);
+      <section>
+        <h2>14. Offene Punkte vor rechtlicher Freigabe</h2>
+        <p>Dieser redaktionelle Stand beschreibt die untersuchte Implementierung, bestätigt aber weder einen rechtskonformen Produktivbetrieb noch nicht vorgelegte Verträge. Vor Veröffentlichung sind insbesondere die konkreten Anbieter und Vertragsrollen, Auftragsverarbeitungsverträge, Drittlandmechanismen, Hosting-/Firebase-Regionen, SMTP-Anbieter, Löschfristen und Sicherungen, KI-Trainingseinstellungen und Medien-Einwilligungen zu bestätigen beziehungsweise umzusetzen. Eine künftige Analytics-Aktivierung bedarf einer gesonderten technischen und rechtlichen Prüfung einschließlich wirksamer Einwilligung und Widerruf. Auch die Erforderlichkeit eines Datenschutzbeauftragten und gegebenenfalls einer Datenschutz-Folgenabschätzung ist anhand des tatsächlichen Betriebs zu prüfen. Änderungen der Dienste oder Abläufe erfordern eine erneute Aktualisierung dieser Hinweise.</p>
+      </section>
+    </LegalPageShell>
+  );
 }

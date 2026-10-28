@@ -48,7 +48,7 @@ export default function TimeTrackerPage() {
   // load projects for this user
   useEffect(() => {
     if (!userId) return;
-    const q = query(collection(db, 'projects'), where('ownerId', '==', userId), orderBy('updatedAt', 'desc'), limit(50));
+    const q = query(collection(db, 'projects'), where('ownerId', '==', userId), orderBy('updatedAt', 'desc'));
     getDocs(q).then((snap) => {
       const list = snap.docs.map((d) => d.data() as Project);
       setProjects(list);

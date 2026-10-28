@@ -6,7 +6,6 @@ import { Lang } from '@/lib/i18n-dict';
 import type { Metadata } from 'next';
 import ConsentBanner from '@/components/ConsentBanner';
 import SiteFooter from '@/components/SiteFooter';
-import AdSenseLoader from '@/components/AdSenseLoader';
 import AppAccessGuard from '@/components/AppAccessGuard';
 
 export const metadata: Metadata = {
@@ -26,13 +25,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
   const initialLang: Lang = raw === 'en' ? 'en' : 'de';
-  const adsenseEnabled = process.env.NEXT_PUBLIC_ENABLE_ADSENSE === 'true';
 
   return (
     <html lang={initialLang}>
-      <head>
-        {adsenseEnabled && <meta name="google-adsense-account" content="ca-pub-9591311841405142" />}
-      </head>
       <body className="bg-neutral-950 text-neutral-100 min-h-screen">
         <I18nRoot initialLang={initialLang}>
           <div className="flex min-h-screen flex-col">
@@ -41,7 +36,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
             <SiteFooter />
           </div>
-          <AdSenseLoader enabled={adsenseEnabled} />
           <ConsentBanner />
         </I18nRoot>
       </body>

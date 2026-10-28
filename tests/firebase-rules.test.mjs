@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
 import test, { after, before } from 'node:test';
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { getBytes, ref, uploadBytes } from 'firebase/storage';
 
 const projectId = 'demo-appschmiede-v2';
@@ -95,6 +96,52 @@ test('unauthenticated visitor has no access to protected data', async () => {
   const anonymousDb = testEnv.unauthenticatedContext().firestore();
   await assertFails(getDoc(doc(anonymousDb, 'projects', 'invited-project')));
   await assertFails(getDocs(collection(anonymousDb, 'templates')));
+});
+
+for (const plan of ['free', 'starter', 'pro', 'business']) {
+  test(`authorized ${plan} member can persist 55 projects, reopen, edit and delete without changing existing projects`, async () => {
+    const uid = `unlimited-${plan}`;
+    const email = `${uid}@example.test`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'users', uid), { email, role: 'user', plan, coinsBalance: 0 });
+      await setDoc(doc(context.firestore(), 'accessGrants', uid), { email, status: 'active' });
+    });
+    const memberDb = firestoreFor(uid, email);
+    for (let index = 0; index < 55; index++) {
+      await assertSucceeds(setDoc(doc(memberDb, 'projects', `${uid}-${index}`), {
+        name: `Project ${index}`, ownerId: uid, ownerUid: uid, members: [uid],
+      }));
+    }
+    const freshDb = firestoreFor(uid, email);
+    const projects = await assertSucceeds(getDocs(query(collection(freshDb, 'projects'), where('ownerId', '==', uid))));
+    assert.equal(projects.size, 55);
+    const target = doc(freshDb, 'projects', `${uid}-54`);
+    await assertSucceeds(updateDoc(target, { name: 'Updated project' }));
+    assert.equal((await assertSucceeds(getDoc(target))).data().name, 'Updated project');
+    await assertSucceeds(deleteDoc(target));
+    assert.equal((await assertSucceeds(getDocs(query(collection(freshDb, 'projects'), where('ownerId', '==', uid))))).size, 54);
+    const adminDb = firestoreFor(adminUid, adminEmail);
+    assert.equal((await assertSucceeds(getDoc(doc(adminDb, 'projects', 'invited-project')))).data().name, 'Invited project');
+    assert.equal((await assertSucceeds(getDoc(doc(freshDb, 'users', uid)))).data().coinsBalance, 0);
+  });
+}
+
+test('project writes reject unauthorized users, foreign owners and malformed ownership', async () => {
+  const project = { name: 'Blocked', ownerId: invitedUid, ownerUid: invitedUid, members: [invitedUid] };
+  await assertFails(setDoc(doc(testEnv.unauthenticatedContext().firestore(), 'projects', 'anonymous-create'), project));
+  const unknownDb = firestoreFor(unknownUid, 'unknown@example.test');
+  await assertFails(setDoc(doc(unknownDb, 'projects', 'unknown-create'), {
+    ...project, ownerId: unknownUid, ownerUid: unknownUid, members: [unknownUid],
+  }));
+  const otherDb = firestoreFor(otherUid, otherEmail);
+  await assertFails(updateDoc(doc(otherDb, 'projects', 'invited-project'), { name: 'Stolen' }));
+  await assertFails(deleteDoc(doc(otherDb, 'projects', 'invited-project')));
+  await assertFails(setDoc(doc(otherDb, 'projects', 'foreign-create'), project));
+  await assertFails(setDoc(doc(otherDb, 'projects', 'malformed-create'), {
+    ...project, ownerId: otherUid, ownerUid: otherUid, members: [],
+  }));
+  await assertFails(getDocs(collection(otherDb, 'projects')));
+  await assertFails(getDocs(query(collection(otherDb, 'projects'), where('ownerId', '==', invitedUid))));
 });
 
 test('chat storage is restricted by grant and project membership', async () => {

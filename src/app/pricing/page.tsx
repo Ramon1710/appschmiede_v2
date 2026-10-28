@@ -2,137 +2,57 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
-import PricingPlanAction from '@/components/PricingPlanAction';
-import { TEMP_FREE_ACCESS_ENABLED } from '@/config/billing';
-import { getHomeContent } from '@/lib/home-content';
-import type { Lang } from '@/lib/i18n-dict';
 
 export const metadata: Metadata = {
-  title: 'Preise | AppSchmiede',
-  description:
-    'Alle Preise, Abos und Coin-Pakete von AppSchmiede auf einer eigenen Seite mit direktem Zugang zum Billing-Bereich.',
+  title: 'Kostenlose Nutzung',
+  description: 'AppSchmiede ist einschließlich KI für freigeschaltete Mitglieder und Partner von Headbang Handwerk e. V. kostenlos.',
 };
 
 export default async function PricingPage() {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get('lang')?.value;
-  const lang: Lang = raw === 'en' ? 'en' : 'de';
+  const lang = (await cookies()).get('lang')?.value === 'en' ? 'en' : 'de';
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const { subscriptionPlans, subscriptionPlanOrder, planFeatureRows, coinPricingCards } = getHomeContent(lang);
-  const orderedPlans = subscriptionPlanOrder
-    .map((planId) => subscriptionPlans.find((plan) => plan.id === planId))
-    .filter((plan): plan is NonNullable<typeof plan> => Boolean(plan));
+  const features = [
+    tr('Projekte und Seiten verwalten', 'Manage projects and pages'),
+    tr('Visueller Editor, Bausteine und fertige Buttons', 'Visual editor, blocks and ready-made buttons'),
+    tr('Vorlagen und KI-gestützte Funktionen', 'Templates and AI-assisted features'),
+    tr('Vorschau, QR-Werkzeuge und verfügbare Exporte', 'Preview, QR tools and available exports'),
+  ];
 
   return (
     <div className="min-h-screen bg-[#03050a] text-white">
       <Header />
-      <main className="mx-auto flex w-full max-w-[1380px] flex-col gap-8 px-4 py-12 lg:px-10">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-8 shadow-2xl">
-          <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Preise', 'Pricing')}</p>
-          <h1 className="mt-3 text-4xl font-semibold">
-            {tr('Leistungen, Abos und Coins', 'Features, subscriptions, and coins')}
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 py-12 lg:px-10">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#041634] via-[#050c1c] to-[#03050a] p-6 shadow-2xl sm:p-8">
+          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Headbang Handwerk e. V.</p>
+          <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">
+            {tr('Kostenlose Nutzung für Mitglieder und Partner', 'Free access for members and partners')}
           </h1>
-          <p className="mt-5 max-w-4xl text-base leading-7 text-neutral-200">
+          <p className="mt-5 text-base leading-7 text-neutral-200">
             {tr(
-              'Die Übersicht zeigt verfügbare Funktionen, Abos und Coin-Pakete. Buchbare Optionen und Preise werden im Bestellprozess angezeigt.',
-              'This overview lists available features, subscriptions, and coin packs. Purchasable options and prices are shown during checkout.'
+              'Die AppSchmiede ist für autorisierte Mitglieder und Partner vollständig kostenlos, einschließlich KI-Funktionen. Es gibt keine nutzerseitige Coin-Abrechnung, keine kostenpflichtigen App-Tarife und keine automatischen kostenpflichtigen Verlängerungen.',
+              'AppSchmiede is completely free of charge for authorized members and partners, including AI features. There is no user-facing coin billing, no paid app plan and no automatic paid renewal.'
             )}
           </p>
+          <p className="mt-4 text-sm leading-6 text-neutral-300">
+            {tr(
+              'Der Zugang erfolgt ausschließlich über eine persönliche Einladung. Eine öffentliche Registrierung ist nicht vorgesehen. Vorhandene historische Zahlungsfragen werden unabhängig davon mit dem Verein geklärt.',
+              'Access is available by personal invitation only. Public registration is not offered. Any historical payment questions must be resolved separately with the association.'
+            )}
+          </p>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {features.map((feature) => (
+              <li key={feature} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-200">{feature}</li>
+            ))}
+          </ul>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link href="/login" className="rounded-full bg-white px-5 py-3 text-center text-sm font-semibold text-[#050c1c] transition hover:bg-neutral-200">
               {tr('Bereits eingeladen? Jetzt anmelden', 'Already invited? Sign in')}
             </Link>
-            {!TEMP_FREE_ACCESS_ENABLED && (
-              <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Zu den Coins', 'Go to coins')}
-              </Link>
-            )}
+            <Link href="/agb" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold transition hover:bg-white/10">
+              {tr('Nutzungsbedingungen', 'Terms of use')}
+            </Link>
           </div>
         </section>
-
-        <section className="grid gap-4 lg:grid-cols-4">
-          {orderedPlans.map((plan) => (
-            <article key={plan.id} className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg">
-              <div className="text-xs uppercase tracking-[0.35em] text-cyan-300">{plan.badge}</div>
-              <h2 className="mt-3 text-2xl font-semibold">{plan.title}</h2>
-              <p className="mt-2 text-sm text-neutral-300">{plan.price}</p>
-              <p className="mt-4 text-sm leading-6 text-neutral-400">{plan.description}</p>
-              <div className="mt-5 space-y-2">
-                {plan.highlights.map((highlight) => (
-                  <div key={highlight} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-neutral-200">
-                    {highlight}
-                  </div>
-                ))}
-              </div>
-              <PricingPlanAction planId={plan.id} lang={lang} />
-            </article>
-          ))}
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
-          <h2 className="text-3xl font-semibold">
-            {tr('Leistungsübersicht', 'Feature overview')}
-          </h2>
-          <div className="mt-6 overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20 text-left text-sm">
-              <thead className="bg-white/5 text-neutral-200">
-                <tr>
-                  <th className="px-4 py-3 font-semibold">{tr('Leistung', 'Feature')}</th>
-                  {orderedPlans.map((plan) => (
-                    <th key={plan.id} className="px-4 py-3 font-semibold">{plan.title}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {planFeatureRows.map((row, index) => (
-                  <tr key={row.feature} className={index % 2 === 0 ? 'bg-white/[0.03]' : 'bg-transparent'}>
-                    <td className="border-t border-white/10 px-4 py-3 text-neutral-200">{row.feature}</td>
-                    {orderedPlans.map((plan) => (
-                      <td key={plan.id} className="border-t border-white/10 px-4 py-3 text-neutral-400">{row.values[plan.id]}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {!TEMP_FREE_ACCESS_ENABLED && (
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-3xl font-semibold">{tr('Coin-Pakete für Extras', 'Coin packs for extras')}</h2>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300">
-                  {tr(
-                    'Coins nutzt du für zusätzliche Bausteine, KI-Funktionen, Vorlagen und neue Seiten. Die Pakete kaufst du einmalig und lädst sie im Billing-Bereich auf dein Konto.',
-                    'Use coins for extra building blocks, AI features, templates, and new pages. Coin packs are one-time purchases that you top up in the billing area.'
-                  )}
-                </p>
-              </div>
-              <Link href="/tools/billing" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Coins kaufen', 'Buy coins')}
-              </Link>
-            </div>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              {coinPricingCards.map((card) => (
-                <article key={card.id} className="rounded-2xl border border-white/10 bg-black/20 p-5 shadow-lg">
-                  <div className="text-xs uppercase tracking-[0.35em] text-emerald-300">{card.badge}</div>
-                  <h3 className="mt-3 text-xl font-semibold">{card.title}</h3>
-                  <p className="mt-2 text-sm text-neutral-300">{card.price}</p>
-                  <p className="mt-4 text-sm leading-6 text-neutral-400">{card.description}</p>
-                  <div className="mt-5 space-y-2">
-                    {card.highlights.map((highlight) => (
-                      <div key={highlight} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-neutral-200">
-                        {highlight}
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
     </div>
   );

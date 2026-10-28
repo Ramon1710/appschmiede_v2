@@ -9,7 +9,6 @@ export type PlanConfig = {
   monthlyPriceEur: number;
   stripePriceId: string | null;
   includedCoinsPerMonth: number;
-  maxProjects: number;
 };
 
 export const PLAN_CONFIG: Record<AppPlanId, PlanConfig> = {
@@ -18,28 +17,24 @@ export const PLAN_CONFIG: Record<AppPlanId, PlanConfig> = {
     monthlyPriceEur: 0,
     stripePriceId: null,
     includedCoinsPerMonth: 0,
-    maxProjects: 9999,
   },
   starter: {
     label: 'Spar Abo',
     monthlyPriceEur: 9.99,
     stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_SPAR_ABO'),
     includedCoinsPerMonth: 80,
-    maxProjects: 3,
   },
   pro: {
     label: 'Standard Abo',
     monthlyPriceEur: 19.99,
     stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_STANDARD_ABO'),
     includedCoinsPerMonth: 150,
-    maxProjects: 6,
   },
   business: {
     label: 'Premium',
     monthlyPriceEur: 59.99,
     stripePriceId: env('NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_ABO'),
     includedCoinsPerMonth: 0,
-    maxProjects: 9999,
   },
 };
 

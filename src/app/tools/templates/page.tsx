@@ -65,7 +65,7 @@ function TemplatesPageComponent() {
             empty: 'No templates available yet.',
             confirmDelete: 'Delete this template permanently?',
             deleteFailed: 'Template could not be deleted. Please try again.',
-            freeNotice: 'Templates are available to authorized members and partners. AI actions are billed through coins.',
+            freeNotice: 'Templates are available to authorized members and partners.',
           }
         : {
             badge: 'Vorlagen',
@@ -83,7 +83,7 @@ function TemplatesPageComponent() {
             empty: 'Noch keine Vorlagen verfügbar.',
             confirmDelete: 'Diese Vorlage wirklich dauerhaft löschen?',
             deleteFailed: 'Vorlage konnte nicht gelöscht werden. Bitte versuche es erneut.',
-            freeNotice: 'Vorlagen stehen autorisierten Mitgliedern und Partnern zur Verfügung. KI-Aktionen werden über Coins abgerechnet.',
+            freeNotice: 'Vorlagen stehen autorisierten Mitgliedern und Partnern zur Verfügung.',
           },
     [lang]
   );

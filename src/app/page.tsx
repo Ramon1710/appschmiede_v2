@@ -314,56 +314,6 @@ function PhonePreviewMini({ lang, compact = false }: { lang: Lang; compact?: boo
   );
 }
 
-function AIGeneratorMini({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-[#040816]/95 p-4 shadow-2xl">
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <div>
-          <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-300">{lang === 'en' ? 'AI Generator' : 'KI-Generator'}</div>
-          <div className="mt-1 text-sm font-semibold text-white">{lang === 'en' ? 'Prompt to app structure' : 'Prompt zur App-Struktur'}</div>
-        </div>
-        <div className="rounded-full bg-cyan-500/15 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-200">Live</div>
-      </div>
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Prompt' : 'Eingabe'}</div>
-        <div className="mt-2 rounded-2xl border border-cyan-400/20 bg-[#0b1731] px-4 py-3 text-sm leading-6 text-neutral-200">
-          {lang === 'en'
-            ? 'Build a mobile app for field technicians with tasks, time logs, photo uploads, and status updates.'
-            : 'Erstelle eine mobile App für Servicetechniker mit Aufgaben, Zeiterfassung, Foto-Uploads und Status-Updates.'}
-        </div>
-      </div>
-      <div className={`mt-4 grid gap-3 ${compact ? 'grid-cols-1' : 'sm:grid-cols-[1.1fr_0.9fr]'}`}>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Generated pages' : 'Generierte Seiten'}</div>
-          <div className="mt-3 space-y-2">
-            {[
-              lang === 'en' ? 'Dashboard' : 'Dashboard',
-              lang === 'en' ? 'Task details' : 'Aufgabendetails',
-              lang === 'en' ? 'Time tracking' : 'Zeiterfassung',
-              lang === 'en' ? 'Media upload' : 'Medien-Upload',
-            ].slice(0, compact ? 3 : 4).map((item) => (
-              <div key={item} className="flex items-center gap-2 rounded-xl bg-black/20 px-3 py-2 text-sm text-neutral-200">
-                <span className="h-2 w-2 rounded-full bg-cyan-300" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 to-cyan-500/10 p-4">
-          <div className="text-[11px] uppercase tracking-[0.25em] text-neutral-400">{lang === 'en' ? 'Suggested stack' : 'Vorgeschlagene Bausteine'}</div>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/80">
-            {['Chat', 'Support', 'QR', 'Analytics', 'Tasks', 'Preview'].map((item) => (
-              <span key={item} className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function WorkflowPreview({
   index,
   lang,
@@ -376,7 +326,7 @@ function WorkflowPreview({
   }
 
   if (index === 1) {
-    return <AIGeneratorMini lang={lang} />;
+    return null;
   }
 
   return <EditorMini lang={lang} />;
@@ -544,10 +494,6 @@ function SpotlightVisual({ title, lang }: { title: string; lang: Lang }) {
   );
 }
 
-function AiPromptVisual({ lang }: { lang: Lang }) {
-  return <AIGeneratorMini lang={lang} />;
-}
-
 export default async function HomePage() {
   const cookieStore = await cookies();
   const raw = cookieStore.get('lang')?.value;
@@ -561,7 +507,6 @@ export default async function HomePage() {
   const pills = reasonPills[lang];
   const {
     workflowSteps,
-    kiHighlights,
   } = getHomeContent(lang);
   const exampleFlow = [
     {
@@ -767,11 +712,11 @@ export default async function HomePage() {
               )}
             </p>
           </header>
-          <div className="mt-8 grid gap-6 xl:grid-cols-3">
+          <div className="mt-8 grid items-start gap-6 xl:grid-cols-3">
             {workflowSteps.map((step, index) => (
               <article key={step.title} className="rounded-[30px] border border-white/10 bg-white/5 p-4 shadow-xl">
                 <WorkflowPreview index={index} lang={lang} />
-                <div className="px-1 pb-2 pt-5">
+                <div className={`px-1 pb-2 ${index === 1 ? '' : 'pt-5'}`}>
                   <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400">
                     {tr('Schritt', 'Step')} {index + 1}
                   </span>
@@ -838,39 +783,6 @@ export default async function HomePage() {
                 <p className="mt-2 text-sm text-neutral-300">{group.text}</p>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-lg">
-          <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
-            <div className="rounded-3xl border border-white/10 bg-[#070b16] p-5 shadow-lg">
-              <div className="rounded-3xl border border-cyan-400/20 bg-[#0b1731] p-4">
-                <div className="text-[11px] uppercase tracking-[0.35em] text-cyan-200">{tr('KI-Eingabe', 'AI prompt')}</div>
-                <div className="mt-3 rounded-2xl bg-white/5 px-4 py-4 text-sm leading-6 text-neutral-200">
-                  {tr(
-                    'Baue eine Service-App mit Einsätzen, Fotos, Chat und Zeiterfassung für mobile Teams.',
-                    'Build a service app with jobs, photos, chat, and time tracking for mobile teams.'
-                  )}
-                </div>
-                <AiPromptVisual lang={lang} />
-              </div>
-            </div>
-            <div>
-              <h2 className="text-3xl font-semibold">{tr('KI an deiner Seite – kein Code notwendig', 'AI by your side — no code required')}</h2>
-              <p className="mt-4 text-base text-neutral-300">
-                {tr(
-                  'Du beschreibst nur das Ziel. Die Plattform schlägt Seiten, Bausteine und Struktur vor, die du danach visuell weiterbearbeitest.',
-                  'You only describe the outcome. The platform suggests screens, blocks, and structure, which you then refine visually.'
-                )}
-              </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {kiHighlights.map((highlight) => (
-                  <div key={highlight} className="rounded-2xl border border-white/10 bg-[#070b16] px-4 py-3 text-sm text-neutral-200">
-                    ✓ {highlight}
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -981,61 +893,6 @@ export default async function HomePage() {
                 <p className="mt-3 text-sm leading-6 text-neutral-300">{entry.answer}</p>
               </details>
             ))}
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-[#050914]/90 p-8 shadow-lg">
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-cyan-300">{tr('Öffentliche Informationen', 'Public information')}</p>
-              <h2 className="mt-3 text-3xl font-semibold">
-                {tr('Was Besucher ohne Login prüfen können', 'What visitors can verify without logging in')}
-              </h2>
-              <p className="mt-4 text-base leading-7 text-neutral-300">
-                {tr(
-                  'Hier findest du Informationen zu Plattform, Funktionen, Datenschutz, Impressum und Abrechnung.',
-                  'Find information about the platform, its features, privacy, legal details, and billing here.'
-                )}
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Link href="/about" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Produkt und Arbeitsweise', 'Product and workflow')}
-              </Link>
-              <Link href="/pricing" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Leistungen & Abrechnung', 'Features & billing')}
-              </Link>
-              <Link href="/datenschutz" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Datenschutz', 'Privacy policy')}
-              </Link>
-              <Link href="/impressum" className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
-                {tr('Impressum', 'Imprint')}
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0b1731] via-[#050c1c] to-[#03050a] p-8 text-center shadow-2xl">
-          <h2 className="text-3xl font-semibold">{tr('Bereit für dein digitales Projekt?', 'Ready for your digital project?')}</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-base text-neutral-200">
-            {tr(
-              'Mitglieder und Partner entwickeln digitale Projekte mit Vorlagen, visueller Bearbeitung, KI-Unterstützung und mobiler Vorschau. Der Zugang erfolgt ausschließlich über eine persönliche Einladung.',
-              'Members and partners can build digital projects with templates, visual editing, AI assistance, and mobile previews. Access is available by personal invitation only.'
-            )}
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              href="/login"
-              className="w-full rounded-full bg-white px-6 py-3 text-center text-base font-semibold text-[#050c1c] transition hover:bg-neutral-200 sm:w-auto"
-            >
-              {tr('Bereits eingeladen? Jetzt anmelden', 'Already invited? Sign in')}
-            </Link>
-            <Link
-              href="/pricing"
-              className="w-full rounded-full border border-white/30 px-6 py-3 text-center text-base font-semibold text-white transition hover:border-white hover:text-white sm:w-auto"
-            >
-              {tr('Leistungen & Abrechnung ansehen', 'View features & billing')}
-            </Link>
           </div>
         </section>
 

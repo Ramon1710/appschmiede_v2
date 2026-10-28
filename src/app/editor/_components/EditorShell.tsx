@@ -14,7 +14,6 @@ import UnauthenticatedScreen from '@/components/UnauthenticatedScreen';
 import type { PageTree, Node as EditorNode, NodeType, NodeProps, BackgroundLayer } from '@/lib/editorTypes';
 import { savePage, subscribePages, createPage, createPageWithContent, deletePage, renamePage, loadPage } from '@/lib/db-editor';
 import useAuth from '@/hooks/useAuth';
-import { COIN_COSTS, type CoinActionKey } from '@/config/coins';
 import type { Project } from '@/lib/db-projects';
 import { subscribeProjects } from '@/lib/db-projects';
 import JSZip from 'jszip';
@@ -149,7 +148,7 @@ type StoredPageTemplate = {
 type MobilePanel = 'toolbox' | 'canvas' | 'properties';
 
 type PanelSide = 'left' | 'right';
-type LeftPanelSectionKey = 'editor' | 'project' | 'elements' | 'costs';
+type LeftPanelSectionKey = 'editor' | 'project' | 'elements';
 type LeftPanelSectionsState = Record<LeftPanelSectionKey, boolean>;
 
 const MOBILE_NAV_ITEMS: Array<{ id: MobilePanel; label: { de: string; en: string }; icon: string }> = [
@@ -186,7 +185,6 @@ const DEFAULT_LEFT_PANEL_SECTIONS: LeftPanelSectionsState = {
   editor: false,
   project: false,
   elements: false,
-  costs: false,
 };
 const DEFAULT_CANVAS_ZOOM = 1;
 
@@ -937,38 +935,13 @@ export default function EditorShell({ initialPageId }: Props) {
   const canEditMainTemplates = canManageMainTemplates(profile?.role);
   const { lang } = useI18n();
   const tr = useCallback((de: string, en: string) => (lang === 'en' ? en : de), [lang]);
-  const numberLocale = lang === 'en' ? 'en-US' : 'de-DE';
-  const formatCoinAmount = useCallback(
-    (value: number) =>
-      new Intl.NumberFormat(numberLocale, {
-        minimumFractionDigits: value % 1 === 0 ? 0 : 1,
-        maximumFractionDigits: 1,
-      }).format(value),
-    [numberLocale]
-  );
-  const formatCoinLabel = useCallback(
-    (value: number) => {
-      if (value <= 0) {
-        return tr('Kostenfrei', 'Free');
-      }
-      const amount = formatCoinAmount(value);
-      return tr(`${amount} Coin${value === 1 ? '' : 's'}`, `${amount} coin${value === 1 ? '' : 's'}`);
-    },
-    [formatCoinAmount, tr]
-  );
-  const basicComponentCoinCost = COIN_COSTS.basicComponent;
-  const componentCoinCost = COIN_COSTS.component;
-  const quickButtonCoinCost = COIN_COSTS.quickButton;
-  const pageCoinCost = COIN_COSTS.page;
-  const templateCoinCost = COIN_COSTS.template;
-  const aiCoinCost = COIN_COSTS.ai;
   const [leftPanelSections, setLeftPanelSections] = useState<LeftPanelSectionsState>(DEFAULT_LEFT_PANEL_SECTIONS);
-  const requireCoinsForAction = useCallback(
-    async (action: CoinActionKey) => {
+  const requireAuthorizedAction = useCallback(
+    async () => {
       if (!user) {
         throw new Error(tr('Bitte melde dich an, um diese Funktion zu nutzen.', 'Please sign in to use this feature.'));
       }
-      await assertAuthorizedAction(user, action);
+      await assertAuthorizedAction(user);
     },
     [user, tr]
   );
@@ -1107,7 +1080,6 @@ export default function EditorShell({ initialPageId }: Props) {
           editor: Boolean(parsed.leftPanelSections.editorCollapsed),
           project: Boolean(parsed.leftPanelSections.projectCollapsed),
           elements: Boolean(parsed.leftPanelSections.elementsCollapsed),
-          costs: Boolean(parsed.leftPanelSections.costsCollapsed),
         });
       }
       layoutHydratedRef.current = true;
@@ -1130,7 +1102,6 @@ export default function EditorShell({ initialPageId }: Props) {
         editor: Boolean(prefs.leftPanelSections?.editorCollapsed),
         project: Boolean(prefs.leftPanelSections?.projectCollapsed),
         elements: Boolean(prefs.leftPanelSections?.elementsCollapsed),
-        costs: Boolean(prefs.leftPanelSections?.costsCollapsed),
       };
       lastSavedLayoutRef.current = {
         leftPanelWidth: typeof prefs.leftPanelWidth === 'number' ? clampPanelWidth('left', prefs.leftPanelWidth) : undefined,
@@ -1140,7 +1111,6 @@ export default function EditorShell({ initialPageId }: Props) {
           editorCollapsed: nextLeftPanelSections.editor,
           projectCollapsed: nextLeftPanelSections.project,
           elementsCollapsed: nextLeftPanelSections.elements,
-          costsCollapsed: nextLeftPanelSections.costs,
         },
       };
       // Wichtig: useUserProfile liefert Live-Snapshots (onSnapshot). Panelbreiten, Zoom und
@@ -1266,7 +1236,6 @@ export default function EditorShell({ initialPageId }: Props) {
         editorCollapsed: leftPanelSections.editor,
         projectCollapsed: leftPanelSections.project,
         elementsCollapsed: leftPanelSections.elements,
-        costsCollapsed: leftPanelSections.costs,
       },
     };
     // Lokale Sicherung der zuletzt verwendeten Layout-Werte (sofort, ohne Netzwerk).
@@ -2325,17 +2294,17 @@ export default function EditorShell({ initialPageId }: Props) {
     return persistTemplateApplication(nextTree, preservedName);
   }, [_projectId, currentPageId, applyTreeUpdate, setPages, setTemplateNotice, currentPageMeta, tree.name]);
 
-  const applyTemplateWithCharge = useCallback(
+  const applyAuthorizedTemplate = useCallback(
     async (template: string) => {
       try {
-        await requireCoinsForAction('template');
+        await requireAuthorizedAction();
       } catch (error) {
         setTemplateNotice(error instanceof Error ? error.message : tr('Vorlage konnte nicht geladen werden.', 'Template could not be loaded.'));
         return false;
       }
       return applyTemplate(template);
     },
-    [applyTemplate, requireCoinsForAction, setTemplateNotice, tr]
+    [applyTemplate, requireAuthorizedAction, setTemplateNotice, tr]
   );
 
   const applySavedPageTemplate = useCallback(
@@ -2368,17 +2337,17 @@ export default function EditorShell({ initialPageId }: Props) {
     [_projectId, currentPageId, currentPageMeta, tree.name, applyTreeUpdate, persistTemplateApplication, setTemplateNotice, tr]
   );
 
-  const applySavedPageTemplateWithCharge = useCallback(
+  const applyAuthorizedSavedPageTemplate = useCallback(
     async (template: StoredPageTemplate) => {
       try {
-        await requireCoinsForAction('template');
+        await requireAuthorizedAction();
       } catch (error) {
         setTemplateNotice(error instanceof Error ? error.message : tr('Vorlage konnte nicht geladen werden.', 'Template could not be loaded.'));
         return false;
       }
       return applySavedPageTemplate(template);
     },
-    [applySavedPageTemplate, requireCoinsForAction, setTemplateNotice, tr]
+    [applySavedPageTemplate, requireAuthorizedAction, setTemplateNotice, tr]
   );
 
   const handleSavePageTemplate = useCallback(async () => {
@@ -2650,7 +2619,7 @@ export default function EditorShell({ initialPageId }: Props) {
       setEditingPageTemplateId(null);
 
       try {
-        await requireCoinsForAction('template');
+        await requireAuthorizedAction();
         setCurrentPageId(null);
         setSelectedId(null);
         clearUndoHistory();
@@ -2686,22 +2655,20 @@ export default function EditorShell({ initialPageId }: Props) {
         setAppTemplateApplying(false);
       }
     },
-    [canEditMainTemplates, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr, requireCoinsForAction]
+    [canEditMainTemplates, _projectId, pages, deletePage, createPageWithContent, clearUndoHistory, touchProject, tr, requireAuthorizedAction]
   );
 
-  const addNode = useCallback(async (type: NodeType, defaultProps: NodeProps = {}, options?: { coinAction?: CoinActionKey }) => {
+  const addNode = useCallback(async (type: NodeType, defaultProps: NodeProps = {}) => {
     if (typeof defaultProps.template === 'string') {
-      void applyTemplateWithCharge(defaultProps.template);
+      void applyAuthorizedTemplate(defaultProps.template);
       return;
     }
 
-    if (options?.coinAction) {
-      try {
-        await requireCoinsForAction(options.coinAction);
-      } catch (error) {
-        setTemplateNotice(error instanceof Error ? error.message : tr('Baustein konnte nicht hinzugefügt werden.', 'Block could not be added.'));
-        return;
-      }
+    try {
+      await requireAuthorizedAction();
+    } catch (error) {
+      setTemplateNotice(error instanceof Error ? error.message : tr('Baustein konnte nicht hinzugefügt werden.', 'Block could not be added.'));
+      return;
     }
 
     const nodeProps = { ...defaultProps } as NodeProps;
@@ -2727,7 +2694,7 @@ export default function EditorShell({ initialPageId }: Props) {
       },
     }));
     setSelectedId(newNode.id);
-  }, [applyTemplateWithCharge, applyTreeUpdate, requireCoinsForAction, setTemplateNotice, tr]);
+  }, [applyAuthorizedTemplate, applyTreeUpdate, requireAuthorizedAction, setTemplateNotice, tr]);
 
   useEffect(() => {
     if (!(_projectId && currentPageId)) return;
@@ -2765,7 +2732,7 @@ export default function EditorShell({ initialPageId }: Props) {
         } else {
           (async () => {
             try {
-              await requireCoinsForAction('page');
+              await requireAuthorizedAction();
               const id = await createPage(_projectId, 'Seite 1', null, { actorUid: user?.uid ?? null });
               setCurrentPageId(id);
             } catch (error) {
@@ -3726,7 +3693,7 @@ export default function EditorShell({ initialPageId }: Props) {
       } as any);
 
       try {
-        await requireCoinsForAction('quickButton');
+        await requireAuthorizedAction();
         const pageId = await createPageWithContent(_projectId, { name: pageName, folder: null, tree }, { actorUid: user?.uid ?? null });
 
         const meta = presetMeta[preset];
@@ -3819,46 +3786,6 @@ export default function EditorShell({ initialPageId }: Props) {
   }, [_projectId, currentPageId, pages, handlePageSelection, tr]);
 
   const templateControlsDisabled = !_projectId || !currentPageId;
-
-  const editorCostSummary = (
-    <div className={`border border-amber-400/25 bg-amber-500/10 text-xs text-amber-50 ${leftPanelSections.costs ? 'rounded-lg px-3 py-2' : 'rounded-xl p-3'}`}>
-      <div className="flex w-full items-center justify-between gap-3 text-left">
-        <div>
-          <div className="font-semibold text-amber-100">{tr('Coin-Kosten im Editor', 'Coin costs in the editor')}</div>
-          {!leftPanelSections.costs && (
-            <div className="mt-1 text-[11px] text-amber-100/80">{tr('Preise ein- oder ausklappen', 'Expand or collapse prices')}</div>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => toggleLeftPanelSection('costs')}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-amber-300/30 bg-black/20 text-base text-amber-100 transition hover:bg-black/30"
-          aria-label={leftPanelSections.costs ? tr('Kosten öffnen', 'Expand costs') : tr('Kosten schließen', 'Collapse costs')}
-        >
-          {leftPanelSections.costs ? '▸' : '▾'}
-        </button>
-      </div>
-      {!leftPanelSections.costs && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-            {tr('Allgemeine Funktionen', 'Basic functions')}: {formatCoinLabel(basicComponentCoinCost)}
-          </span>
-          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-            {tr('Andere Bausteine', 'Other blocks')}: {formatCoinLabel(componentCoinCost)}
-          </span>
-          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-            {tr('Fertige Buttons', 'Quick buttons')}: {formatCoinLabel(quickButtonCoinCost)}
-          </span>
-          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-            KI: {formatCoinLabel(aiCoinCost)}
-          </span>
-          <span className="rounded-full border border-amber-300/30 bg-black/20 px-2.5 py-1">
-            {tr('Vorlagen', 'Templates')}: {formatCoinLabel(templateCoinCost)}
-          </span>
-        </div>
-      )}
-    </div>
-  );
 
   const templateContent = (
     <div className="space-y-4">
@@ -3956,7 +3883,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 );
                 return;
               }
-              const applied = await applyTemplateWithCharge(tpl.template);
+              const applied = await applyAuthorizedTemplate(tpl.template);
               if (applied) {
                 setTemplateNotice(null);
               }
@@ -3973,9 +3900,6 @@ export default function EditorShell({ initialPageId }: Props) {
             </div>
             <div className="mt-3 text-lg font-semibold text-white">{tr(tpl.title.de, tpl.title.en)}</div>
             <p className="text-sm text-neutral-300">{tr(tpl.description.de, tpl.description.en)}</p>
-            <div className="mt-3 inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
-              {formatCoinLabel(templateCoinCost)} {tr('pro Anwendung', 'per use')}
-            </div>
             <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-300">
               {tr('Vorlage anwenden', 'Apply template')}
               <span className="ml-1 transition group-hover:translate-x-1">→</span>
@@ -3998,7 +3922,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 key={tpl.id}
                 type="button"
                 disabled={templateControlsDisabled}
-                onClick={() => void applySavedPageTemplateWithCharge(tpl)}
+                onClick={() => void applyAuthorizedSavedPageTemplate(tpl)}
                 className={`group w-full rounded-2xl border px-4 py-4 text-left transition ${
                   templateControlsDisabled
                     ? 'cursor-not-allowed border-white/5 bg-white/5 text-neutral-500 opacity-60'
@@ -4011,9 +3935,6 @@ export default function EditorShell({ initialPageId }: Props) {
                 </div>
                 <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
                 {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
-                <div className="mt-3 inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-100">
-                  {formatCoinLabel(templateCoinCost)} {tr('pro Anwendung', 'per use')}
-                </div>
                 {canEditMainTemplates && !templateControlsDisabled && (
                   <div className="mt-3 flex gap-2">
                     <button
@@ -4065,9 +3986,6 @@ export default function EditorShell({ initialPageId }: Props) {
                   </div>
                   <div className="mt-3 text-lg font-semibold text-white">{tpl.name}</div>
                   {tpl.description && <p className="text-sm text-neutral-300">{tpl.description}</p>}
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
-                    {formatCoinLabel(templateCoinCost)} {tr('pro Anwendung', 'per use')}
-                  </div>
                   <span className="mt-3 inline-flex items-center text-[11px] font-semibold text-emerald-200">
                     {appTemplateApplying ? 'Lade Vorlage…' : 'Vorlage zum Bearbeiten laden'}
                     <span className="ml-1 transition group-hover:translate-x-1">→</span>
@@ -4307,12 +4225,12 @@ export default function EditorShell({ initialPageId }: Props) {
                         if (!_projectId) return;
                         const idx = pages.length + 1;
                         const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
-                        await requireCoinsForAction('page');
+                        await requireAuthorizedAction();
                         const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                         handlePageSelection(id || null, { placeholderName: defaultName });
                       }}
                     >
-                      {tr('+ Seite', '+ Page')} · {formatCoinLabel(pageCoinCost)}
+                      {tr('+ Seite', '+ Page')}
                     </button>
                   </div>
                   </div>
@@ -4323,8 +4241,7 @@ export default function EditorShell({ initialPageId }: Props) {
                 {renderLeftPanelToggle('elements', tr('Elemente', 'Elements'), tr('Bausteine & Vorlagen', 'Blocks & templates'))}
                 {!leftPanelSections.elements && (
                   <div className="mt-4 flex flex-col">
-                    {editorCostSummary}
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-xs font-semibold">
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold">
                       {[
                         { id: 'components', label: tr('Bausteine', 'Blocks') },
                         { id: 'quick-buttons', label: tr('Fertige Buttons', 'Quick buttons') },
@@ -4417,12 +4334,12 @@ export default function EditorShell({ initialPageId }: Props) {
                       if (!_projectId) return;
                       const idx = pages.length + 1;
                       const defaultName = lang === 'en' ? `Page ${idx}` : `Seite ${idx}`;
-                      await requireCoinsForAction('page');
+                      await requireAuthorizedAction();
                       const id = await createPage(_projectId, defaultName, null, { actorUid: user?.uid ?? null });
                       handlePageSelection(id || null, { placeholderName: defaultName });
                     }}
                   >
-                    {tr('+ Seite', '+ Page')} · {formatCoinLabel(pageCoinCost)}
+                    {tr('+ Seite', '+ Page')}
                   </button>
                 </div>
                 <div className="mt-2 flex items-center gap-2 text-xs">
@@ -4486,9 +4403,6 @@ export default function EditorShell({ initialPageId }: Props) {
                           {tab.label}
                         </button>
                       ))}
-                    </div>
-                    <div className="mt-4">
-                      {editorCostSummary}
                     </div>
                     <div className="mt-4 space-y-3 overflow-y-auto pr-1">
                       {toolboxTab === 'components' && <CategorizedToolbox onAdd={addNode} />}
@@ -4704,4 +4618,3 @@ export default function EditorShell({ initialPageId }: Props) {
     </>
   );
 }
-

@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { COIN_COSTS } from '@/config/coins';
 import { useI18n } from '@/lib/i18n';
 
 export type QuickButtonPresetKey =
@@ -48,7 +47,6 @@ interface QuickButtonsPanelProps {
 export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelProps) {
   const { lang } = useI18n();
   const tr = (de: string, en: string) => (lang === 'en' ? en : de);
-  const quickButtonCostLabel = tr(`${COIN_COSTS.quickButton} Coin`, `${COIN_COSTS.quickButton} coin`);
   const [expanded, setExpanded] = useState<string[]>(['contact']);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -154,7 +152,6 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
                 className="flex w-full items-center gap-2 bg-neutral-900 px-3 py-2 text-left text-sm font-semibold hover:bg-neutral-800"
               >
                 <span className="flex-1">{tr(category.name.de, category.name.en)}</span>
-                <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">{quickButtonCostLabel}</span>
                 <span className="text-xs text-neutral-500">{isExpanded ? '▼' : '▶'}</span>
               </button>
 
@@ -172,7 +169,6 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
                         <span>{item.icon}</span>
                         <span className="truncate">{tr(item.label.de, item.label.en)}</span>
                       </span>
-                      <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-100">{quickButtonCostLabel}</span>
                     </button>
                   ))}
                 </div>
@@ -184,4 +180,3 @@ export default function QuickButtonsPanel({ onCreatePage }: QuickButtonsPanelPro
     </div>
   );
 }
-

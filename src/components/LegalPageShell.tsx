@@ -9,7 +9,7 @@ type Props = {
 
 export default function LegalPageShell({ title, subtitle, updatedAt, children }: Props) {
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-4xl break-words px-6 py-10">
       <div className="rounded-3xl border border-white/10 bg-[#08111f]/90 p-6 shadow-2xl sm:p-8">
         <header className="border-b border-white/10 pb-6">
           <h1 className="text-3xl font-semibold text-white sm:text-4xl">{title}</h1>

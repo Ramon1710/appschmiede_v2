@@ -1,4 +1,4 @@
-export const PRIVACY_CONSENT_VERSION = '2026-03-08';
+export const PRIVACY_CONSENT_VERSION = '2026-10-28-analysis-only';
 export const PRIVACY_CONSENT_STORAGE_KEY = 'appschmiede_privacy_consent';
 export const PRIVACY_CONSENT_COOKIE = 'appschmiede_privacy_consent';
 export const PRIVACY_SETTINGS_EVENT = 'appschmiede:open-privacy-settings';
@@ -46,7 +46,13 @@ export function readPrivacyConsent(): PrivacyConsent | null {
 
   try {
     const parsed: unknown = JSON.parse(raw);
-    return isPrivacyConsent(parsed) ? parsed : null;
+    if (!isPrivacyConsent(parsed) || parsed.version !== PRIVACY_CONSENT_VERSION) {
+      return null;
+    }
+
+    const savedAt = Date.parse(parsed.updatedAt);
+    const age = Date.now() - savedAt;
+    return Number.isFinite(savedAt) && age >= 0 && age < 180 * 24 * 60 * 60 * 1000 ? parsed : null;
   } catch {
     return null;
   }

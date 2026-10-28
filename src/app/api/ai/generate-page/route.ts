@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import type { PageTree, Node, NodeProps } from '@/lib/editorTypes';
-import { chargeCoinsForAction, isBillingError } from '@/lib/billing-server';
 import { requireAuthenticatedUid } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
@@ -416,9 +415,8 @@ export async function POST(request: Request) {
 
   const pageName = typeof body.pageName === 'string' ? body.pageName : undefined;
   const userPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
-  let uid: string | null = null;
   try {
-    uid = await requireAuthenticatedUid(request);
+    await requireAuthenticatedUid(request);
   } catch (error) {
     return NextResponse.json({ error: 'authentication required' }, { status: 401 });
   }
@@ -524,17 +522,12 @@ export async function POST(request: Request) {
 
     const page = validOpenAiPage ?? fallbackPage;
 
-    await chargeCoinsForAction(uid, 'ai');
-
     return NextResponse.json({
       page,
       source: validOpenAiPage ? 'openai' : 'fallback',
       diagnostics: validOpenAiPage ? undefined : { reason: 'parse_failed_or_empty' },
     });
   } catch (error) {
-    if (isBillingError(error)) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: 402 });
-    }
     console.error('AI generation failed, falling back', error);
     const fallback = wantsHomepage
       ? buildModernHomepage(userPrompt, pageName)

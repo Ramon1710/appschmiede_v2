@@ -8,7 +8,7 @@ export default function SiteFooter() {
         <div className="max-w-2xl space-y-3">
           <p className="text-base font-semibold text-white">AppSchmiede</p>
           <p className="leading-6 text-neutral-400">
-            Exklusiv für autorisierte Mitglieder und Partner von Headbang Handwerk e. V. Analyse-Technologien werden nur nach Einwilligung verwendet.
+            Kostenlos und exklusiv für autorisierte Mitglieder und Partner von Headbang Handwerk e. V. Hinweise zu Cookies und optionalen Diensten finden Sie in der Datenschutzerklärung.
           </p>
           <a
             href="https://www.headbang-handwerk.com/"
@@ -29,9 +29,6 @@ export default function SiteFooter() {
           </Link>
           <Link href="/agb" className="transition hover:text-cyan-300">
             AGB
-          </Link>
-          <Link href="/stripe-subscriptions" className="transition hover:text-cyan-300">
-            Stripe-Subscriptions
           </Link>
           <Link href="/datenschutz/firebase" className="transition hover:text-cyan-300">
             Firebase-Hinweise

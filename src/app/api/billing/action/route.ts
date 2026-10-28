@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { CoinActionKey } from '@/config/coins';
-import { assertCanCreateProject, chargeCoinsForAction, isBillingError } from '@/lib/billing-server';
+import { chargeCoinsForAction, isBillingError } from '@/lib/billing-server';
 import { isRequestAuthError, requireAuthenticatedUid } from '@/lib/server-auth';
 
 export const runtime = 'nodejs';
@@ -20,8 +20,6 @@ function billingErrorStatus(code: string): number {
   switch (code) {
     case 'insufficient_coins':
       return 402;
-    case 'project_limit':
-      return 409;
     case 'subscription_missing':
       return 404;
     default:
@@ -35,7 +33,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as BillingActionRequest;
 
     if (body.kind === 'assert-project-create') {
-      await assertCanCreateProject(uid);
+      // Older clients still use this action; access authorization above is sufficient.
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 

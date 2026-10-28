@@ -97,7 +97,7 @@ export default async function AboutPage() {
             <Link href="/datenschutz" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
               {tr('Datenschutz', 'Privacy policy')}
             </Link>
-            <a href="mailto:ramon.meyer@hotmail.de" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
+            <a href="mailto:info@headbang-handwerk.de" className="rounded-full border border-white/20 px-5 py-3 text-center text-sm font-semibold text-white transition hover:border-cyan-400/60 hover:text-cyan-200">
               {tr('Kontakt per E-Mail', 'Contact by email')}
             </a>
           </div>

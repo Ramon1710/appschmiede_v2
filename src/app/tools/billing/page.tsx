@@ -88,12 +88,12 @@ export default function BillingPage() {
         <main className="min-h-screen w-full bg-neutral-950 px-4 py-10 text-neutral-100 lg:px-10">
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <section className="rounded-3xl border border-white/10 bg-neutral-900/80 p-8 shadow-xl">
-              <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Käufe pausiert', 'Purchases paused')}</p>
-              <h1 className="mt-3 text-3xl font-semibold">{tr('Coin-Käufe sind derzeit pausiert', 'Coin purchases are currently paused')}</h1>
+              <p className="text-xs uppercase tracking-[0.4em] text-emerald-300">{tr('Mitglieder und Partner', 'Members and partners')}</p>
+              <h1 className="mt-3 text-3xl font-semibold">{tr('AppSchmiede ist kostenlos', 'AppSchmiede is free of charge')}</h1>
               <p className="mt-4 text-base leading-7 text-neutral-300">
                 {tr(
-                  'Verfügbare Zahlungsoptionen werden hier angezeigt, sobald Coin-Käufe wieder freigeschaltet sind.',
-                  'Available payment options will be shown here when coin purchases are enabled again.'
+                  'Freigeschaltete Mitglieder und Partner nutzen die Plattform einschließlich KI ohne Coin-Abrechnung oder kostenpflichtige App-Abonnements. Historische Zahlungsfragen bitte direkt mit dem Verein klären.',
+                  'Authorized members and partners use the platform, including AI, without coin billing or paid app subscriptions. Please contact the association directly about historical payments.'
                 )}
               </p>
             </section>

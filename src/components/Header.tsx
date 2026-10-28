@@ -97,7 +97,6 @@ export default function Header() {
             ) : null}
           </>
         )}
-        <Link href="/pricing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_pricing')}</Link>
         {!TEMP_FREE_ACCESS_ENABLED && (
           <Link href="/tools/billing" className="hover:text-cyan-400 transition text-sm uppercase tracking-wide">{t('nav_coins')}</Link>
         )}
