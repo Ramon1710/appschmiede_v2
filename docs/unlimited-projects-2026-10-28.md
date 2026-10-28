@@ -2,6 +2,8 @@
 
 Stand: 28.10.2026
 
+Nachtrag: Auf anschließenden ausdrücklichen Wunsch wurde auch der gesamte Ablaufkasten „Mit KI erweitern“ entfernt, einschließlich der englischen Fassung. Der Ablauf zeigt jetzt zwei fortlaufend nummerierte Schritte im zweispaltigen Desktop-Layout. Die nachfolgenden Beschreibungen des früher noch erhaltenen zweiten KI-Schritts dokumentieren den vorherigen Teilauftrag; die Regressionstests prüfen inzwischen dessen vollständige Entfernung. Tatsächliche KI-Funktionen bleiben unverändert.
+
 ## Ergebnis
 
 Die lokale Implementierung enthält keine tarif-, abonnement- oder coinabhängige maximale Projektanzahl mehr. Dies gilt unabhängig von historischen Profilwerten wie `free`, `starter`, `pro` oder `business`. Es wurde weder ein großes Ersatzlimit noch eine neue Projektzähler-Obergrenze eingeführt.

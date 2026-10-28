@@ -106,7 +106,7 @@ test('shared project service creates beyond 9999, lists, subscribes, renames and
 });
 
 for (const lang of ['de', 'en']) {
-  test(`homepage removes only requested AI visuals while retaining all workflow descriptions (${lang})`, async () => {
+  test(`homepage removes the AI workflow card and keeps two complete numbered steps (${lang})`, async () => {
     const billing = await load('src/config/billing.ts');
     const content = await load('src/lib/home-content.ts', { '@/config/billing': billing });
     const { default: Home } = await load('src/app/page.tsx', {
@@ -116,6 +116,13 @@ for (const lang of ['de', 'en']) {
       '@/lib/home-content': content,
     });
     const html = renderToStaticMarkup(await Home());
+    const workflow = html.match(/<section id="workflow"[\s\S]*?<\/section>/)?.[0];
+    assert.ok(workflow);
+    assert.doesNotMatch(workflow, /Mit KI erweitern|Extend with AI/);
+    assert.equal((workflow.match(/<article class="rounded-\[30px\]/g) ?? []).length, 2);
+    assert.equal(content.getHomeContent(lang).workflowSteps.length, 2);
+    assert.match(workflow, lang === 'de' ? /Zwei klare Schritte/ : /Two clear steps/);
+    assert.doesNotMatch(workflow, /(?:Schritt|Step) 3/);
     assert.doesNotMatch(html, /KI-Eingabe|KI-Generator|AI Generator|Prompt zur App-Struktur|Prompt to app structure|KI an deiner Seite|AI by your side|Vorgeschlagene Bausteine|Suggested stack|Build a service app with jobs, photos, chat, and time tracking for mobile teams/);
     for (const step of content.getHomeContent(lang).workflowSteps) {
       assert.ok(html.includes(renderToStaticMarkup(createElement('h3', null, step.title)).slice(4, -5)), step.title);
@@ -124,7 +131,7 @@ for (const lang of ['de', 'en']) {
     assert.match(html, /id="headbang-handwerk-title"/);
     assert.match(html, /href="https:\/\/www.headbang-handwerk.com\/"/);
     assert.match(html, /id="workflow"/);
-    assert.match(html, /xl:grid-cols-3/);
+    assert.match(workflow, /xl:grid-cols-2/);
     assert.match(html, /id="praxis"/);
     assert.doesNotMatch(html, /<section[^>]*>\s*<\/section>/);
   });

@@ -58,11 +58,6 @@ const de: HomeContent = {
         'Starte mit einer Vorlage für dein Use-Case: Support-Chat, Aufgabenverwaltung, Zeiterfassung, Analytics, Dokumentation und mehr. Ein Klick – und dein erstes Projekt ist angelegt.',
     },
     {
-      title: 'Mit KI erweitern',
-      description:
-        'Beschreibe in eigenen Worten, was deine App können soll. Die KI legt passende Seiten, Abschnitte und Inhalte an – inklusive Farben, Layouts und Strukturen, die zu deinem Projekt passen.',
-    },
-    {
       title: 'Im Editor anpassen & testen',
       description:
         'Feinschliff machst du im visuellen Editor: Texte, Buttons, Abschnitte, Layout – alles per Drag & Drop. Mit QR-Code öffnest du deine App direkt auf dem Smartphone und testest sie live.',
@@ -311,11 +306,6 @@ const en: HomeContent = {
       title: 'Pick a template',
       description:
         'Start from a ready-made template for your use case: support chat, task management, time tracking, analytics, documentation, and more. One click — and your first project is created.',
-    },
-    {
-      title: 'Extend with AI',
-      description:
-        'Describe in your own words what your app should do. The AI generates matching pages, sections and content — including colors, layouts and structure that fit your project.',
     },
     {
       title: 'Customize & test in the editor',

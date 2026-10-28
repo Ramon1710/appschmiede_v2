@@ -325,10 +325,6 @@ function WorkflowPreview({
     return <TemplateGalleryMini lang={lang} />;
   }
 
-  if (index === 1) {
-    return null;
-  }
-
   return <EditorMini lang={lang} />;
 }
 
@@ -707,16 +703,16 @@ export default async function HomePage() {
             <h2 className="text-3xl font-semibold">{tr('So funktioniert die AppSchmiede', 'How AppSchmiede works')}</h2>
             <p className="text-sm text-neutral-300 md:text-base">
               {tr(
-                'Drei klare Schritte statt langer Vorprojekte.',
-                'Three clear steps instead of long prep phases.'
+                'Zwei klare Schritte statt langer Vorprojekte.',
+                'Two clear steps instead of long prep phases.'
               )}
             </p>
           </header>
-          <div className="mt-8 grid items-start gap-6 xl:grid-cols-3">
+          <div className="mt-8 grid items-start gap-6 xl:grid-cols-2">
             {workflowSteps.map((step, index) => (
               <article key={step.title} className="rounded-[30px] border border-white/10 bg-white/5 p-4 shadow-xl">
                 <WorkflowPreview index={index} lang={lang} />
-                <div className={`px-1 pb-2 ${index === 1 ? '' : 'pt-5'}`}>
+                <div className="px-1 pb-2 pt-5">
                   <span className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-400">
                     {tr('Schritt', 'Step')} {index + 1}
                   </span>
